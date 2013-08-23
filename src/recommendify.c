@@ -3,9 +3,14 @@
 #include <stdlib.h>
 
 #include "recommendify.h"
+#include "smatrix.h"
 #include "version.h"
 
+smatrix* db;
+
 int main(int argc, char **argv) {
+  db = smatrix_init();
+
   print_version();
   return 0;
 }
