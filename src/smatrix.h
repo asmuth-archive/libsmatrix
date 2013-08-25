@@ -14,10 +14,10 @@ typedef struct {
 } smatrix_t;
 
 smatrix_t* smatrix_init();
-smatrix_vec_t* smatrix_lookup_row(smatrix_t* self, int index);
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, int row_index, int col_index);
+smatrix_vec_t** smatrix_lookup_row(smatrix_t* self, int index);
 smatrix_vec_t* smatrix_lookup_col(smatrix_vec_t* row, int index);
-//void smatrix_insert(smatrix* self);
+void smatrix_increment(smatrix_t* self, int row_index, int col_index, int value);
 void smatrix_free(smatrix_t* self);
 
 #endif
