@@ -19,8 +19,8 @@ smatrix_t* smatrix_init() {
   return self;
 }
 
-void smatrix_resize(smatrix_t* self, int min_size) {
-  int new_size = self->size;
+void smatrix_resize(smatrix_t* self, uint32_t min_size) {
+  uint32_t new_size = self->size;
 
   while (new_size < min_size) {
     new_size = new_size * SMATRIX_GROWTH_FACTOR;
@@ -36,36 +36,49 @@ void smatrix_resize(smatrix_t* self, int min_size) {
   self->size = new_size;
 }
 
-smatrix_vec_t* smatrix_lookup(smatrix_t* self, int row_index, int col_index, int insert) {
+smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {
   smatrix_vec_t *col = NULL, **row = NULL;
 
-  if (row_index > self->size) {
-    if (insert) {
-      smatrix_resize(self, row_index + 1);
+  if (x > self->size) {
+    if (create) {
+      smatrix_resize(self, x + 1);
     } else {
       return NULL;
     }
   }
 
-  row = self->data + col_index;
+  row = self->data + x;
 
-  if (*row) {
-    // lookup col
-  } else {
-    if (insert) {
-    // insert a new row
-      printf("create row: %i\n", row_index);
-      *row = col = malloc(sizeof(smatrix_vec_t));
-    } else {
+  if (*row == NULL) {
+    if (!create)
       return NULL;
+
+    *row = col = malloc(sizeof(smatrix_vec_t));
+    col->index = y;
+  }
+
+  if (col == NULL) {
+    col = *row;
+
+    while (col->index != y) {
+      if (col->next == NULL || col->index > y) {
+        col = NULL;
+        break;
+      }
+
+      col = col->next;
     }
   }
 
-  printf("found col: %p\n", col);
 
-  if (col == NULL && insert) {
+  printf("found col (1): %p\n", col);
+
+  // insert column
+  if (col == NULL && create) {
     // insert col
   }
+
+  printf("found col (2): %p\n", col);
 
   return col;
 }

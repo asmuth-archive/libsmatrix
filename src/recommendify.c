@@ -14,6 +14,10 @@ int main(int argc, char **argv) {
   printf("INIT %p, %i\n", db, db->size);
   smatrix_lookup(db, 53415246, 22361353, 1);
   smatrix_lookup(db, 53415246, 22361353, 1);
+  smatrix_lookup(db, 53415249, 22361353, 1);
+  smatrix_lookup(db, 53415249, 22361353, 1);
+  smatrix_lookup(db, 53415249, 22361359, 1);
+  smatrix_lookup(db, 53415249, 22361359, 1);
   printf("...\n");
 
   print_version();
