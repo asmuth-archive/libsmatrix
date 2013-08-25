@@ -1,3 +1,10 @@
+// This file is part of the "recommendify" project
+//   (c) 2011-2013 Paul Asmuth <paul@paulasmuth.com>
+//
+// Licensed under the MIT License (the "License"); you may not use this
+// file except in compliance with the License. You may obtain a copy of
+// the License at: http://opensource.org/licenses/MIT
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,6 +33,7 @@ void smatrix_resize(smatrix_t* self, uint32_t min_size) {
     new_size = new_size * SMATRIX_GROWTH_FACTOR;
   }
 
+  // FIXPAUL mutex start
   smatrix_vec_t** new_data = malloc(sizeof(void *) * new_size);
   memcpy(new_data, self->data, sizeof(void *) * self->size);
   memset(new_data, 0, sizeof(void *) * (new_size - self->size));
@@ -34,10 +42,11 @@ void smatrix_resize(smatrix_t* self, uint32_t min_size) {
 
   self->data = new_data;
   self->size = new_size;
+  // FIXPAUL mutex end
 }
 
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {
-  smatrix_vec_t *col = NULL, **row = NULL;
+  smatrix_vec_t *col = NULL, **row = NULL, *cur;
 
   if (x > self->size) {
     if (create) {
@@ -53,8 +62,12 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
     if (!create)
       return NULL;
 
-    *row = col = malloc(sizeof(smatrix_vec_t));
-    col->index = y;
+    // FIXPAUL mutex start
+    if (*row == NULL) {
+      *row = col = malloc(sizeof(smatrix_vec_t));
+      col->index = y;
+    }
+    // FIXPAUL mutex end
   }
 
   if (col == NULL) {
@@ -70,15 +83,20 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
     }
   }
 
-
-  printf("found col (1): %p\n", col);
-
   // insert column
   if (col == NULL && create) {
-    // insert col
-  }
+    cur = *row;
 
-  printf("found col (2): %p\n", col);
+    // FIXPAUL mutex start
+    while (cur->next && cur->next->index < y)
+      cur = cur->next;
+
+    col = malloc(sizeof(smatrix_vec_t));
+    col->index = y;
+    col->next  = cur->next;
+    cur->next  = col;
+    // FIXPAUL mutex end
+  }
 
   return col;
 }
