@@ -65,6 +65,7 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
     // FIXPAUL mutex start
     if (*row == NULL) {
       *row = col = malloc(sizeof(smatrix_vec_t));
+      col->next = NULL;
       col->index = y;
     }
     // FIXPAUL mutex end
@@ -83,7 +84,6 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
     }
   }
 
-  // insert column
   if (col == NULL && create) {
     cur = *row;
 
@@ -102,6 +102,21 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
 }
 
 void smatrix_free(smatrix_t* self) {
+  smatrix_vec_t *cur, *tmp;
+  uint32_t n;
+
+  for (n = 0; n < self->size; n++) {
+    cur = self->data[n];
+
+    while (cur) {
+      tmp = cur;
+      cur = cur->next;
+
+      printf("FREE %p -- row %i, col %i\n", tmp, n, tmp->index);
+      free(tmp);
+    }
+  }
+
   free(self->data);
   free(self);
 }
