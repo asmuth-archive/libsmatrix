@@ -11,11 +11,14 @@
 
 #include "recommendify.h"
 #include "smatrix.h"
+#include "cf.h"
 #include "version.h"
 
 smatrix_t* db;
 
 int main(int argc, char **argv) {
+  print_version();
+
   db = smatrix_init();
 
   // FNORD
@@ -36,7 +39,7 @@ int main(int argc, char **argv) {
     for (cur = buf; *cur; cur++) {
       if (*cur == ',' || *cur == '\n') {
         *cur = 0;
-        if (sess_len < (sizeof(sess) / sizeof(uint32_t)) - 1) {
+        if ((unsigned long) sess_len < (sizeof(sess) / sizeof(uint32_t)) - 1) {
           sess[sess_len] = atoi(last);
           sess_len++;
         }
@@ -45,13 +48,15 @@ int main(int argc, char **argv) {
     }
 
     sess_count++;
-    cf_add_session(sess, sess_len);
+    if (sess_count == 10000) break;
+    cf_add_session(db, sess, sess_len * sizeof(uint32_t));
   }
 
   fclose(f);
   printf("   * imported %i sessions\n", sess_count);
   // EOFNORD
 
+  /*
   smatrix_vec_t* val = smatrix_lookup(db, 53415246, 22361353, 1);
   val->value += 1;
 
@@ -60,8 +65,7 @@ int main(int argc, char **argv) {
   smatrix_lookup(db, 53415249, 22361353, 1);
   smatrix_lookup(db, 53415249, 22361359, 1);
   smatrix_lookup(db, 53415249, 22361359, 1);
-
-  print_version();
+  */
 
   smatrix_free(db);
 
