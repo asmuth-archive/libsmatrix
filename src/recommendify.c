@@ -12,7 +12,8 @@ int main(int argc, char **argv) {
   db = smatrix_init();
 
   printf("INIT %p, %i\n", db, db->size);
-  smatrix_increment(db, 53415246, 22361353, 1);
+  smatrix_lookup(db, 53415246, 22361353, 1);
+  smatrix_lookup(db, 53415246, 22361353, 1);
   printf("...\n");
 
   print_version();
