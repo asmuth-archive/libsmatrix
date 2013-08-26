@@ -107,7 +107,7 @@ smatrix_vec_t* smatrix_insert(smatrix_vec_t** row, uint32_t y) {
 
   if (row_len > SMATRIX_MAX_ROW_SIZE) {
     //printf("ROW LEN %i\n", row_len);
-    smatrix_truncate(row);
+    smatrix_truncate(*row);
   }
 
   return *cur;
