@@ -48,7 +48,7 @@ void* tmp_import() {
     }
 
     sess_count++;
-    if (sess_count == 10000) break;
+    if (sess_count == 100000) break;
     cf_add_session(db, sess, sess_len * sizeof(uint32_t));
   }
 
@@ -67,18 +67,10 @@ int main(int argc, char **argv) {
   //pthread_create(&t2, NULL, &tmp_import, NULL);
   //pthread_create(&t3, NULL, &tmp_import, NULL);
   //pthread_create(&t4, NULL, &tmp_import, NULL);
-  //pthread_create(&t5, NULL, &tmp_import, NULL);
-  //pthread_create(&t6, NULL, &tmp_import, NULL);
-  //pthread_create(&t7, NULL, &tmp_import, NULL);
-  //pthread_create(&t8, NULL, &tmp_import, NULL);
   pthread_join(t1, NULL);
   //pthread_join(t2, NULL);
   //pthread_join(t3, NULL);
   //pthread_join(t4, NULL);
-  //pthread_join(t5, NULL);
-  //pthread_join(t6, NULL);
-  //pthread_join(t7, NULL);
-  //pthread_join(t8, NULL);
 
   //long n, c = size / sizeof(uint32_t);
   //for (n = 0; n < c; n++) {
