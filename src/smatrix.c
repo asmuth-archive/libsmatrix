@@ -47,9 +47,9 @@ void smatrix_resize(smatrix_t* self, uint32_t min_size) {
 }
 
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {
-  pthread_rwlock_rdlock(&self->lock);
+  smatrix_vec_t *col = NULL, **row = NULL;
 
-  smatrix_vec_t *col = NULL, **row = NULL, *cur;
+  pthread_rwlock_rdlock(&self->lock);
 
   if (x > self->size) {
     if (create) {
@@ -72,11 +72,8 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
 
     smatrix_wrlock(self);
 
-    if (*row == NULL) {
-      *row = col = malloc(sizeof(smatrix_vec_t));
-      col->next = NULL;
-      col->index = y;
-    }
+    if (*row == NULL)
+      col = smatrix_insert(row, y);
 
     smatrix_unlock(self);
   }
@@ -94,26 +91,10 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
     }
   }
 
+  // FIXPAUL insert must return if column already exists (race)...
   if (col == NULL && create) {
     smatrix_wrlock(self);
-
-    int row_len = 1;
-    cur = *row;
-
-    for (; cur->next && cur->next->index < y; row_len++)
-      cur = cur->next;
-
-    col = malloc(sizeof(smatrix_vec_t));
-    col->index = y;
-    col->next  = cur->next;
-    cur->next  = col;
-
-    for (; cur->next; row_len++)
-      cur = cur->next;
-
-    if (row_len > SMATRIX_MAX_ROW_SIZE)
-      smatrix_truncate(row);
-
+    col = smatrix_insert(row, y);
     smatrix_unlock(self);
   }
 
@@ -152,5 +133,30 @@ void smatrix_unlock(smatrix_t* self) {
 }
 
 void smatrix_truncate(smatrix_vec_t* row) {
-  printf("TRUNCATE! %p\n", row);
+  //printf("TRUNCATE! %p\n", row);
 }
+
+smatrix_vec_t* smatrix_insert(smatrix_vec_t* row, uint32_t y) {
+  smatrix_vec_t *col, *cur = row;
+  uint32_t row_len = 1;
+
+  for (; cur->next && cur->next->index < y; row_len++)
+    cur = cur->next;
+
+  col = malloc(sizeof(smatrix_vec_t));
+  col->index = y;
+  col->next  = cur->next;
+  cur->next  = col;
+
+  for (; cur->next; row_len++)
+    cur = cur->next;
+
+  if (row_len > SMATRIX_MAX_ROW_SIZE) {
+    printf("ROW LEN %i\n", row_len);
+    smatrix_truncate(row);
+  }
+
+  return col;
+}
+
+

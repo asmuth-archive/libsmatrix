@@ -31,6 +31,7 @@ typedef struct {
 
 smatrix_t* smatrix_init();
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create);
+smatrix_vec_t* smatrix_insert(smatrix_vec_t* row, uint32_t y);
 void smatrix_free(smatrix_t* self);
 void smatrix_wrlock(smatrix_t* self);
 void smatrix_unlock(smatrix_t* self);
