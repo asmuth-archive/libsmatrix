@@ -87,7 +87,7 @@ smatrix_vec_t* smatrix_insert(smatrix_vec_t** row, uint32_t y) {
   uint32_t row_len = 1;
   smatrix_vec_t **cur = row, *next;
 
-  for (; *cur && (*cur)->next && (*cur)->next->index <= y; row_len++) {
+  for (; *cur && (*cur)->index <= y; row_len++) {
     if ((*cur)->index == y) {
       //printf("FOUND WHILE INSERTING?! %i <-> %i @ %i -> %p\n", (*cur)->index, y, row_len, *cur);
       return *cur;
