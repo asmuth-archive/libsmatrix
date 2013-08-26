@@ -16,17 +16,12 @@
 
 smatrix_t* db;
 
-int main(int argc, char **argv) {
-  print_version();
-
-  db = smatrix_init();
-
-  // FNORD
+void* tmp_import() {
   printf("> importing /tmp/reco_in.csv...\n");
+  FILE *f = fopen("/tmp/reco_in.csv", "r");
   int sess_count = 0;
   size_t buf_len = 0;
   char *buf = NULL, *cur;
-  FILE *f = fopen("/tmp/reco_in.csv", "r");
 
   if (!f) {
     printf("cannot open file\n");
@@ -56,24 +51,37 @@ int main(int argc, char **argv) {
     if (sess_count == 100000) break;
     cf_add_session(db, sess, sess_len * sizeof(uint32_t));
   }
+
   free(buf);
   fclose(f);
   printf("   * imported %i sessions\n", sess_count);
+}
+
+int main(int argc, char **argv) {
+  print_version();
+  db = smatrix_init();
+
+  // FNORD
+  pthread_t t1, t2, t3, t4, t5, t6, t7, t8;
+  pthread_create(&t1, NULL, &tmp_import, NULL);
+  //pthread_create(&t2, NULL, &tmp_import, NULL);
+  //pthread_create(&t3, NULL, &tmp_import, NULL);
+  //pthread_create(&t4, NULL, &tmp_import, NULL);
+  //pthread_create(&t5, NULL, &tmp_import, NULL);
+  //pthread_create(&t6, NULL, &tmp_import, NULL);
+  //pthread_create(&t7, NULL, &tmp_import, NULL);
+  //pthread_create(&t8, NULL, &tmp_import, NULL);
+  pthread_join(t1, NULL);
+  //pthread_join(t2, NULL);
+  //pthread_join(t3, NULL);
+  //pthread_join(t4, NULL);
+  //pthread_join(t5, NULL);
+  //pthread_join(t6, NULL);
+  //pthread_join(t7, NULL);
+  //pthread_join(t8, NULL);
   // EOFNORD
 
-  /*
-  smatrix_vec_t* val = smatrix_lookup(db, 53415246, 22361353, 1);
-  val->value += 1;
-
-  smatrix_lookup(db, 53415246, 22361353, 1);
-  smatrix_lookup(db, 53415249, 22361353, 1);
-  smatrix_lookup(db, 53415249, 22361353, 1);
-  smatrix_lookup(db, 53415249, 22361359, 1);
-  smatrix_lookup(db, 53415249, 22361359, 1);
-  */
-
   smatrix_free(db);
-
   return 0;
 }
 
