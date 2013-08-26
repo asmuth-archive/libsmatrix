@@ -13,6 +13,7 @@
 
 #define SMATRIX_INITIAL_SIZE  120000000
 #define SMATRIX_GROWTH_FACTOR 2
+#define SMATRIX_MAX_ROW_SIZE  50
 
 typedef struct smatrix_vec_s smatrix_vec_t;
 
@@ -31,7 +32,8 @@ typedef struct {
 smatrix_t* smatrix_init();
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create);
 void smatrix_free(smatrix_t* self);
-inline void smatrix_wrlock(smatrix_t* self);
-inline void smatrix_unlock(smatrix_t* self);
+void smatrix_wrlock(smatrix_t* self);
+void smatrix_unlock(smatrix_t* self);
+void smatrix_truncate(smatrix_vec_t* row);
 
 #endif

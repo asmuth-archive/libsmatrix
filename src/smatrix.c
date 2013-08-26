@@ -97,7 +97,7 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
   if (col == NULL && create) {
     smatrix_wrlock(self);
 
-    int row_len = 0;
+    int row_len = 1;
     cur = *row;
 
     for (; cur->next && cur->next->index < y; row_len++)
@@ -108,10 +108,11 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
     col->next  = cur->next;
     cur->next  = col;
 
-    for (row_len = 0; cur->next; row_len++)
+    for (; cur->next; row_len++)
       cur = cur->next;
 
-    printf("ROW LEN: %i\n", row_len);
+    if (row_len > SMATRIX_MAX_ROW_SIZE)
+      smatrix_truncate(row);
 
     smatrix_unlock(self);
   }
@@ -148,4 +149,8 @@ void smatrix_wrlock(smatrix_t* self) {
 void smatrix_unlock(smatrix_t* self) {
   pthread_rwlock_unlock(&self->lock);
   pthread_rwlock_rdlock(&self->lock);
+}
+
+void smatrix_truncate(smatrix_vec_t* row) {
+  printf("TRUNCATE! %p\n", row);
 }
