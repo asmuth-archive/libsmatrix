@@ -96,15 +96,22 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
 
   if (col == NULL && create) {
     smatrix_wrlock(self);
+
+    int row_len = 0;
     cur = *row;
 
-    while (cur->next && cur->next->index < y)
+    for (; cur->next && cur->next->index < y; row_len++)
       cur = cur->next;
 
     col = malloc(sizeof(smatrix_vec_t));
     col->index = y;
     col->next  = cur->next;
     cur->next  = col;
+
+    for (row_len = 0; cur->next; row_len++)
+      cur = cur->next;
+
+    printf("ROW LEN: %i\n", row_len);
 
     smatrix_unlock(self);
   }

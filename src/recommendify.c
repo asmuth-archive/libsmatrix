@@ -79,6 +79,12 @@ int main(int argc, char **argv) {
   //pthread_join(t6, NULL);
   //pthread_join(t7, NULL);
   //pthread_join(t8, NULL);
+
+  //long n, c = size / sizeof(uint32_t);
+  //for (n = 0; n < c; n++) {
+  //  printf("%i -> %i\n", n, smatrix_lookup(db, n, 0, 0)->value);
+  //}
+
   // EOFNORD
 
   smatrix_free(db);
