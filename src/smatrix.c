@@ -29,13 +29,13 @@ smatrix_t* smatrix_init() {
 }
 
 void smatrix_resize(smatrix_t* self, uint32_t min_size) {
+
   uint32_t new_size = self->size;
 
   while (new_size < min_size) {
     new_size = new_size * SMATRIX_GROWTH_FACTOR;
   }
 
-  // FIXPAUL mutex start
   smatrix_vec_t** new_data = malloc(sizeof(void *) * new_size);
   memcpy(new_data, self->data, sizeof(void *) * self->size);
   memset(new_data, 0, sizeof(void *) * (new_size - self->size));
@@ -44,15 +44,21 @@ void smatrix_resize(smatrix_t* self, uint32_t min_size) {
 
   self->data = new_data;
   self->size = new_size;
-  // FIXPAUL mutex end
 }
 
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {
+  pthread_rwlock_rdlock(&self->lock);
+
   smatrix_vec_t *col = NULL, **row = NULL, *cur;
 
   if (x > self->size) {
     if (create) {
-      smatrix_resize(self, x + 1);
+      smatrix_wrlock(self);
+
+      if (x > self->size)
+        smatrix_resize(self, x + 1);
+
+      smatrix_unlock(self);
     } else {
       return NULL;
     }
@@ -64,13 +70,15 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
     if (!create)
       return NULL;
 
-    // FIXPAUL mutex start
+    smatrix_wrlock(self);
+
     if (*row == NULL) {
       *row = col = malloc(sizeof(smatrix_vec_t));
       col->next = NULL;
       col->index = y;
     }
-    // FIXPAUL mutex end
+
+    smatrix_unlock(self);
   }
 
   if (col == NULL) {
@@ -87,9 +95,9 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
   }
 
   if (col == NULL && create) {
+    smatrix_wrlock(self);
     cur = *row;
 
-    // FIXPAUL mutex start
     while (cur->next && cur->next->index < y)
       cur = cur->next;
 
@@ -97,9 +105,11 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
     col->index = y;
     col->next  = cur->next;
     cur->next  = col;
-    // FIXPAUL mutex end
+
+    smatrix_unlock(self);
   }
 
+  pthread_rwlock_unlock(&self->lock);
   return col;
 }
 
@@ -121,4 +131,14 @@ void smatrix_free(smatrix_t* self) {
 
   free(self->data);
   free(self);
+}
+
+void smatrix_wrlock(smatrix_t* self) {
+  pthread_rwlock_unlock(&self->lock);
+  pthread_rwlock_wrlock(&self->lock);
+}
+
+void smatrix_unlock(smatrix_t* self) {
+  pthread_rwlock_unlock(&self->lock);
+  pthread_rwlock_rdlock(&self->lock);
 }
