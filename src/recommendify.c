@@ -53,7 +53,7 @@ int main(int argc, char **argv) {
     }
 
     sess_count++;
-    if (sess_count == 1000) break;
+    if (sess_count == 100000) break;
     cf_add_session(db, sess, sess_len * sizeof(uint32_t));
   }
   free(buf);

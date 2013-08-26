@@ -104,9 +104,6 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
 void smatrix_free(smatrix_t* self) {
   smatrix_vec_t *cur, *tmp;
   uint32_t n;
-  unsigned long items_freed = 0;
-
-  printf("check... %i\n", self->size);
 
   for (n = 0; n < self->size; n++) {
     cur = self->data[n];
@@ -114,12 +111,9 @@ void smatrix_free(smatrix_t* self) {
     while (cur) {
       tmp = cur;
       cur = cur->next;
-      items_freed++;
       free(tmp);
     }
   }
-
-  printf("freed %lu items\n", items_freed);
 
   free(self->data);
   free(self);

@@ -13,11 +13,13 @@
 #define SMATRIX_INITIAL_SIZE  120000000
 #define SMATRIX_GROWTH_FACTOR 2
 
-typedef struct smatrix_vec_s {
-  uint32_t index;
-  uint32_t value;
-  struct smatrix_vec_s* next;
-} smatrix_vec_t;
+typedef struct smatrix_vec_s smatrix_vec_t;
+
+struct smatrix_vec_s {
+  uint32_t        index;
+  uint32_t        value;
+  smatrix_vec_t*  next;
+};
 
 typedef struct {
   smatrix_vec_t** data;
