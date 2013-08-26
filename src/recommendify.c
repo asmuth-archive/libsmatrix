@@ -23,10 +23,15 @@ int main(int argc, char **argv) {
 
   // FNORD
   printf("> importing /tmp/reco_in.csv...\n");
-  int sess_count;
-  size_t buf_len;
-  char *buf, *cur;
+  int sess_count = 0;
+  size_t buf_len = 0;
+  char *buf = NULL, *cur;
   FILE *f = fopen("/tmp/reco_in.csv", "r");
+
+  if (!f) {
+    printf("cannot open file\n");
+    exit(1);
+  }
 
   while (1) {
     if (getline(&buf, &buf_len, f) == -1)
@@ -48,10 +53,10 @@ int main(int argc, char **argv) {
     }
 
     sess_count++;
-    if (sess_count == 10000) break;
+    if (sess_count == 1000) break;
     cf_add_session(db, sess, sess_len * sizeof(uint32_t));
   }
-
+  free(buf);
   fclose(f);
   printf("   * imported %i sessions\n", sess_count);
   // EOFNORD

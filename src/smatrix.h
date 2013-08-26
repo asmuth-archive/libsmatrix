@@ -10,7 +10,7 @@
 #ifndef SMATRIX_H
 #define SMATRIX_H
 
-#define SMATRIX_INITIAL_SIZE  1024
+#define SMATRIX_INITIAL_SIZE  120000000
 #define SMATRIX_GROWTH_FACTOR 2
 
 typedef struct smatrix_vec_s {
