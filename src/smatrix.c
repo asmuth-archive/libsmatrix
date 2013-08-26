@@ -28,24 +28,6 @@ smatrix_t* smatrix_init() {
   return self;
 }
 
-void smatrix_resize(smatrix_t* self, uint32_t min_size) {
-
-  uint32_t new_size = self->size;
-
-  while (new_size < min_size) {
-    new_size = new_size * SMATRIX_GROWTH_FACTOR;
-  }
-
-  smatrix_vec_t** new_data = malloc(sizeof(void *) * new_size);
-  memcpy(new_data, self->data, sizeof(void *) * self->size);
-  memset(new_data, 0, sizeof(void *) * (new_size - self->size));
-
-  free(self->data);
-
-  self->data = new_data;
-  self->size = new_size;
-}
-
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {
   smatrix_vec_t *col = NULL, **row = NULL;
 
@@ -102,6 +84,50 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
   return col;
 }
 
+smatrix_vec_t* smatrix_insert(smatrix_vec_t* row, uint32_t y) {
+  smatrix_vec_t *col, *cur = row;
+  uint32_t row_len = 1;
+
+  for (; cur->next && cur->next->index < y; row_len++)
+    cur = cur->next;
+
+  col = malloc(sizeof(smatrix_vec_t));
+  col->index = y;
+  col->next  = cur->next;
+  cur->next  = col;
+
+  for (; cur->next; row_len++)
+    cur = cur->next;
+
+  if (row_len > SMATRIX_MAX_ROW_SIZE) {
+    printf("ROW LEN %i\n", row_len);
+    smatrix_truncate(row);
+  }
+
+  return col;
+}
+
+void smatrix_resize(smatrix_t* self, uint32_t min_size) {
+  uint32_t new_size = self->size;
+
+  while (new_size < min_size) {
+    new_size = new_size * SMATRIX_GROWTH_FACTOR;
+  }
+
+  smatrix_vec_t** new_data = malloc(sizeof(void *) * new_size);
+  memcpy(new_data, self->data, sizeof(void *) * self->size);
+  memset(new_data, 0, sizeof(void *) * (new_size - self->size));
+
+  free(self->data);
+
+  self->data = new_data;
+  self->size = new_size;
+}
+
+void smatrix_truncate(smatrix_vec_t* row) {
+  //printf("TRUNCATE! %p\n", row);
+}
+
 void smatrix_free(smatrix_t* self) {
   smatrix_vec_t *cur, *tmp;
   uint32_t n;
@@ -131,32 +157,3 @@ void smatrix_unlock(smatrix_t* self) {
   pthread_rwlock_unlock(&self->lock);
   pthread_rwlock_rdlock(&self->lock);
 }
-
-void smatrix_truncate(smatrix_vec_t* row) {
-  //printf("TRUNCATE! %p\n", row);
-}
-
-smatrix_vec_t* smatrix_insert(smatrix_vec_t* row, uint32_t y) {
-  smatrix_vec_t *col, *cur = row;
-  uint32_t row_len = 1;
-
-  for (; cur->next && cur->next->index < y; row_len++)
-    cur = cur->next;
-
-  col = malloc(sizeof(smatrix_vec_t));
-  col->index = y;
-  col->next  = cur->next;
-  cur->next  = col;
-
-  for (; cur->next; row_len++)
-    cur = cur->next;
-
-  if (row_len > SMATRIX_MAX_ROW_SIZE) {
-    printf("ROW LEN %i\n", row_len);
-    smatrix_truncate(row);
-  }
-
-  return col;
-}
-
-
