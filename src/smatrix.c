@@ -89,7 +89,7 @@ smatrix_vec_t* smatrix_insert(smatrix_vec_t** row, uint32_t y) {
 
   for (; *cur && (*cur)->next && (*cur)->next->index <= y; row_len++) {
     if ((*cur)->index == y) {
-      printf("FOUND WHILE INSERTING?! %i <-> %i @ %i -> %p\n", (*cur)->index, y, row_len, *cur);
+      //printf("FOUND WHILE INSERTING?! %i <-> %i @ %i -> %p\n", (*cur)->index, y, row_len, *cur);
       return *cur;
     } else {
       cur = &((*cur)->next);
@@ -152,6 +152,24 @@ void smatrix_free(smatrix_t* self) {
 
   free(self->data);
   free(self);
+}
+
+void smatrix_dump(smatrix_t* self) {
+  smatrix_vec_t *cur;
+  uint32_t n;
+
+  for (n = 0; n < self->size; n++) {
+    cur = self->data[n];
+
+    if (!cur) continue;
+
+    printf("%i ===> ", n);
+    while (cur) {
+      printf(" %i:%i, ", cur->index, cur->value);
+      cur = cur->next;
+    }
+    printf("\n----\n");
+  }
 }
 
 void smatrix_wrlock(smatrix_t* self) {

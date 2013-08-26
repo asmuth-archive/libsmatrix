@@ -48,7 +48,7 @@ void* tmp_import() {
     }
 
     sess_count++;
-    if (sess_count == 100000) break;
+    if (sess_count == 10000) break;
     cf_add_session(db, sess, sess_len * sizeof(uint32_t));
   }
 
@@ -87,6 +87,7 @@ int main(int argc, char **argv) {
 
   // EOFNORD
 
+  smatrix_dump(db);
   smatrix_free(db);
   return 0;
 }
