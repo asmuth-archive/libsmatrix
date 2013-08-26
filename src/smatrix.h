@@ -6,6 +6,7 @@
 // the License at: http://opensource.org/licenses/MIT
 
 #include <stdint.h>
+#include <pthread.h>
 
 #ifndef SMATRIX_H
 #define SMATRIX_H
@@ -16,14 +17,15 @@
 typedef struct smatrix_vec_s smatrix_vec_t;
 
 struct smatrix_vec_s {
-  uint32_t        index;
-  uint32_t        value;
-  smatrix_vec_t*  next;
+  uint32_t         index;
+  uint32_t         value;
+  smatrix_vec_t*   next;
 };
 
 typedef struct {
-  smatrix_vec_t** data;
-  uint32_t        size;
+  smatrix_vec_t**  data;
+  uint32_t         size;
+  pthread_rwlock_t lock;
 } smatrix_t;
 
 smatrix_t* smatrix_init();

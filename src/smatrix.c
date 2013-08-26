@@ -16,12 +16,14 @@ smatrix_t* smatrix_init() {
 
   self->size = SMATRIX_INITIAL_SIZE;
   self->data = malloc(sizeof(void *) * self->size);
-  memset(self->data, 0, sizeof(void *) * self->size);
 
   if (self->data == NULL) {
     free(self);
     return NULL;
   }
+
+  memset(self->data, 0, sizeof(void *) * self->size);
+  pthread_rwlock_init(&self->lock, NULL);
 
   return self;
 }
@@ -114,6 +116,8 @@ void smatrix_free(smatrix_t* self) {
       free(tmp);
     }
   }
+
+  pthread_rwlock_destroy(&self->lock);
 
   free(self->data);
   free(self);
