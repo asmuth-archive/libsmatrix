@@ -73,7 +73,6 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
     }
   }
 
-  // FIXPAUL insert must return if column already exists (race)...
   if (col == NULL && create) {
     smatrix_wrlock(self);
     col = smatrix_insert(row, y);
@@ -84,27 +83,34 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
   return col;
 }
 
-smatrix_vec_t* smatrix_insert(smatrix_vec_t* row, uint32_t y) {
-  smatrix_vec_t *col, *cur = row;
+smatrix_vec_t* smatrix_insert(smatrix_vec_t** row, uint32_t y) {
   uint32_t row_len = 1;
+  smatrix_vec_t **cur = row, *next;
 
-  for (; cur->next && cur->next->index < y; row_len++)
-    cur = cur->next;
+  for (; *cur && (*cur)->next && (*cur)->next->index <= y; row_len++) {
+    if ((*cur)->index == y) {
+      printf("FOUND WHILE INSERTING?! %i <-> %i @ %i -> %p\n", (*cur)->index, y, row_len, *cur);
+      return *cur;
+    } else {
+      cur = &((*cur)->next);
+    }
+  }
 
-  col = malloc(sizeof(smatrix_vec_t));
-  col->index = y;
-  col->next  = cur->next;
-  cur->next  = col;
+  next = *cur;
 
-  for (; cur->next; row_len++)
-    cur = cur->next;
+  *cur = malloc(sizeof(smatrix_vec_t));
+  (*cur)->index = y;
+  (*cur)->next  = next;
+
+  for (; (*cur)->next; row_len++)
+    cur = &((*cur)->next);
 
   if (row_len > SMATRIX_MAX_ROW_SIZE) {
-    printf("ROW LEN %i\n", row_len);
+    //printf("ROW LEN %i\n", row_len);
     smatrix_truncate(row);
   }
 
-  return col;
+  return *cur;
 }
 
 void smatrix_resize(smatrix_t* self, uint32_t min_size) {
