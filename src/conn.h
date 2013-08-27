@@ -10,14 +10,19 @@
 #ifndef CONN_H
 #define CONN_H
 
+#define CONN_BUF_SIZE 4096
+
 typedef struct conn_s conn_t;
 
 struct conn_s {
   int       fd;
+  int       buffer_pos;
+  char      buffer[CONN_BUF_SIZE];
   pthread_t thread;
 };
 
 conn_t* conn_init(int fd);
-void conn_run(conn_t* self);
+void* conn_run(void* self);
+void conn_close(conn_t* self);
 
 #endif

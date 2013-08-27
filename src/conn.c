@@ -6,17 +6,47 @@
 // the License at: http://opensource.org/licenses/MIT
 
 #include <stdlib.h>
+#include <unistd.h>
 #include "conn.h"
 
 conn_t* conn_init(int fd) {
   conn_t* self = malloc(sizeof(conn_t));
   self->fd = fd;
+  self->buffer_pos = 0;
 
-  pthread_create(&self->thread, NULL, conn_run, self);
+  pthread_create(&self->thread, NULL, &conn_run, self);
 
   return self;
 }
 
-void conn_run(conn_t* self) {
+void* conn_run(void* self_) {
+  conn_t *self = (conn_t *) self_;
+  int chunk, remaining;
+
   printf("RUN! %i\n", self->fd);
+
+  for (;;) {
+    remaining = CONN_BUF_SIZE - self->buffer_pos;
+
+    if (remaining == 0) {
+      printf("buffer overflow :(\n");
+      conn_close(self);
+    }
+
+    chunk = read(self->fd, self->buffer + self->buffer_pos, remaining);
+
+    if (chunk < 1) {
+      conn_close(self);
+      return NULL;
+    }
+
+    self->buffer_pos += chunk;
+
+    self->buffer[self->buffer_pos + 1] = 0;
+    printf("buf: %s ---\n", self->buffer);
+  }
+}
+
+void conn_close(conn_t* self) {
+  printf("CLOSE %i\n", self->fd);
 }
