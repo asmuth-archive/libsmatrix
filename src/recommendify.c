@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
 
   // EOFNORD
 
-  smatrix_dump(db);
+  //smatrix_dump(db);
   smatrix_free(db);
   return 0;
 }
