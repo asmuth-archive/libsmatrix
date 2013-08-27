@@ -20,7 +20,7 @@
 smatrix_t* db;
 
 void* tmp_import() {
-  printf("\n\n> importing /tmp/reco_in.csv...\n");
+  printf("\n> importing /tmp/reco_in.csv...\n");
   FILE *f = fopen("/tmp/reco_in.csv", "r");
   int sess_count = 0;
   size_t buf_len = 0;
