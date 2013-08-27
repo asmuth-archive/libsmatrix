@@ -8,12 +8,14 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include "conn.h"
+#include "http.h"
 
 conn_t* conn_init(int fd) {
   conn_t* self = malloc(sizeof(conn_t));
   self->fd = fd;
   self->buffer_pos = 0;
 
+  http_req_init(&self->http);
   pthread_create(&self->thread, NULL, &conn_run, self);
 
   return self;
@@ -21,7 +23,7 @@ conn_t* conn_init(int fd) {
 
 void* conn_run(void* self_) {
   conn_t *self = (conn_t *) self_;
-  int chunk, remaining;
+  int chunk, remaining, ret;
 
   printf("RUN! %i\n", self->fd);
 
@@ -41,9 +43,16 @@ void* conn_run(void* self_) {
     }
 
     self->buffer_pos += chunk;
+    ret = http_read(&self->http, self->buffer, self->buffer_pos);
 
-    self->buffer[self->buffer_pos + 1] = 0;
-    printf("buf: %s ---\n", self->buffer);
+    if (ret == -1) {
+      conn_close(self);
+      return NULL;
+    }
+
+    if (ret > 0) {
+      printf("http request finished!\n");
+    }
   }
 }
 
