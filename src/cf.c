@@ -24,19 +24,34 @@ void cf_add_session(smatrix_t* smatrix, uint32_t* session, size_t size) {
 }
 
 void cf_top_neighbors(smatrix_t* smatrix, uint32_t id, uint32_t num) {
-  smatrix_vec_t *cur, *vec = smatrix_lookup(smatrix, id, 0, 0);
+  smatrix_vec_t *cur, *root;
+  float similarity;
 
-  if (vec == NULL)
+  root = smatrix_lookup(smatrix, id, 0, 0);
+
+  if (root == NULL)
     return;
 
-  printf("RECO for: %i (%i total views):\n", id, vec->value);
+  printf("RECO for: %i (%i total views):\n", id, root->value);
 
-  for (; vec; vec = vec->next) {
-    cur = smatrix_lookup(smatrix, vec->index, 0, 0);
-
-    if (cur == NULL)
-      continue;
-
-    printf("  > %i [cc %i] [sim ...] [total %i]\n", vec->index, vec->value, cur->value);
+  for (cur = root->next; cur; cur = cur->next) {
+    similarity = cf_jaccard(smatrix, root, cur);
+    printf("  > %i [cc %i] [sim %f]\n", cur->index, cur->value, similarity);
   }
+}
+
+float cf_jaccard(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b) {
+  uint32_t num, den;
+  smatrix_vec_t *b_root = smatrix_lookup(smatrix, b->index, 0, 0);
+
+  if (b_root == NULL)
+    return 0.0;
+
+  num = b->value;
+  den = a->value + b_root->value - b->value;
+
+  if (den == 0)
+    return 0.0;
+
+  return ((float) num / (float) den);
 }

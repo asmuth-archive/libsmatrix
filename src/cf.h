@@ -15,5 +15,6 @@
 
 void cf_add_session(smatrix_t* smatrix, uint32_t* session, size_t size);
 void cf_top_neighbors(smatrix_t* smatrix, uint32_t id, uint32_t num);
+float cf_jaccard(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b);
 
 #endif
