@@ -8,6 +8,7 @@
 #include <stdio.h>
 
 #include "cf.h"
+#include "string.h"
 
 void cf_add_session(smatrix_t* smatrix, uint32_t* session, size_t size) {
   long i, n, c = size / sizeof(uint32_t);
@@ -23,21 +24,29 @@ void cf_add_session(smatrix_t* smatrix, uint32_t* session, size_t size) {
   }
 }
 
-void cf_top_neighbors(smatrix_t* smatrix, uint32_t id, uint32_t num) {
+cf_reco_t* cf_recommend(smatrix_t* smatrix, uint32_t id) {
+  int pos;
   smatrix_vec_t *cur, *root;
-  float similarity;
+  cf_reco_t* result;
 
   root = smatrix_lookup(smatrix, id, 0, 0);
 
   if (root == NULL)
-    return;
+    return NULL;
 
-  printf("RECO for: %i (%i total views):\n", id, root->value);
+  result = malloc(sizeof(cf_reco_t));
+  memset(result, 0, sizeof(cf_reco_t));
 
-  for (cur = root->next; cur; cur = cur->next) {
-    similarity = cf_jaccard(smatrix, root, cur);
-    printf("  > %i [cc %i] [sim %f]\n", cur->index, cur->value, similarity);
+  cur = root->next;
+
+  for (pos = 0; cur; pos++) {
+    result->size++;
+    result->ids[pos] = cur->index;
+    result->similarities[pos] = cf_jaccard(smatrix, root, cur);
+    cur = cur->next;
   }
+
+  return result;
 }
 
 float cf_jaccard(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b) {

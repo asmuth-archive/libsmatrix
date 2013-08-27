@@ -13,8 +13,14 @@
 #ifndef CF_H
 #define CF_H
 
+typedef struct {
+  uint32_t ids[SMATRIX_MAX_ROW_SIZE];
+  float    similarities[SMATRIX_MAX_ROW_SIZE];
+  int      size;
+} cf_reco_t;
+
 void cf_add_session(smatrix_t* smatrix, uint32_t* session, size_t size);
-void cf_top_neighbors(smatrix_t* smatrix, uint32_t id, uint32_t num);
+cf_reco_t* cf_recommend(smatrix_t* smatrix, uint32_t id);
 float cf_jaccard(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b);
 
 #endif
