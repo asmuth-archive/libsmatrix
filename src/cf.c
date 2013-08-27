@@ -22,3 +22,21 @@ void cf_add_session(smatrix_t* smatrix, uint32_t* session, size_t size) {
     }
   }
 }
+
+void cf_top_neighbors(smatrix_t* smatrix, uint32_t id, uint32_t num) {
+  smatrix_vec_t *cur, *vec = smatrix_lookup(smatrix, id, 0, 0);
+
+  if (vec == NULL)
+    return;
+
+  printf("RECO for: %i (%i total views):\n", id, vec->value);
+
+  for (; vec; vec = vec->next) {
+    cur = smatrix_lookup(smatrix, vec->index, 0, 0);
+
+    if (cur == NULL)
+      continue;
+
+    printf("  > %i [cc %i] [sim ...] [total %i]\n", vec->index, vec->value, cur->value);
+  }
+}

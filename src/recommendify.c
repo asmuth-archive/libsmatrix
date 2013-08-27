@@ -78,6 +78,7 @@ int main(int argc, char **argv) {
   //}
 
   // EOFNORD
+  cf_top_neighbors(db, 43798630, 10);
 
   //smatrix_dump(db);
   smatrix_free(db);

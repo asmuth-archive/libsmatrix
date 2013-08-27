@@ -14,5 +14,6 @@
 #define CF_H
 
 void cf_add_session(smatrix_t* smatrix, uint32_t* session, size_t size);
+void cf_top_neighbors(smatrix_t* smatrix, uint32_t id, uint32_t num);
 
 #endif
