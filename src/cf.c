@@ -17,12 +17,8 @@ void cf_add_session(smatrix_t* smatrix, uint32_t* session, size_t size) {
 
     for (i = 0; i < c; i++) {
       if (i != n) {
-        smatrix_vec_t* x = smatrix_lookup(smatrix, session[n], session[i], 1);
-        x->value++;
-        //printf("YO %i...%i\n", smatrix_lookup(smatrix, session[n], session[i], 1)->value, x->value);
+        smatrix_lookup(smatrix, session[n], session[i], 1)->value++;
       }
     }
   }
-
-  //printf("\n");
 }
