@@ -8,6 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+#include <netinet/in.h>
 
 #include "recommendify.h"
 #include "smatrix.h"
@@ -17,7 +20,7 @@
 smatrix_t* db;
 
 void* tmp_import() {
-  printf("> importing /tmp/reco_in.csv...\n");
+  printf("\n\n> importing /tmp/reco_in.csv...\n");
   FILE *f = fopen("/tmp/reco_in.csv", "r");
   int sess_count = 0;
   size_t buf_len = 0;
@@ -58,6 +61,9 @@ void* tmp_import() {
 }
 
 int main(int argc, char **argv) {
+  int fd, ssock, opt = 1;
+  struct sockaddr_in saddr;
+
   print_version();
   db = smatrix_init();
 
@@ -78,7 +84,46 @@ int main(int argc, char **argv) {
   //}
 
   // EOFNORD
-  cf_top_neighbors(db, 43798630, 10);
+  //cf_top_neighbors(db, 43798630, 10);
+  
+  saddr.sin_family = AF_INET;
+  saddr.sin_addr.s_addr = htonl(INADDR_ANY);
+  saddr.sin_port = htons(2323);
+
+  ssock = socket(AF_INET, SOCK_STREAM, 0);
+
+  if (ssock == -1) {
+    perror("create socket failed!\n");
+    return 1;
+  }
+
+  if (setsockopt(ssock, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+    perror("setsockopt(SO_REUSEADDR)");
+    return 1;
+  }
+
+  if (bind(ssock, (struct sockaddr *) &saddr, sizeof(saddr)) == -1) {
+    perror("bind failed");
+    return 1;
+  }
+
+  if (listen(ssock, 1024) == -1) {
+    perror("listen failed");
+    return 1;
+  }
+
+  printf("\n> listening on 0.0.0.0:2323\n");
+
+  for (;;) {
+    fd = accept(ssock, NULL, NULL);
+
+    if (fd == -1) {
+      perror("accept failed");
+      continue;
+    }
+
+    printf("ACCEPT: %i\n", fd);
+  }
 
   //smatrix_dump(db);
   smatrix_free(db);
