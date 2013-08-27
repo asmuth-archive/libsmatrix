@@ -15,6 +15,7 @@
 #include "recommendify.h"
 #include "smatrix.h"
 #include "cf.h"
+#include "conn.h"
 #include "version.h"
 
 smatrix_t* db;
@@ -51,7 +52,7 @@ void* tmp_import() {
     }
 
     sess_count++;
-    if (sess_count == 100000) break;
+    if (sess_count == 10000) break;
     cf_add_session(db, sess, sess_len * sizeof(uint32_t));
   }
 
@@ -122,7 +123,7 @@ int main(int argc, char **argv) {
       continue;
     }
 
-    printf("ACCEPT: %i\n", fd);
+    conn_init(fd);
   }
 
   //smatrix_dump(db);
