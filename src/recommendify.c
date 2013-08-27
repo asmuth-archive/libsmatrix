@@ -59,6 +59,7 @@ void* tmp_import() {
   free(buf);
   fclose(f);
   printf("   * imported %i sessions\n", sess_count);
+  return NULL;
 }
 
 int main(int argc, char **argv) {
@@ -68,25 +69,8 @@ int main(int argc, char **argv) {
   print_version();
   db = smatrix_init();
 
-  // FNORD
-  pthread_t t1, t2, t3, t4, t5, t6, t7, t8;
-  pthread_create(&t1, NULL, &tmp_import, NULL);
-  //pthread_create(&t2, NULL, &tmp_import, NULL);
-  //pthread_create(&t3, NULL, &tmp_import, NULL);
-  //pthread_create(&t4, NULL, &tmp_import, NULL);
-  pthread_join(t1, NULL);
-  //pthread_join(t2, NULL);
-  //pthread_join(t3, NULL);
-  //pthread_join(t4, NULL);
+  tmp_import();
 
-  //long n, c = size / sizeof(uint32_t);
-  //for (n = 0; n < c; n++) {
-  //  printf("%i -> %i\n", n, smatrix_lookup(db, n, 0, 0)->value);
-  //}
-
-  // EOFNORD
-  //cf_top_neighbors(db, 43798630, 10);
-  
   saddr.sin_family = AF_INET;
   saddr.sin_addr.s_addr = htonl(INADDR_ANY);
   saddr.sin_port = htons(2323);
@@ -126,7 +110,6 @@ int main(int argc, char **argv) {
     conn_init(fd);
   }
 
-  //smatrix_dump(db);
   smatrix_free(db);
   return 0;
 }
