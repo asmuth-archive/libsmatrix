@@ -7,8 +7,13 @@
 
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdint.h>
 #include "conn.h"
 #include "http.h"
+#include "smatrix.h"
+#include "cf.h"
+
+extern smatrix_t* db;
 
 conn_t* conn_init(int fd) {
   conn_t* self = malloc(sizeof(conn_t));
@@ -59,14 +64,29 @@ void conn_handle(conn_t* self) {
 
   printf("http request finished!\n");
 
-  if (strncmp(self->http->uri_argv[0], "/recommendation", 15) == 0) {
-    printf("fu\n");
-  } else {
-    char* resp = "HTTP/1.1 404 Not Found\r\nServer: recommendify-v2.0.0\r\nConnection: Keep-Alive\r\nContent-Length: 11\r\n\r\nnot found\r\n";
-    conn_write(self, resp, strlen(resp));
+  if (self->http->uri_argc > 1 && strncmp(self->http->uri_argv[0], "/query", 6) == 0) {
+    *self->http->uri_argv[2] = 0;
+    uint32_t n, id = atoi(self->http->uri_argv[1] + 1);
+    printf("creating recos for %i\n", id);
+    cf_reco_t* recos = cf_recommend(db, id);
+
+    if (recos) {
+      for (n = 0; recos->ids[n] && n < SMATRIX_MAX_ROW_SIZE; n++) {
+        printf("  ° %i -> %f\n", recos->ids[n], recos->similarities[n]);
+      }
+    }
+
+    printf("fuquery: %i\n", id);
+    return;
   }
 
-  //printf() strncmp()
+  if (strncmp(self->http->uri_argv[0], "/learn", 6) == 0) {
+    printf("fulearn\n");
+    return;
+  }
+
+  char* resp = "HTTP/1.1 404 Not Found\r\nServer: recommendify-v2.0.0\r\nConnection: Keep-Alive\r\nContent-Length: 11\r\n\r\nnot found\r\n";
+  conn_write(self, resp, strlen(resp));
 }
 
 void conn_write(conn_t* self, char* buf, size_t buf_len) {
