@@ -15,7 +15,7 @@ conn_t* conn_init(int fd) {
   self->fd = fd;
   self->buffer_pos = 0;
 
-  http_req_init(&self->http);
+  self->http = http_req_init();
   pthread_create(&self->thread, NULL, &conn_run, self);
 
   return self;
@@ -43,7 +43,7 @@ void* conn_run(void* self_) {
     }
 
     self->buffer_pos += chunk;
-    ret = http_read(&self->http, self->buffer, self->buffer_pos);
+    ret = http_read(self->http, self->buffer, self->buffer_pos);
 
     if (ret == -1) {
       conn_close(self);
@@ -58,4 +58,9 @@ void* conn_run(void* self_) {
 
 void conn_close(conn_t* self) {
   printf("CLOSE %i\n", self->fd);
+
+  http_req_free(self->http);
+  free(self);
+
+  pthread_exit(NULL);
 }

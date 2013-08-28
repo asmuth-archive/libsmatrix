@@ -16,11 +16,11 @@
 typedef struct conn_s conn_t;
 
 struct conn_s {
-  int        fd;
-  int        buffer_pos;
-  char       buffer[CONN_BUF_SIZE];
-  http_req_t http;
-  pthread_t  thread;
+  int         fd;
+  int         buffer_pos;
+  char        buffer[CONN_BUF_SIZE];
+  http_req_t* http;
+  pthread_t   thread;
 };
 
 conn_t* conn_init(int fd);
