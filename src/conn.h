@@ -25,6 +25,8 @@ struct conn_s {
 
 conn_t* conn_init(int fd);
 void* conn_run(void* self);
+void conn_handle(conn_t* self);
+void conn_write(conn_t* self, char* buf, size_t buf_len);
 void conn_close(conn_t* self);
 
 #endif
