@@ -20,6 +20,8 @@ conn_t* conn_init(int fd) {
   conn_t* self = malloc(sizeof(conn_t));
   self->fd = fd;
   self->buffer_pos = 0;
+  self->buffer_size = CONN_BUFFER_SIZE_INIT;
+  self->buffer = malloc(self->buffer_size);
 
   self->http = http_req_init();
   pthread_create(&self->thread, NULL, &conn_run, self);
@@ -29,15 +31,20 @@ conn_t* conn_init(int fd) {
 
 void* conn_run(void* self_) {
   conn_t *self = (conn_t *) self_;
-  int chunk, remaining, body_pos;
+  long int chunk, body_bytes_left, remaining, body_pos;
 
   for (;;) {
     body_pos = 0;
+    body_bytes_left = 0;
 
-    while (body_pos == 0) {
-      remaining = CONN_BUF_SIZE - self->buffer_pos;
+    while (body_pos == 0 || body_bytes_left > 0) {
+      remaining = self->buffer_size - self->buffer_pos;
 
       if (remaining == 0) {
+      //if (self->buffer_pos > CONN_MAX_BUFFER_SIZE) {
+        conn_write_http(self, "413 Request Entity Too Large",
+          "maximum buffer size exeeded\n", 28);
+
         conn_close(self);
         return NULL;
       }
@@ -50,7 +57,14 @@ void* conn_run(void* self_) {
       }
 
       self->buffer_pos += chunk;
-      body_pos = http_read(self->http, self->buffer, self->buffer_pos);
+
+      if (body_pos == 0)
+        body_pos = http_read(self->http, self->buffer, self->buffer_pos);
+
+      if (body_pos > 0 && self->http->content_length > 0)
+        body_bytes_left = self->http->content_length - self->buffer_pos - body_pos - 1;
+
+      printf("bytes left: %i\n", body_bytes_left);
     }
 
     if (body_pos < 0) {
@@ -58,6 +72,7 @@ void* conn_run(void* self_) {
       return NULL;
     }
 
+    printf("body pos %i, content length %i, buf pos %i\n", body_pos, self->http->content_length, self->buffer_pos);
     conn_handle(self);
     conn_reset(self);
   }
@@ -107,6 +122,9 @@ void conn_handle_index(conn_t* self) {
     return conn_write_http(self, "400 Bad Request",
       "please use HTTP POST\n", 21);
 
+  if (self->http->content_length <= 0)
+    return conn_write_http(self, "411 Length Required",
+      "please set the Content-Length header\n", 37);
   printf("INDEX %i\n", self->http->method);
   //char* resp = "HTTP/1.1 200 OK\r\nServer: recommendify-v2.0.0\r\nConnection: Keep-Alive\r\nContent-Length: 6\r\n\r\npong\r\n";
   //conn_write(self, resp, strlen(resp));
@@ -142,6 +160,7 @@ void conn_close(conn_t* self) {
   printf("CLOSE %i\n", self->fd);
 
   http_req_free(self->http);
+  free(self->buffer);
   free(self);
 
   pthread_exit(NULL);

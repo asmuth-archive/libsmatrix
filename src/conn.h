@@ -11,14 +11,16 @@
 #ifndef CONN_H
 #define CONN_H
 
-#define CONN_BUF_SIZE 4096
+#define CONN_BUFFER_SIZE_MAX 262144000 // 250 MB
+#define CONN_BUFFER_SIZE_INIT 4096
 
 typedef struct conn_s conn_t;
 
 struct conn_s {
   int         fd;
-  int         buffer_pos;
-  char        buffer[CONN_BUF_SIZE];
+  long int    buffer_pos;
+  long int    buffer_size;
+  char*       buffer;
   http_req_t* http;
   pthread_t   thread;
 };

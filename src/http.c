@@ -17,6 +17,7 @@ http_req_t* http_req_init() {
   http_req_t* req = calloc(1, sizeof(http_req_t));
   req->last_pos = 0;
   req->state = HTTP_STATE_METHOD;
+  req->content_length = 0;
 
   return req;
 }
@@ -25,6 +26,7 @@ void http_req_reset(http_req_t* self) {
   memset(self, 0, sizeof(http_req_t));
   self->last_pos = 0;
   self->state = HTTP_STATE_METHOD;
+  self->content_length = 0;
 }
 
 void http_req_free(http_req_t* self) {
@@ -192,6 +194,10 @@ void http_read_header(http_req_t* req, char* hkey, int hkey_len, char* hval, int
     if (strncmp(hval, "Keep-Alive", hval_len) == 0) {
       req->keepalive = 1;
     }
+  }
+
+  else if (strncmp(hkey, "Content-Length", hkey_len) == 0) {
+    req->content_length = strtol(hval, NULL, 10);
   }
 }
 

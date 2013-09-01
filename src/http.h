@@ -22,17 +22,18 @@
 #define HTTP_URI_MAXARGS 255
 
 typedef struct {
-  int   method;
-  int   keepalive;
-  char  uri[HTTP_URI_LEN];
-  int   uri_len;
-  char* uri_argv[HTTP_URI_MAXARGS + 1];
-  int   uri_argc;
-  int   state;
-  int   last_pos;
-  char* cur_token;
-  char* cur_hkey;
-  int   cur_hkey_len;
+  int      method;
+  int      keepalive;
+  char     uri[HTTP_URI_LEN];
+  int      uri_len;
+  char*    uri_argv[HTTP_URI_MAXARGS + 1];
+  int      uri_argc;
+  int      state;
+  int      last_pos;
+  char*    cur_token;
+  char*    cur_hkey;
+  int      cur_hkey_len;
+  long int content_length;
 } http_req_t;
 
 http_req_t* http_req_init();
