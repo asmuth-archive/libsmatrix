@@ -29,35 +29,37 @@ conn_t* conn_init(int fd) {
 
 void* conn_run(void* self_) {
   conn_t *self = (conn_t *) self_;
-  int chunk, remaining, ret;
+  int chunk, remaining, body_pos;
 
   for (;;) {
-    remaining = CONN_BUF_SIZE - self->buffer_pos;
+    body_pos = 0;
 
-    if (remaining == 0) {
+    while (body_pos == 0) {
+      remaining = CONN_BUF_SIZE - self->buffer_pos;
+
+      if (remaining == 0) {
+        conn_close(self);
+        return NULL;
+      }
+
+      chunk = read(self->fd, self->buffer + self->buffer_pos, remaining);
+
+      if (chunk < 1) {
+        conn_close(self);
+        return NULL;
+      }
+
+      self->buffer_pos += chunk;
+      body_pos = http_read(self->http, self->buffer, self->buffer_pos);
+    }
+
+    if (body_pos < 0) {
       conn_close(self);
       return NULL;
     }
 
-    chunk = read(self->fd, self->buffer + self->buffer_pos, remaining);
-
-    if (chunk < 1) {
-      conn_close(self);
-      return NULL;
-    }
-
-    self->buffer_pos += chunk;
-    ret = http_read(self->http, self->buffer, self->buffer_pos);
-
-    if (ret == -1) {
-      conn_close(self);
-      return NULL;
-    }
-
-    if (ret > 0) {
-      conn_handle(self);
-      conn_reset(self);
-    }
+    conn_handle(self);
+    conn_reset(self);
   }
 }
 
