@@ -34,65 +34,64 @@ void* conn_run(void* self_) {
   char* new_buffer;
   conn_t *self = (conn_t *) self_;
 
-  for (;;) {
-    body_pos = 0;
-    body_bytes_left = 0;
+keepalive:
 
-    while (body_pos == 0 || body_bytes_left > 0) {
-      remaining = self->buffer_size - self->buffer_pos;
+  remaining = 0;
+  body_pos = 0;
+  body_bytes_left = 0;
 
-      if (remaining == 0) {
-        new_buffer_size = self->buffer_size + body_bytes_left;
-        new_buffer_size += CONN_BUFFER_SIZE_GROW;
+  while (body_pos == 0 || body_bytes_left > 0) {
+    remaining = self->buffer_size - self->buffer_pos;
 
-        if (new_buffer_size > CONN_BUFFER_SIZE_MAX) {
-          conn_write_http(self, "413 Request Entity Too Large",
-            "maximum buffer size exeeded\n", 28);
+    if (remaining == 0) {
+      new_buffer_size = self->buffer_size + body_bytes_left;
+      new_buffer_size += CONN_BUFFER_SIZE_GROW;
 
-          conn_close(self);
-          return NULL;
-        }
+      if (new_buffer_size > CONN_BUFFER_SIZE_MAX) {
+        conn_write_http(self, "413 Request Entity Too Large",
+          "maximum buffer size exeeded\n", 28);
 
-        printf("REALLOC TO %li bytes\n", new_buffer_size);
-        new_buffer = realloc(self->buffer, new_buffer_size);
-
-        if (new_buffer == NULL) {
-          printf("REALLOC FAILED\n");
-          conn_close(self);
-          return NULL;
-        }
-
-        self->buffer = new_buffer;
-        remaining = new_buffer_size - self->buffer_pos;
+        goto close;
       }
 
-      chunk = read(self->fd, self->buffer + self->buffer_pos, remaining);
+      new_buffer = 0;
+      new_buffer = realloc(self->buffer, new_buffer_size);
 
-      if (chunk < 1) {
-        printf("READ %i\n", chunk);
-        conn_close(self);
-        return NULL;
-      }
+      if (new_buffer == NULL)
+        goto close;
 
-      self->buffer_pos += chunk;
-
-      if (body_pos == 0)
-        body_pos = http_read(self->http,self->buffer, self->buffer_pos);
-
-      body_bytes_left =
-        self->http->content_length - self->buffer_pos + body_pos + 1;
-
-      printf("bytes left: %i\n", body_bytes_left);
+      self->buffer = new_buffer;
+      remaining = new_buffer_size - self->buffer_pos;
     }
 
-    if (body_pos < 0) {
-      conn_close(self);
-      return NULL;
-    }
+    chunk = read(self->fd, self->buffer + self->buffer_pos, remaining);
 
-    conn_handle(self);
-    conn_reset(self);
+    if (chunk < 1)
+      goto close;
+
+    self->buffer_pos += chunk;
+
+    if (body_pos == 0)
+      body_pos = http_read(self->http,self->buffer, self->buffer_pos);
+
+    body_bytes_left =
+      self->http->content_length - self->buffer_pos + body_pos + 1;
   }
+
+  if (body_pos < 0)
+    goto close;
+
+  conn_handle(self);
+
+  if (self->http->keepalive) {
+    conn_reset(self);
+    goto keepalive;
+  }
+
+close:
+
+  conn_close(self);
+  return NULL;
 }
 
 void conn_handle(conn_t* self) {
