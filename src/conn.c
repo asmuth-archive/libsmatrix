@@ -81,6 +81,9 @@ keepalive:
   if (body_pos < 0)
     goto close;
 
+  self->body = self->buffer + body_pos;
+  self->body_len = self->http->content_length;
+
   conn_handle(self);
 
   if (self->http->keepalive) {
@@ -134,6 +137,9 @@ void conn_handle_query(conn_t* self) {
 }
 
 void conn_handle_index(conn_t* self) {
+  char resp[4096];
+  int  sessions_imported;
+
   if (self->http->method != 2)
     return conn_write_http(self, "400 Bad Request",
       "please use HTTP POST\n", 21);
@@ -141,9 +147,11 @@ void conn_handle_index(conn_t* self) {
   if (self->http->content_length <= 0)
     return conn_write_http(self, "411 Length Required",
       "please set the Content-Length header\n", 37);
-  printf("INDEX %i\n", self->http->method);
-  //char* resp = "HTTP/1.1 200 OK\r\nServer: recommendify-v2.0.0\r\nConnection: Keep-Alive\r\nContent-Length: 6\r\n\r\npong\r\n";
-  //conn_write(self, resp, strlen(resp));
+
+  sessions_imported = marshal_load_csv(self->body, self->body_len);
+
+  sprintf(resp, "imported %li sessions\n", sessions_imported);
+  conn_write_http(self, "200 Created", resp, strlen(resp));
 }
 
 // FIXPAUL this should be one writev syscall, not two write syscalls

@@ -22,6 +22,8 @@ struct conn_s {
   long int    buffer_pos;
   long int    buffer_size;
   char*       buffer;
+  long int    body_len;
+  char*       body;
   http_req_t* http;
   pthread_t   thread;
 };
