@@ -35,8 +35,8 @@ void* conn_run(void* self_) {
     remaining = CONN_BUF_SIZE - self->buffer_pos;
 
     if (remaining == 0) {
-      printf("buffer overflow :(\n");
       conn_close(self);
+      return NULL;
     }
 
     chunk = read(self->fd, self->buffer + self->buffer_pos, remaining);
@@ -56,13 +56,12 @@ void* conn_run(void* self_) {
 
     if (ret > 0) {
       conn_handle(self);
+      conn_reset(self);
     }
   }
 }
 
 void conn_handle(conn_t* self) {
-  printf("URL: %s (%s)\n", self->http->uri, self->http->uri_argv[1]);
-
   switch (self->http->uri_argc) {
 
     case 2:
@@ -130,6 +129,11 @@ void conn_write(conn_t* self, char* buf, size_t buf_len) {
   chunk = write(self->fd, buf, buf_len);
 
   printf("WRITE %i\n", chunk);
+}
+
+void conn_reset(conn_t* self) {
+  self->buffer_pos = 0;
+  http_req_reset(self->http);
 }
 
 void conn_close(conn_t* self) {
