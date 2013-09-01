@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
   print_version();
   db = smatrix_init();
 
-  tmp_import();
+  //tmp_import();
 
   saddr.sin_family = AF_INET;
   saddr.sin_addr.s_addr = htonl(INADDR_ANY);
