@@ -74,17 +74,18 @@ void conn_handle(conn_t* self) {
         return conn_handle_index(self);
 
       if (strncmp(self->http->uri_argv[0], "/ping", 5) == 0)
-        return conn_handle_ping(self);
+        return conn_write_http(self, "200 OK", "pong\n", 5);
 
     default:
-      conn_handle_404(self);
+      conn_write_http(self, "404 Not Found", "not found\n", 10);
 
   }
 }
 
 void conn_handle_query(conn_t* self) {
   if (self->http->method != 1)
-    return conn_handle_404(self);
+    return conn_write_http(self, "400 Bad Request",
+      "please use HTTP GET\n", 20);
 
   *self->http->uri_argv[2] = 0;
   uint32_t n, id = atoi(self->http->uri_argv[1] + 1);
@@ -97,26 +98,30 @@ void conn_handle_query(conn_t* self) {
     }
   }
 
-  char* resp = "HTTP/1.1 200 OK\r\nServer: recommendify-v2.0.0\r\nConnection: Keep-Alive\r\nContent-Length: 7\r\n\r\nfnord\r\n";
-  conn_write(self, resp, strlen(resp));
+  conn_write_http(self, "200 OK", "fnord\n", 6);
 }
 
 void conn_handle_index(conn_t* self) {
   if (self->http->method != 2)
-    return conn_handle_404(self);
+    return conn_write_http(self, "400 Bad Request",
+      "please use HTTP POST\n", 21);
 
   printf("INDEX %i\n", self->http->method);
   //char* resp = "HTTP/1.1 200 OK\r\nServer: recommendify-v2.0.0\r\nConnection: Keep-Alive\r\nContent-Length: 6\r\n\r\npong\r\n";
   //conn_write(self, resp, strlen(resp));
 }
 
-void conn_handle_ping(conn_t* self) {
-  char* resp = "HTTP/1.1 200 OK\r\nServer: recommendify-v2.0.0\r\nConnection: Keep-Alive\r\nContent-Length: 6\r\n\r\npong\r\n";
-  conn_write(self, resp, strlen(resp));
-}
-void conn_handle_404(conn_t* self) {
-  char* resp = "HTTP/1.1 404 Not Found\r\nServer: recommendify-v2.0.0\r\nConnection: Keep-Alive\r\nContent-Length: 11\r\n\r\nnot found\r\n";
-  conn_write(self, resp, strlen(resp));
+// FIXPAUL this should be one writev syscall, not two write syscalls
+void conn_write_http(conn_t* self, const char* status, char* body, size_t body_len) {
+  char headers[4096];
+
+  snprintf(headers, 4096,
+    "HTTP/1.1 %s\r\nServer: recommendify-v2.0.0\r\nConnection: Keep-Alive\r\nContent-Length: %i\r\n\r\n",
+    status, body_len
+  );
+
+  conn_write(self, headers, strlen(headers));
+  conn_write(self, body, body_len);
 }
 
 void conn_write(conn_t* self, char* buf, size_t buf_len) {
