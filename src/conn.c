@@ -63,11 +63,20 @@ void* conn_run(void* self_) {
 void conn_handle(conn_t* self) {
   printf("URL: %s (%s)\n", self->http->uri, self->http->uri_argv[1]);
 
-  if (self->http->uri_argc > 1)
-    if (strncmp(self->http->uri_argv[0], "/query", 6) == 0)
-      return conn_handle_query(self);
+  switch (self->http->uri_argc) {
 
-  conn_handle_404(self);
+    case 2:
+      if (strncmp(self->http->uri_argv[0], "/query", 6) == 0)
+        return conn_handle_query(self);
+
+    case 1:
+      if (strncmp(self->http->uri_argv[0], "/ping", 5) == 0)
+        return conn_handle_ping(self);
+
+    default:
+      conn_handle_404(self);
+
+  }
 }
 
 void conn_handle_query(conn_t* self) {
@@ -88,6 +97,11 @@ void conn_handle_query(conn_t* self) {
 
 void conn_handle_404(conn_t* self) {
   char* resp = "HTTP/1.1 404 Not Found\r\nServer: recommendify-v2.0.0\r\nConnection: Keep-Alive\r\nContent-Length: 11\r\n\r\nnot found\r\n";
+  conn_write(self, resp, strlen(resp));
+}
+
+void conn_handle_ping(conn_t* self) {
+  char* resp = "HTTP/1.1 200 OK\r\nServer: recommendify-v2.0.0\r\nConnection: Keep-Alive\r\nContent-Length: 6\r\n\r\npong\r\n";
   conn_write(self, resp, strlen(resp));
 }
 
