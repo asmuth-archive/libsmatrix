@@ -14,6 +14,7 @@
 #define CONN_BUFFER_SIZE_MAX 262144000 // 250 MB
 #define CONN_BUFFER_SIZE_INIT 4096
 #define CONN_BUFFER_SIZE_GROW 4096
+#define CONN_BUFFER_SIZE_HEADERS 8192
 
 typedef struct conn_s conn_t;
 

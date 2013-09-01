@@ -156,10 +156,13 @@ void conn_handle_index(conn_t* self) {
 
 // FIXPAUL this should be one writev syscall, not two write syscalls
 void conn_write_http(conn_t* self, const char* status, char* body, size_t body_len) {
-  char headers[4096];
+  char headers[CONN_BUFFER_SIZE_HEADERS];
 
-  snprintf(headers, 4096,
-    "HTTP/1.1 %s\r\nServer: recommendify-v2.0.0\r\nConnection: Keep-Alive\r\nContent-Length: %i\r\n\r\n",
+  snprintf(headers, CONN_BUFFER_SIZE_HEADERS,
+    "HTTP/1.1 %s\r\n" \
+    "Server: recommendify-v2.0.0\r\n" \
+    "Connection: Keep-Alive\r\n"\
+    "Content-Length: %i\r\n\r\n",
     status, body_len
   );
 
