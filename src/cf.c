@@ -10,6 +10,7 @@
 #include "cf.h"
 #include "string.h"
 
+// FIXPAUL actualy increment operation is not atomic!
 void cf_add_pset(smatrix_t* smatrix, cf_pset_t* pset) {
   long int i, n;
 

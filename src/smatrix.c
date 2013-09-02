@@ -50,7 +50,7 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
 
   if (*row == NULL) {
     if (!create)
-      return NULL;
+      goto unlock;
 
     smatrix_wrlock(self);
 
@@ -78,6 +78,8 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
     col = smatrix_insert(row, y);
     smatrix_unlock(self);
   }
+
+unlock:
 
   pthread_rwlock_unlock(&self->lock);
   return col;
