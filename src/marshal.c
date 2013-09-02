@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include "marshal.h"
 
-int marshal_load_csv(char* data, size_t size) {
+long int marshal_load_csv(char* data, size_t size) {
   printf("LOAD %p (%i bytes)\n", data, size);
-  return 42;
+  return 42L;
 }
 

@@ -9,10 +9,12 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdio.h>
 #include "conn.h"
 #include "http.h"
 #include "smatrix.h"
 #include "cf.h"
+#include "marshal.h"
 
 extern smatrix_t* db;
 
@@ -138,7 +140,7 @@ void conn_handle_query(conn_t* self) {
 
 void conn_handle_index(conn_t* self) {
   char resp[4096];
-  int  sessions_imported;
+  long int sessions_imported;
 
   if (self->http->method != 2)
     return conn_write(self, "400 Bad Request",

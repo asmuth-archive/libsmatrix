@@ -8,6 +8,6 @@
 #ifndef MARSHAL_H
 #define MARSHAL_H
 
-int marshal_load_csv(char* data, size_t size);
+long int marshal_load_csv(char* data, size_t size);
 
 #endif
