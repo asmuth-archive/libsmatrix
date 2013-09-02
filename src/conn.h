@@ -34,8 +34,7 @@ void* conn_run(void* self);
 void conn_handle(conn_t* self);
 void conn_handle_query(conn_t* self);
 void conn_handle_index(conn_t* self);
-void conn_write(conn_t* self, char* buf, size_t buf_len);
-void conn_write_http(conn_t* self, const char* status, char* body, size_t body_len);
+void conn_write(conn_t* self, const char* status, char* body, size_t body_len);
 void conn_reset(conn_t* self);
 void conn_close(conn_t* self);
 

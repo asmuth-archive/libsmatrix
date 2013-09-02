@@ -48,7 +48,7 @@ keepalive:
       new_buffer_size += CONN_BUFFER_SIZE_GROW;
 
       if (new_buffer_size > CONN_BUFFER_SIZE_MAX) {
-        conn_write_http(self, "413 Request Entity Too Large",
+        conn_write(self, "413 Request Entity Too Large",
           "maximum buffer size exeeded\n", 28);
 
         goto close;
@@ -109,17 +109,17 @@ void conn_handle(conn_t* self) {
         return conn_handle_index(self);
 
       if (strncmp(self->http->uri_argv[0], "/ping", 5) == 0)
-        return conn_write_http(self, "200 OK", "pong\n", 5);
+        return conn_write(self, "200 OK", "pong\n", 5);
 
     default:
-      conn_write_http(self, "404 Not Found", "not found\n", 10);
+      conn_write(self, "404 Not Found", "not found\n", 10);
 
   }
 }
 
 void conn_handle_query(conn_t* self) {
   if (self->http->method != 1)
-    return conn_write_http(self, "400 Bad Request",
+    return conn_write(self, "400 Bad Request",
       "please use HTTP GET\n", 20);
 
   *self->http->uri_argv[2] = 0;
@@ -133,7 +133,7 @@ void conn_handle_query(conn_t* self) {
     }
   }
 
-  conn_write_http(self, "200 OK", "fnord\n", 6);
+  conn_write(self, "200 OK", "fnord\n", 6);
 }
 
 void conn_handle_index(conn_t* self) {
@@ -141,24 +141,26 @@ void conn_handle_index(conn_t* self) {
   int  sessions_imported;
 
   if (self->http->method != 2)
-    return conn_write_http(self, "400 Bad Request",
+    return conn_write(self, "400 Bad Request",
       "please use HTTP POST\n", 21);
 
   if (self->http->content_length <= 0)
-    return conn_write_http(self, "411 Length Required",
+    return conn_write(self, "411 Length Required",
       "please set the Content-Length header\n", 37);
 
   sessions_imported = marshal_load_csv(self->body, self->body_len);
 
   sprintf(resp, "imported %li sessions\n", sessions_imported);
-  conn_write_http(self, "200 Created", resp, strlen(resp));
+  conn_write(self, "200 Created", resp, strlen(resp));
 }
 
 // FIXPAUL this should be one writev syscall, not two write syscalls
-void conn_write_http(conn_t* self, const char* status, char* body, size_t body_len) {
+void conn_write(conn_t* self, const char* status, char* body, size_t body_len) {
   char headers[CONN_BUFFER_SIZE_HEADERS];
+  size_t headers_len, bytes_written;
+  struct iovec handle[2];
 
-  snprintf(headers, CONN_BUFFER_SIZE_HEADERS,
+  headers_len = snprintf(headers, CONN_BUFFER_SIZE_HEADERS,
     "HTTP/1.1 %s\r\n" \
     "Server: recommendify-v2.0.0\r\n" \
     "Connection: Keep-Alive\r\n"\
@@ -166,16 +168,13 @@ void conn_write_http(conn_t* self, const char* status, char* body, size_t body_l
     status, body_len
   );
 
-  conn_write(self, headers, strlen(headers));
-  conn_write(self, body, body_len);
-}
+  handle[0]->iov_base = headers;
+  handle[0]->iov_len  = headers_len;
+  handle[0]->iov_base = body;
+  handle[0]->iov_len  = body_len;
 
-void conn_write(conn_t* self, char* buf, size_t buf_len) {
-  int chunk;
-
-  chunk = write(self->fd, buf, buf_len);
-
-  printf("WRITE %i\n", chunk);
+  bytes_written = writev(self->fd, &handle, 2);
+  printf("WRITE %i\n", bytes_written);
 }
 
 void conn_reset(conn_t* self) {
