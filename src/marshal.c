@@ -7,28 +7,29 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include "cf.h"
 #include "marshal.h"
 
 extern smatrix_t* db;
 
 long int marshal_load_csv(char* data, size_t size) {
+  cf_pset_t pset = {0};
   char *end, *start = data;
-  long int sess_ind = 0, num = 0;
-  uint32_t sess[MARSHAL_MAX_SESS_LEN];
+  long int num = 0;
 
   for (end = start; end < data + size; end++) {
     if (*end != '\n' && *end != ',')
       continue;
 
-    if (sess_ind < MARSHAL_MAX_SESS_LEN - 1) {
-      sess[sess_ind] = atoi(start);
-      sess_ind++;
+    if (pset.len < CF_MAX_PSET_LEN - 1) {
+      pset.ids[pset.len] = atoi(start);
+      pset.len++;
     }
 
     if (*end == '\n') {
-      cf_add_session(db, sess, sess_ind + 1);
-      sess_ind = 0; num++;
+      cf_add_pset(db, &pset);
+      pset.len = 0; num++;
     }
 
     start = end + 1;

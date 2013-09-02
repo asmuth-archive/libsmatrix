@@ -10,15 +10,15 @@
 #include "cf.h"
 #include "string.h"
 
-void cf_add_session(smatrix_t* smatrix, uint32_t* session, long int len) {
+void cf_add_pset(smatrix_t* smatrix, cf_pset_t* pset) {
   long i, n;
 
-  for (n = 0; n < len; n++) {
-    smatrix_lookup(smatrix, session[n], 0, 1)->value++;
+  for (n = 0; n < pset->len; n++) {
+    smatrix_lookup(smatrix, pset->ids[n], 0, 1)->value++;
 
-    for (i = 0; i < len; i++) {
-      if (i != n) {
-        smatrix_lookup(smatrix, session[n], session[i], 1)->value++;
+    for (i = 0; i < pset->len; i++) {
+      if (i == n) {
+        smatrix_lookup(smatrix, pset->ids[n], pset->ids[i], 1)->value++;
       }
     }
   }
@@ -40,9 +40,9 @@ cf_reco_t* cf_recommend(smatrix_t* smatrix, uint32_t id) {
   cur = root->next;
 
   for (pos = 0; cur; pos++) {
-    result->size++;
     result->ids[pos] = cur->index;
     result->similarities[pos] = cf_jaccard(smatrix, root, cur);
+    result->len++;
     cur = cur->next;
   }
 
