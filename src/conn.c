@@ -48,7 +48,7 @@ keepalive:
   while (body_pos == 0 || body_bytes_left > 0) {
     remaining = self->buffer_size - self->buffer_pos;
 
-    if (remaining == 0) {
+    if (remaining <= 1) {
       new_buffer_size = self->buffer_size + body_bytes_left;
       new_buffer_size += CONN_BUFFER_SIZE_GROW;
 
