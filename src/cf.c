@@ -11,7 +11,7 @@
 #include "string.h"
 
 void cf_add_pset(smatrix_t* smatrix, cf_pset_t* pset) {
-  long i, n;
+  long int i, n;
 
   for (n = 0; n < pset->len; n++) {
     smatrix_lookup(smatrix, pset->ids[n], 0, 1)->value++;

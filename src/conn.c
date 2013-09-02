@@ -10,7 +10,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include "conn.h"
 #include "http.h"
 #include "smatrix.h"
@@ -158,15 +160,15 @@ void conn_handle_index(conn_t* self) {
 }
 
 void conn_write(conn_t* self, const char* status, char* body, size_t body_len) {
-  char   headers[CONN_BUFFER_SIZE_HEADERS];
-  size_t headers_len, bytes_written, bytes_expected;
   struct iovec handle[2];
+  char   headers[CONN_BUFFER_SIZE_HEADERS];
+  size_t headers_len, bytes_written;
 
   headers_len = snprintf(headers, CONN_BUFFER_SIZE_HEADERS,
     "HTTP/1.1 %s\r\n" \
     "Server: recommendify-v2.0.0\r\n" \
     "Connection: Keep-Alive\r\n"\
-    "Content-Length: %i\r\n\r\n",
+    "Content-Length: %lu\r\n\r\n",
     status, body_len
   );
 
@@ -175,10 +177,10 @@ void conn_write(conn_t* self, const char* status, char* body, size_t body_len) {
   handle[1].iov_base = body;
   handle[1].iov_len  = body_len;
 
-  bytes_expected = body_len + headers_len;
-  bytes_written  = writev(self->fd, &handle, 2);
+  bytes_written = writev(self->fd,
+    (const struct iovec *) &handle, 2);
 
-  if (bytes_written != bytes_expected) {
+  if (bytes_written != body_len + headers_len) {
     printf("ERROR WRITING?\n"); // FIXPAUL
   }
 }

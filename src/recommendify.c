@@ -25,6 +25,10 @@ int main(int argc, char **argv) {
   struct sockaddr_in saddr;
 
   print_version();
+
+  // FIXPAUL optparsing
+  (void) argc; (void) argv;
+
   db = smatrix_init();
 
   saddr.sin_family = AF_INET;
