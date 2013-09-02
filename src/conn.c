@@ -158,8 +158,8 @@ void conn_handle_index(conn_t* self) {
 }
 
 void conn_write(conn_t* self, const char* status, char* body, size_t body_len) {
-  char headers[CONN_BUFFER_SIZE_HEADERS];
-  size_t headers_len, bytes_written;
+  char   headers[CONN_BUFFER_SIZE_HEADERS];
+  size_t headers_len, bytes_written, bytes_expected;
   struct iovec handle[2];
 
   headers_len = snprintf(headers, CONN_BUFFER_SIZE_HEADERS,
@@ -175,8 +175,12 @@ void conn_write(conn_t* self, const char* status, char* body, size_t body_len) {
   handle[1].iov_base = body;
   handle[1].iov_len  = body_len;
 
-  bytes_written = writev(self->fd, &handle, 2);
-  printf("WRITE %i\n", bytes_written);
+  bytes_expected = body_len + headers_len;
+  bytes_written  = writev(self->fd, &handle, 2);
+
+  if (bytes_written != bytes_expected) {
+    printf("ERROR WRITING?\n"); // FIXPAUL
+  }
 }
 
 void conn_reset(conn_t* self) {
@@ -185,8 +189,6 @@ void conn_reset(conn_t* self) {
 }
 
 void conn_close(conn_t* self) {
-  printf("CLOSE %i\n", self->fd);
-
   close(self->fd);
   http_req_free(self->http);
   free(self->buffer);

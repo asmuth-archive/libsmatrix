@@ -8,6 +8,8 @@
 #ifndef MARSHAL_H
 #define MARSHAL_H
 
+#define MARSHAL_MAX_SESS_LEN 512
+
 long int marshal_load_csv(char* data, size_t size);
 
 #endif

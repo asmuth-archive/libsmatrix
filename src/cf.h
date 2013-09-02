@@ -19,7 +19,7 @@ typedef struct {
   int      size;
 } cf_reco_t;
 
-void cf_add_session(smatrix_t* smatrix, uint32_t* session, size_t size);
+void cf_add_session(smatrix_t* smatrix, uint32_t* session, long int);
 cf_reco_t* cf_recommend(smatrix_t* smatrix, uint32_t id);
 float cf_jaccard(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b);
 
