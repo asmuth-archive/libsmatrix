@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/socket.h>
 #include "conn.h"
 #include "http.h"
 #include "smatrix.h"
@@ -156,7 +157,6 @@ void conn_handle_index(conn_t* self) {
   conn_write(self, "200 Created", resp, strlen(resp));
 }
 
-// FIXPAUL this should be one writev syscall, not two write syscalls
 void conn_write(conn_t* self, const char* status, char* body, size_t body_len) {
   char headers[CONN_BUFFER_SIZE_HEADERS];
   size_t headers_len, bytes_written;
@@ -170,10 +170,10 @@ void conn_write(conn_t* self, const char* status, char* body, size_t body_len) {
     status, body_len
   );
 
-  handle[0]->iov_base = headers;
-  handle[0]->iov_len  = headers_len;
-  handle[0]->iov_base = body;
-  handle[0]->iov_len  = body_len;
+  handle[0].iov_base = headers;
+  handle[0].iov_len  = headers_len;
+  handle[1].iov_base = body;
+  handle[1].iov_len  = body_len;
 
   bytes_written = writev(self->fd, &handle, 2);
   printf("WRITE %i\n", bytes_written);
