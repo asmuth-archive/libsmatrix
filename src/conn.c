@@ -66,6 +66,7 @@ keepalive:
         goto close;
 
       self->buffer = new_buffer;
+      self->buffer_size = new_buffer_size;
       remaining = new_buffer_size - self->buffer_pos;
     }
 
