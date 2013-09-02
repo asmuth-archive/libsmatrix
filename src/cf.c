@@ -17,7 +17,7 @@ void cf_add_pset(smatrix_t* smatrix, cf_pset_t* pset) {
     smatrix_lookup(smatrix, pset->ids[n], 0, 1)->value++;
 
     for (i = 0; i < pset->len; i++) {
-      if (i == n) {
+      if (i != n) {
         smatrix_lookup(smatrix, pset->ids[n], pset->ids[i], 1)->value++;
       }
     }

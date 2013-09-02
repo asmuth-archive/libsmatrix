@@ -19,7 +19,7 @@ long int marshal_load_csv(char* data, size_t size) {
   long int num = 0;
 
   for (end = start; end < data + size; end++) {
-    if (*end != '\n' && *end != ',')
+    if (!(*end == '\n' || *end == ','))
       continue;
 
     if (pset.len < CF_MAX_PSET_LEN - 1) {

@@ -87,7 +87,7 @@ keepalive:
   if (body_pos < 0)
     goto close;
 
-  self->body = self->buffer + body_pos;
+  self->body = self->buffer + body_pos + 1;
   self->body_len = self->http->content_length;
 
   conn_handle(self);
