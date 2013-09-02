@@ -107,14 +107,14 @@ void conn_handle(conn_t* self) {
   switch (self->http->uri_argc) {
 
     case 2:
-      if (strncmp(self->http->uri_argv[0], "/query", 6) == 0)
+      if (strncmp(self->http->uri, "/query", 6) == 0)
         return conn_handle_query(self);
 
     case 1:
-      if (strncmp(self->http->uri_argv[0], "/index", 6) == 0)
+      if (strncmp(self->http->uri, "/index", 6) == 0)
         return conn_handle_index(self);
 
-      if (strncmp(self->http->uri_argv[0], "/ping", 5) == 0)
+      if (strncmp(self->http->uri, "/ping", 5) == 0)
         return conn_write(self, "200 OK", "pong\n", 5);
 
     default:
