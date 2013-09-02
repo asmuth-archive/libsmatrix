@@ -123,23 +123,34 @@ void conn_handle(conn_t* self) {
   }
 }
 
+#define CONN_RESP_BUF_SIZE 8192
+
 void conn_handle_query(conn_t* self) {
+  uint32_t n, id;
+  char buf[CONN_RESP_BUF_SIZE];
+  size_t buf_len;
+
   if (self->http->method != 1)
     return conn_write(self, "400 Bad Request",
       "please use HTTP GET\n", 20);
 
-  *self->http->uri_argv[2] = 0;
-  uint32_t n, id = atoi(self->http->uri_argv[1] + 1);
-  printf("creating recos for %i\n", id);
+  id = atoi(self->http->uri_argv[1] + 1);
   cf_reco_t* recos = cf_recommend(db, id);
 
-  if (recos) {
-    for (n = 0; recos->ids[n] && n < SMATRIX_MAX_ROW_SIZE; n++) {
-      printf("  ° %i -> %f\n", recos->ids[n], recos->similarities[n]);
-    }
+  if (recos == NULL) {
+    conn_write(self, "200 OK", "no recos found\n", 15);
+    return;
   }
 
-  conn_write(self, "200 OK", "fnord\n", 6);
+  buf_len = snprintf(buf, CONN_RESP_BUF_SIZE,
+    "quality,%f\n", recos->quality);
+
+  for (n = 0; recos->ids[n] && n < SMATRIX_MAX_ROW_SIZE; n++) {
+    buf_len += snprintf(buf + buf_len, CONN_RESP_BUF_SIZE - buf_len,
+      "reco,%i,%f\n", recos->ids[n], recos->similarities[n]);
+  }
+
+  conn_write(self, "201 Found", buf, buf_len);
 }
 
 void conn_handle_index(conn_t* self) {
@@ -169,6 +180,7 @@ void conn_write(conn_t* self, const char* status, char* body, size_t body_len) {
     "HTTP/1.1 %s\r\n" \
     "Server: recommendify-v2.0.0\r\n" \
     "Connection: Keep-Alive\r\n"\
+    "Content-Type: text/plain\r\n"\
     "Content-Length: %lu\r\n\r\n",
     status, body_len
   );

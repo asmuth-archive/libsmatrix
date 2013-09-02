@@ -46,6 +46,7 @@ cf_reco_t* cf_recommend(smatrix_t* smatrix, uint32_t id) {
     cur = cur->next;
   }
 
+  result->quality = root->value;
   return result;
 }
 

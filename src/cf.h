@@ -19,6 +19,7 @@ typedef struct {
   uint32_t ids[SMATRIX_MAX_ROW_SIZE];
   float    similarities[SMATRIX_MAX_ROW_SIZE];
   int      len;
+  float    quality;
 } cf_reco_t;
 
 typedef struct {
