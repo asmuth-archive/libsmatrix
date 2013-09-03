@@ -20,7 +20,8 @@ typedef struct smatrix_vec_s smatrix_vec_t;
 struct smatrix_vec_s {
   uint32_t         index;
   uint16_t         value;
-  uint16_t         flags;
+  uint8_t          refs;
+  uint8_t          flags;
   smatrix_vec_t*   next;
 };
 

@@ -81,7 +81,7 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
     smatrix_unlock(self);
   }
 
-  smatrix_vec_incref(*col);
+  smatrix_vec_incref(col);
   smatrix_vec_unlock(*row);
 
 unlock:
@@ -107,6 +107,7 @@ smatrix_vec_t* smatrix_insert(smatrix_vec_t** row, uint32_t y) {
   *cur = new = malloc(sizeof(smatrix_vec_t));
   new->value = 0;
   new->index = y;
+  new->flags = 0;
   new->next  = next;
 
   for (; next; row_len++)
@@ -151,7 +152,7 @@ void smatrix_truncate(smatrix_vec_t** row) {
   delete = *found;
   *found = delete->next;
 
-  free(delete);
+  smatrix_vec_decref(delete);
 }
 
 void smatrix_free(smatrix_t* self) {
@@ -203,9 +204,21 @@ void smatrix_unlock(smatrix_t* self) {
 }
 
 void smatrix_vec_lock(smatrix_vec_t* vec) {
+  for (;;) {
+    __sync_synchronize();
+    volatile uint32_t flags = vec->flags;
+
+    if (flags & 1 == 1)
+      continue;
+
+    if (__sync_bool_compare_and_swap(&vec->flags, flags, flags | 1))
+      break;
+  }
 }
 
 void smatrix_vec_unlock(smatrix_vec_t* vec) {
+  __sync_synchronize();
+  vec->flags &= ~1;
 }
 
 void smatrix_vec_incref(smatrix_vec_t* vec) {
