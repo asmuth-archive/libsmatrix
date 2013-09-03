@@ -23,13 +23,26 @@ extern smatrix_t* db;
 
 conn_t* conn_init(int fd) {
   conn_t* self = malloc(sizeof(conn_t));
+
+  if (self == NULL)
+    return NULL;
+
   self->fd = fd;
   self->buffer_pos = 0;
   self->buffer_size = CONN_BUFFER_SIZE_INIT;
   self->buffer = malloc(self->buffer_size);
 
+  if (self->buffer == NULL) {
+    free(self);
+    return NULL;
+  }
+
   self->http = http_req_init();
-  pthread_create(&self->thread, NULL, &conn_run, self);
+
+  if (pthread_create(&self->thread, NULL, &conn_run, self)) {
+    printf("CANNOT CREATE THREAD\n");
+    return NULL;
+  }
 
   return self;
 }
@@ -38,6 +51,8 @@ void* conn_run(void* self_) {
   long int chunk, body_bytes_left, remaining, body_pos, new_buffer_size;
   char* new_buffer;
   conn_t *self = (conn_t *) self_;
+
+  pthread_detach(self->thread);
 
 keepalive:
 

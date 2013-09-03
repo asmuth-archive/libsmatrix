@@ -208,7 +208,7 @@ void smatrix_vec_lock(smatrix_vec_t* vec) {
     __sync_synchronize();
     volatile uint32_t flags = vec->flags;
 
-    if (flags & 1 == 1)
+    if ((flags & 1) == 1)
       continue;
 
     if (__sync_bool_compare_and_swap(&vec->flags, flags, flags | 1))

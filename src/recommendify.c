@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
 
   while (running) {
     fd = accept(ssock, NULL, NULL);
+    printf("ACCEPT\n");
 
     if (fd == -1) {
       perror("accept failed");
