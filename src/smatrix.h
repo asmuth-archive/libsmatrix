@@ -19,7 +19,8 @@ typedef struct smatrix_vec_s smatrix_vec_t;
 
 struct smatrix_vec_s {
   uint32_t         index;
-  uint32_t         value;
+  uint16_t         value;
+  uint16_t         flags;
   smatrix_vec_t*   next;
 };
 
@@ -38,5 +39,10 @@ void smatrix_dump(smatrix_t* self);
 void smatrix_free(smatrix_t* self);
 void smatrix_wrlock(smatrix_t* self);
 void smatrix_unlock(smatrix_t* self);
+
+void smatrix_vec_lock(smatrix_vec_t* vec);
+void smatrix_vec_unlock(smatrix_vec_t* vec);
+void smatrix_vec_incref(smatrix_vec_t* vec);
+void smatrix_vec_decref(smatrix_vec_t* vec);
 
 #endif

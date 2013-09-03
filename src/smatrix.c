@@ -42,7 +42,7 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
 
       smatrix_unlock(self);
     } else {
-      return NULL;
+      goto unlock;
     }
   }
 
@@ -59,6 +59,8 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
 
     smatrix_unlock(self);
   }
+
+  smatrix_vec_lock(*row);
 
   if (col == NULL) {
     col = *row;
@@ -78,6 +80,9 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
     col = smatrix_insert(row, y);
     smatrix_unlock(self);
   }
+
+  smatrix_vec_incref(*col);
+  smatrix_vec_unlock(*row);
 
 unlock:
 
@@ -195,4 +200,16 @@ void smatrix_wrlock(smatrix_t* self) {
 void smatrix_unlock(smatrix_t* self) {
   pthread_rwlock_unlock(&self->lock);
   pthread_rwlock_rdlock(&self->lock);
+}
+
+void smatrix_vec_lock(smatrix_vec_t* vec) {
+}
+
+void smatrix_vec_unlock(smatrix_vec_t* vec) {
+}
+
+void smatrix_vec_incref(smatrix_vec_t* vec) {
+}
+
+void smatrix_vec_decref(smatrix_vec_t* vec) {
 }
