@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
 #include <sys/socket.h>
 #include <netinet/tcp.h>
 #include <netinet/in.h>
@@ -19,15 +21,28 @@
 #include "version.h"
 
 smatrix_t* db;
+volatile int running = 1;
+int ssock;
+
+void quit() {
+  if (running) {
+    running = 0;
+    shutdown(ssock, SHUT_RDWR);
+  }
+}
 
 int main(int argc, char **argv) {
-  int fd, ssock, opt = 1;
+  int fd, opt = 1;
   struct sockaddr_in saddr;
 
   print_version();
 
   // FIXPAUL optparsing
   (void) argc; (void) argv;
+
+  signal(SIGQUIT, quit);
+  signal(SIGINT, quit);
+  signal(SIGPIPE, SIG_IGN);
 
   db = smatrix_init();
 
@@ -59,7 +74,7 @@ int main(int argc, char **argv) {
 
   printf("\n> listening on 0.0.0.0:2323\n");
 
-  for (;;) {
+  while (running) {
     fd = accept(ssock, NULL, NULL);
 
     if (fd == -1) {
@@ -70,6 +85,7 @@ int main(int argc, char **argv) {
     conn_init(fd);
   }
 
+  close(ssock);
   smatrix_free(db);
   return 0;
 }
