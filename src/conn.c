@@ -138,13 +138,14 @@ void conn_handle(conn_t* self) {
   }
 }
 
-#define CONN_RESP_BUF_SIZE 8192
+#define CONN_RESP_BUF_SIZE 65536
 
 void conn_handle_query(conn_t* self) {
   uint32_t n, id;
-  char buf[CONN_RESP_BUF_SIZE];
+  char* buf = malloc(CONN_RESP_BUF_SIZE);
   size_t buf_len = 0;
 
+  printf("INIT\n");
   if (self->http->method != 1)
     return conn_write(self, "400 Bad Request",
       "please use HTTP GET\n", 20);
@@ -156,16 +157,20 @@ void conn_handle_query(conn_t* self) {
     conn_write(self, "200 OK", "no recos found\n", 15);
     return;
   }
+  printf("GOT RECOS\n");
 
   //buf_len = snprintf(buf, CONN_RESP_BUF_SIZE,
   //  "quality,%f\n", recos->quality);
 
   for (n = 0; recos->ids[n] && n < SMATRIX_MAX_ROW_SIZE; n++) {
-    buf_len += snprintf(buf + buf_len, CONN_RESP_BUF_SIZE - buf_len - 1,
+    buf_len += snprintf(buf + buf_len, CONN_RESP_BUF_SIZE - buf_len - 2,
       "reco,%i,%f\n", recos->ids[n], recos->similarities[n]);
   }
 
+  buf[buf_len] = 0;
+  printf("WRITE!\n");
   conn_write(self, "201 Found", buf, buf_len);
+  free(buf);
 }
 
 void conn_handle_index(conn_t* self) {

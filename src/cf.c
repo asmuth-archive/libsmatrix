@@ -38,6 +38,7 @@ cf_reco_t* cf_recommend(smatrix_t* smatrix, uint32_t id) {
   result = malloc(sizeof(cf_reco_t));
   cur = root->next;
 
+  printf("RECOS FOR %i (%i total @ %i)\n", id, root->value, index);
   for (pos = 0; cur; pos++) {
     result->ids[pos] = cur->index;
     result->similarities[pos] = cf_jaccard(smatrix, root, cur);
@@ -66,6 +67,8 @@ float cf_jaccard(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b) {
 
   if (den == 0)
     return 0.0;
+
+  printf("   COMPARE %i: cc %i, total %i @ %i, sim %f\n", b->index, b->value, b_root->value, b_root->index, ((float) num / (float) den));
 
   return ((float) num / (float) den);
 }
