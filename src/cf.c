@@ -36,8 +36,6 @@ cf_reco_t* cf_recommend(smatrix_t* smatrix, uint32_t id) {
     return NULL;
 
   result = malloc(sizeof(cf_reco_t));
-  memset(result, 0, sizeof(cf_reco_t));
-
   cur = root->next;
 
   for (pos = 0; cur; pos++) {
@@ -45,6 +43,11 @@ cf_reco_t* cf_recommend(smatrix_t* smatrix, uint32_t id) {
     result->similarities[pos] = cf_jaccard(smatrix, root, cur);
     result->len++;
     cur = cur->next;
+  }
+
+  for (; pos < SMATRIX_MAX_ROW_SIZE; pos++) {
+    result->ids[pos] = 0;
+    result->similarities[pos] = 0;
   }
 
   result->quality = root->value;

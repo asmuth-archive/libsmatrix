@@ -143,7 +143,7 @@ void conn_handle(conn_t* self) {
 void conn_handle_query(conn_t* self) {
   uint32_t n, id;
   char buf[CONN_RESP_BUF_SIZE];
-  size_t buf_len;
+  size_t buf_len = 0;
 
   if (self->http->method != 1)
     return conn_write(self, "400 Bad Request",
@@ -157,11 +157,11 @@ void conn_handle_query(conn_t* self) {
     return;
   }
 
-  buf_len = snprintf(buf, CONN_RESP_BUF_SIZE,
-    "quality,%f\n", recos->quality);
+  //buf_len = snprintf(buf, CONN_RESP_BUF_SIZE,
+  //  "quality,%f\n", recos->quality);
 
   for (n = 0; recos->ids[n] && n < SMATRIX_MAX_ROW_SIZE; n++) {
-    buf_len += snprintf(buf + buf_len, CONN_RESP_BUF_SIZE - buf_len,
+    buf_len += snprintf(buf + buf_len, CONN_RESP_BUF_SIZE - buf_len - 1,
       "reco,%i,%f\n", recos->ids[n], recos->similarities[n]);
   }
 
