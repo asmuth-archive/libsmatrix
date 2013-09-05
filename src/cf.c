@@ -76,6 +76,10 @@ float cf_jaccard(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b) {
 
 double cf_cosine(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b) {
   double num, den;
+
+  if (b->value < 2)
+    return 0.0;
+
   smatrix_vec_t *b_root = smatrix_lookup(smatrix, b->index, 0, 0);
 
   if (b_root == NULL)
