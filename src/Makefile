@@ -9,7 +9,7 @@ SHELL        = /bin/sh
 CC           = clang
 FLAGS        =
 CFLAGS       = -Wall -Wextra
-LDFLAGS      = -lpthread
+LDFLAGS      = -lpthread -lm
 DEBUGFLAGS   = -g3 -O0 -D _DEBUG
 RELEASEFLAGS = -O3 -march=native -mtune=native -D NDEBUG -fwhole-program
 

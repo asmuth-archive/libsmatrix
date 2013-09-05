@@ -42,7 +42,7 @@ cf_reco_t* cf_recommend(smatrix_t* smatrix, uint32_t id) {
   printf("RECOS FOR %i (%i total @ %i)\n", id, root->value, root->index);
   for (pos = 0; cur; pos++) {
     result->ids[pos] = cur->index;
-    result->similarities[pos] = cf_jaccard(smatrix, root, cur);
+    result->similarities[pos] = cf_cosine(smatrix, root, cur);
     result->len++;
     cur = cur->next;
   }
@@ -74,7 +74,7 @@ float cf_jaccard(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b) {
   return ((float) num / (float) den);
 }
 
-float cf_cosine(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b) {
+double cf_cosine(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b) {
   double num, den;
   smatrix_vec_t *b_root = smatrix_lookup(smatrix, b->index, 0, 0);
 
@@ -82,12 +82,10 @@ float cf_cosine(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b) {
     return 0.0;
 
   num = (double) b->value;
-  den = sqrt((double) a->value) * sqrt((double) b->value);
+  den = sqrt((double) a->value) * sqrt((double) b_root->value);
 
-  if (den == 0.0)
-    return 0.0;
+  printf("   COMPARE %i: cc %i, total %i @ %i\n", b->index, b->value, b_root->value, b_root->index);
+  printf("   SIM %f/%f = %f\n", num, den, (num / den));
 
-  printf("   COMPARE %i: cc %i, total %i @ %i, sim %f\n", b->index, b->value, b_root->value, b_root->index, ((float) num / (float) den));
-
-  return ((float) num / (float) den);
+  return (num / den);
 }

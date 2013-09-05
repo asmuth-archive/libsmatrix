@@ -13,7 +13,7 @@
 
 #define SMATRIX_INITIAL_SIZE  120000000
 #define SMATRIX_GROWTH_FACTOR 2
-#define SMATRIX_MAX_ROW_SIZE  500
+#define SMATRIX_MAX_ROW_SIZE  4096
 
 typedef struct smatrix_vec_s smatrix_vec_t;
 

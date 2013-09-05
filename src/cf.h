@@ -17,7 +17,7 @@
 
 typedef struct {
   uint32_t ids[SMATRIX_MAX_ROW_SIZE];
-  float    similarities[SMATRIX_MAX_ROW_SIZE];
+  double   similarities[SMATRIX_MAX_ROW_SIZE];
   int      len;
   float    quality;
 } cf_reco_t;
@@ -31,6 +31,6 @@ typedef struct {
 void cf_add_pset(smatrix_t* smatrix, cf_pset_t* pset);
 cf_reco_t* cf_recommend(smatrix_t* smatrix, uint32_t id);
 float cf_jaccard(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b);
-float cf_cosine(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b);
+double cf_cosine(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b);
 
 #endif
