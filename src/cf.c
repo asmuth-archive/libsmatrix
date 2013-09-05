@@ -75,9 +75,15 @@ float cf_jaccard(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b) {
 }
 
 double cf_cosine(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b) {
-  double num, den;
+  double num, den, min;
 
-  if (b->value < 2)
+  if (a->value > 10) {
+    min = ceil(log((double) a->value) / log(6));
+  } else {
+    min = 2;
+  }
+
+  if (b->value < min)
     return 0.0;
 
   smatrix_vec_t *b_root = smatrix_lookup(smatrix, b->index, 0, 0);
@@ -89,7 +95,7 @@ double cf_cosine(smatrix_t* smatrix, smatrix_vec_t* a, smatrix_vec_t *b) {
   den = sqrt((double) a->value) * sqrt((double) b_root->value);
 
   printf("   COMPARE %i: cc %i, total %i @ %i\n", b->index, b->value, b_root->value, b_root->index);
-  printf("   SIM %f/%f = %f\n", num, den, (num / den));
+  printf("   SIM %f/%f = %f, MIN %f\n", num, den, (num / den), min);
 
   return (num / den);
 }
