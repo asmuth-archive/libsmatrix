@@ -34,11 +34,17 @@ smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int creat
   pthread_rwlock_rdlock(&self->lock);
 
   if (x > self->size) {
+    if (x > SMATRIX_MAX_ID)
+      goto unlock;
+
     if (create) {
       smatrix_wrlock(self);
 
       if (x > self->size)
         smatrix_resize(self, x + 1);
+
+      if (x > self->size)
+        goto unlock;
 
       smatrix_unlock(self);
     } else {
@@ -120,13 +126,17 @@ smatrix_vec_t* smatrix_insert(smatrix_vec_t** row, uint32_t y) {
 }
 
 void smatrix_resize(smatrix_t* self, uint32_t min_size) {
-  uint32_t new_size = self->size;
+  long int new_size = self->size;
 
   while (new_size < min_size) {
     new_size = new_size * SMATRIX_GROWTH_FACTOR;
   }
 
   smatrix_vec_t** new_data = malloc(sizeof(void *) * new_size);
+
+  if (new_data == NULL)
+    return;
+
   memcpy(new_data, self->data, sizeof(void *) * self->size);
   memset(new_data, 0, sizeof(void *) * (new_size - self->size));
 
@@ -134,6 +144,16 @@ void smatrix_resize(smatrix_t* self, uint32_t min_size) {
 
   self->data = new_data;
   self->size = new_size;
+}
+
+void smatrix_increment(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value) {
+  smatrix_vec_t* vec = smatrix_lookup(self, x, y, 1);
+
+  if (vec == NULL)
+    return;
+
+  // FIXPAUL check for overflow, also this is not an atomic increment
+  vec->value++;
 }
 
 void smatrix_truncate(smatrix_vec_t** row) {

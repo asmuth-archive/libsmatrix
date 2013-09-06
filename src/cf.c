@@ -11,16 +11,15 @@
 #include "cf.h"
 #include "string.h"
 
-// FIXPAUL actualy increment operation is not atomic!
 void cf_add_pset(smatrix_t* smatrix, cf_pset_t* pset) {
   long int i, n;
 
   for (n = 0; n < pset->len; n++) {
-    smatrix_lookup(smatrix, pset->ids[n], 0, 1)->value++;
+    smatrix_increment(smatrix, pset->ids[n], 0, 1);
 
     for (i = 0; i < pset->len; i++) {
       if (i != n) {
-        smatrix_lookup(smatrix, pset->ids[n], pset->ids[i], 1)->value++;
+        smatrix_increment(smatrix, pset->ids[n], pset->ids[i], 1);
       }
     }
   }
