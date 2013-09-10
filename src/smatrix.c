@@ -56,6 +56,7 @@ smatrix_t* smatrix_open(const char* fname) {
   return self;
 }
 
+// FIXPAUL: this needs to be atomic (compare and swap!)
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   uint64_t old = self->fpos;
   uint64_t new = old + bytes;
