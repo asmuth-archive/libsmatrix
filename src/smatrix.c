@@ -146,6 +146,7 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
 
 void smatrix_rmap_sync(smatrix_t* self) {
   int n, all_dirty = 1;
+  char slot_buf[16];
 
   pthread_rwlock_rdlock(&self->rmap.lock);
   pthread_mutex_lock(&self->wlock);
@@ -166,7 +167,13 @@ void smatrix_rmap_sync(smatrix_t* self) {
     if (!all_dirty)
       continue;
 
+    // FIXPAUL what is byte ordering?
+    memset(&slot_buf, 0, 16);
+    memcpy(&slot_buf[4], &self->rmap.data[n].key, 4);
+    memcpy(&slot_buf[8], &self->rmap.data[n].ptr, 8); // FIXPAUL copy foffset
+
     printf("PERSIST %i->%p @ %li\n", self->rmap.data[n].key, self->rmap.data[n].ptr, self->rmap_fpos + (n * 16));
+    pwrite(self->fd, &slot_buf, 16, self->rmap_fpos + (n * 16));
   }
 
   pthread_rwlock_unlock(&self->rmap.lock);
