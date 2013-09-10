@@ -74,6 +74,7 @@ void smatrix_rmap_sync(smatrix_t* self);
 void smatrix_rmap_load(smatrix_t* self);
 
 void smatrix_meta_sync(smatrix_t* self);
+void smatrix_meta_load(smatrix_t* self);
 
 
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes);

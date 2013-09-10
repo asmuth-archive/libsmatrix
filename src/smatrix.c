@@ -35,7 +35,7 @@ smatrix_t* smatrix_open(const char* fname) {
   fseek(self->file, 0, SEEK_END);
   self->fpos = ftell(self->file);
 
-  if (1 || self->fpos == 0) {
+  if (self->fpos == 0) {
     printf("NEW FILE!\n");
     smatrix_falloc(self, SMATRIX_META_SIZE);
 
@@ -49,7 +49,9 @@ smatrix_t* smatrix_open(const char* fname) {
     smatrix_rmap_sync(self);
   } else {
     printf("LOAD FILE!\n");
-    smatrix_rmap_load(self);
+    smatrix_meta_load(self);
+    //smatrix_rmap_load(self);
+    abort();
   }
 
   return self;
@@ -205,6 +207,27 @@ void smatrix_meta_sync(smatrix_t* self) {
   printf("FIXPAUL: sync meta data \n");
 
   pwrite(self->fd, &buf, SMATRIX_META_SIZE, 0);
+}
+
+void smatrix_meta_load(smatrix_t* self) {
+  char buf[SMATRIX_META_SIZE];
+  size_t read;
+
+  read = pread(self->fd, &buf, SMATRIX_META_SIZE, 0);
+
+  if (read != SMATRIX_META_SIZE) {
+    printf("CANNOT READ FILE HEADER\n"); //FIXPAUL
+    abort();
+  }
+
+  if (buf[0] != 0x17 || buf[1] != 0x17) {
+    printf("INVALID FILE HEADER\n"); //FIXPAUL
+    abort();
+  }
+
+  // because f**k other endianess, thats why...
+  memcpy(&self->rmap_fpos, &buf[8],  8);
+  memcpy(&self->rmap_size, &buf[16], 8);
 }
 
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {
