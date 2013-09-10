@@ -48,8 +48,15 @@ typedef struct {
 typedef struct {
   FILE*            file;
   smatrix_rmap_t   rmap;
+  long int         rmap_size;
+  long int         rmap_fpos;
+
+  pthread_mutex_t  wlock;
+
+
 
   pthread_rwlock_t lock;
+
   smatrix_vec_t**  data;
   long int         size;
 } smatrix_t;
@@ -59,6 +66,7 @@ void smatrix_close(smatrix_t* self);
 
 smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, smatrix_row_t* insert);
 void smatrix_rmap_resize(smatrix_rmap_t* rmap);
+void smatrix_rmap_sync(smatrix_t* self);
 
 
 uint32_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y);

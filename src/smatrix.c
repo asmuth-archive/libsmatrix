@@ -17,9 +17,13 @@ smatrix_t* smatrix_open(const char* fname) {
   if (self == NULL)
     return NULL;
 
+  pthread_mutex_init(&self->wlock, NULL);
+
   self->rmap.size = SMATRIX_RMAP_INITIAL_SIZE;
   self->rmap.used = 0;
   self->rmap.data = malloc(sizeof(smatrix_row_t) * self->rmap.size);
+  self->rmap_size = 0;
+  self->rmap_fpos = 23;
 
   if (self->rmap.data == NULL) {
     free(self);
@@ -116,6 +120,32 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
   rmap->data = new.data;
   rmap->size = new.size;
   rmap->used = new.used;
+}
+
+void smatrix_rmap_sync(smatrix_t* self) {
+  int n, all_dirty = 1;
+
+  pthread_rwlock_rdlock(&self->rmap.lock);
+  pthread_mutex_lock(&self->wlock);
+
+  if (self->rmap_size != self->rmap.size) {
+    // FIXPAUL: write new rmap size + rmap pos in file header
+    all_dirty = 1;
+  }
+
+  for (n = 0; n < self->rmap.size; n++) {
+    if (!self->rmap.data[n].ptr)
+      continue;
+
+    if (!all_dirty)
+      continue;
+
+    printf("PERSIST %i->%p @ %li\n", self->rmap.data[n].key, self->rmap.data[n].ptr, self->rmap_fpos + (n * 16));
+  }
+
+  pthread_rwlock_unlock(&self->rmap.lock);
+
+  pthread_mutex_unlock(&self->wlock);
 }
 
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {
@@ -281,9 +311,10 @@ void smatrix_close(smatrix_t* self) {
 
   */
 
+  pthread_mutex_destroy(&self->wlock);
   pthread_rwlock_destroy(&self->rmap.lock);
-  free(self->rmap.data);
 
+  free(self->rmap.data);
   free(self);
 }
 

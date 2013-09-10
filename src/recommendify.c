@@ -73,6 +73,7 @@ int main(int argc, char **argv) {
   test_rmap(133, 0);
   printf("USED %li\n", db->rmap.used);
 
+  smatrix_rmap_sync(db);
 /*
   saddr.sin_family = AF_INET;
   saddr.sin_addr.s_addr = htonl(INADDR_ANY);
