@@ -45,7 +45,10 @@ void* test_rmap_fnord(void * xxx) {
   int n = 0;
 
   for (;; n++) {
-    smatrix_rmap_get(db, n);
+    int x = smatrix_rmap_get(db, n)->index;
+
+    if (x != n)
+      abort();
   }
 }
 
@@ -76,8 +79,9 @@ int main(int argc, char **argv) {
   printf("USED %li\n", db->rmap.used);
   smatrix_rmap_sync(db);
 
+  //sleep(5);
+  test_rmap_fnord(NULL);
   exit(0);
-  sleep(5);
 
   void* fnord;
   pthread_t t[32];

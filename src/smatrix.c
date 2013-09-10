@@ -77,7 +77,7 @@ smatrix_row_t* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
     row = malloc(sizeof(smatrix_row_t)); // FIXPAUL never freed :(
     row->flags = 0;
     row->index = key;
-    row->fpos = 666;
+    row->fpos = smatrix_falloc(self, 666);
 
     if (smatrix_rmap_lookup(&self->rmap, key, row) != row) {
       free(row);
@@ -112,8 +112,13 @@ smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, smatrix_r
   if (insert == NULL)
     return NULL;
 
-  printf("INSERTING:::\n");
+  printf("INSERTING::: %i\n", key);
   pthread_rwlock_wrlock(&rmap->lock);
+
+  if (rmap->data[pos].ptr) {
+    pthread_rwlock_unlock(&rmap->lock);
+    return smatrix_rmap_lookup(rmap, key, insert);
+  }
 
   if (rmap->used > rmap->size / 2) {
     smatrix_rmap_resize(rmap);
@@ -210,7 +215,7 @@ void smatrix_rmap_sync(smatrix_t* self) {
 void smatrix_rmap_load(smatrix_t* self) {
   int n = 0;
   size_t read, rmap_bytes;
-  
+
   rmap_bytes = self->rmap_size * 16;
   self->rmap.size = self->rmap_size;
   self->rmap.used = 0;
