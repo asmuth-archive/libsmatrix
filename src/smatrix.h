@@ -12,7 +12,7 @@
 #ifndef SMATRIX_H
 #define SMATRIX_H
 
-#define SMATRIX_RMAP_INITIAL_SIZE 1024
+#define SMATRIX_RMAP_INITIAL_SIZE 10
 #define SMATRIX_GROWTH_FACTOR 2
 #define SMATRIX_MAX_ROW_SIZE  4096
 #define SMATRIX_MAX_ID 100000000
@@ -39,7 +39,7 @@ typedef struct {
   pthread_rwlock_t lock;
 
 
-  smatrix_row_t**  rmap;
+  smatrix_row_t*   rmap;
   long int         rmap_size;
   long int         rmap_used;
 
@@ -49,6 +49,8 @@ typedef struct {
 
 smatrix_t* smatrix_open(const char* fname);
 void smatrix_close(smatrix_t* self);
+
+smatrix_row_t* smatrix_rmap_lookup(smatrix_t* self, uint32_t key, int create);
 
 uint32_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y);
 void smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value);

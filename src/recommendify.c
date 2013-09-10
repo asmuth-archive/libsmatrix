@@ -31,6 +31,16 @@ void quit() {
   }
 }
 
+void test_rmap(uint32_t key, int create) {
+  smatrix_row_t* row = smatrix_rmap_lookup(db, key, create);
+
+  if (row == NULL) {
+    printf("%i: not found\n", key);
+  } else {
+    printf("%i: found (%i)\n", key, row->index);
+  }
+}
+
 int main(int argc, char **argv) {
   int fd, opt = 1;
   struct sockaddr_in saddr;
@@ -45,6 +55,13 @@ int main(int argc, char **argv) {
   signal(SIGPIPE, SIG_IGN);
 
   db = smatrix_open("/var/tmp/reco.db");
+
+  test_rmap(123, 0);
+  test_rmap(123, 1);
+  test_rmap(133, 1);
+  test_rmap(456, 1);
+  test_rmap(123, 1);
+  test_rmap(456, 0);
 
 /*
   saddr.sin_family = AF_INET;

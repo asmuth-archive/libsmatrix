@@ -23,6 +23,8 @@ smatrix_t* smatrix_open(const char* fname) {
     return NULL;
   }
 
+  memset(self->rmap, 0, sizeof(smatrix_row_t) * self->rmap_size);
+
   self->file = fopen(fname, "a+b");
 
   if (self->file == NULL) {
@@ -41,6 +43,30 @@ smatrix_t* smatrix_open(const char* fname) {
 
   return self;
 }
+
+smatrix_row_t* smatrix_rmap_lookup(smatrix_t* self, uint32_t key, int create) {
+  long int n, pos = key % self->rmap_size;
+
+  for (n = 0; n < self->rmap_size; n++) {
+    if (self->rmap[pos].head == NULL)
+      break;
+
+    if (self->rmap[pos].index == key)
+      return &self->rmap[pos];
+
+    pos = (pos + 1) % self->rmap_size;
+  }
+
+  if (create) {
+    self->rmap_used++;
+    self->rmap[pos].index = key;
+    self->rmap[pos].head = 1;
+    return &self->rmap[pos];
+  }
+
+  return NULL;
+}
+
 
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {
   smatrix_vec_t *col = NULL, **row = NULL;
