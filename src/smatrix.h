@@ -12,7 +12,7 @@
 #ifndef SMATRIX_H
 #define SMATRIX_H
 
-#define SMATRIX_INITIAL_SIZE  120000000
+#define SMATRIX_RMAP_INITIAL_SIZE 1024
 #define SMATRIX_GROWTH_FACTOR 2
 #define SMATRIX_MAX_ROW_SIZE  4096
 #define SMATRIX_MAX_ID 100000000
@@ -27,7 +27,7 @@ struct smatrix_vec_s {
   smatrix_vec_t*   next;
 };
 
-typedef struct __attribute__((__packed__)) {
+typedef struct {
   uint32_t        index;
   uint32_t        length;
   uint64_t        foffset;
@@ -38,6 +38,10 @@ typedef struct {
   FILE*            file;
   pthread_rwlock_t lock;
 
+
+  smatrix_row_t**  rmap;
+  long int         rmap_size;
+  long int         rmap_used;
 
   smatrix_vec_t**  data;
   long int         size;

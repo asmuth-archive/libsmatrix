@@ -14,22 +14,25 @@
 smatrix_t* smatrix_open(const char* fname) {
   smatrix_t* self = malloc(sizeof(smatrix_t));
 
+  self->rmap_size = SMATRIX_RMAP_INITIAL_SIZE;
+  self->rmap_used = 0;
+  self->rmap = malloc(sizeof(smatrix_row_t) * self->rmap_size);
+
+  if (self->rmap == NULL) {
+    free(self);
+    return NULL;
+  }
+
   self->file = fopen(fname, "a+b");
 
   if (self->file == NULL) {
     perror("cannot open file");
+    free(self->rmap);
     free(self);
     return NULL;
   }
 
 /*
-  self->size = SMATRIX_INITIAL_SIZE;
-  self->data = malloc(sizeof(void *) * self->size);
-
-  if (self->data == NULL) {
-    free(self);
-    return NULL;
-  }
 
   memset(self->data, 0, sizeof(void *) * self->size);
 */
@@ -203,7 +206,7 @@ void smatrix_close(smatrix_t* self) {
   */
   pthread_rwlock_destroy(&self->lock);
 
-  //free(self->data);
+  free(self->rmap);
   free(self);
 }
 
