@@ -19,21 +19,7 @@ smatrix_t* smatrix_open(const char* fname) {
 
   pthread_mutex_init(&self->wlock, NULL);
 
-  self->rmap.size = SMATRIX_RMAP_INITIAL_SIZE;
-  self->rmap.used = 0;
-  self->rmap.data = malloc(sizeof(smatrix_row_t) * self->rmap.size);
-
-  self->rmap_size = 0;
-  self->rmap_fpos = 23;
-  self->fpos      = 0;
-
-  if (self->rmap.data == NULL) {
-    free(self);
-    return NULL;
-  }
-
-  memset(self->rmap.data, 0, sizeof(smatrix_row_t) * self->rmap.size);
-  pthread_rwlock_init(&self->rmap.lock, NULL);
+// FILE INIT
 
   self->file = fopen(fname, "a+b");
 
@@ -45,10 +31,29 @@ smatrix_t* smatrix_open(const char* fname) {
   }
 
   self->fd = fileno(self->file);
+  fseek(self->file, 0, SEEK_END);
+  self->fpos = ftell(self->file);
 
-  smatrix_rmap_load(self);
+  if (1 || self->fpos == 0) {
+    printf("NEW FILE!\n");
+    self->rmap.size = SMATRIX_RMAP_INITIAL_SIZE;
+    self->rmap.used = 0;
+    self->rmap_size = 0;
+    self->fpos      = 0; // FIXPAUL header size
+    self->rmap_fpos = 42;
+    self->rmap.data = malloc(sizeof(smatrix_row_t) * self->rmap.size);
 
-  //pthread_rwlock_init(&self->lock, NULL);
+    if (self->rmap.data == NULL) {
+      free(self);
+      abort(); // FIXPAUL
+    }
+
+    memset(self->rmap.data, 0, sizeof(smatrix_row_t) * self->rmap.size);
+    pthread_rwlock_init(&self->rmap.lock, NULL);
+  } else {
+    printf("LOAD FILE!\n");
+    smatrix_rmap_load(self);
+  }
 
   return self;
 }
