@@ -17,6 +17,8 @@
 #define SMATRIX_MAX_ROW_SIZE  4096
 #define SMATRIX_MAX_ID 100000000
 
+#define SMATRIX_META_SIZE 512
+
 typedef struct smatrix_vec_s smatrix_vec_t;
 
 struct smatrix_vec_s {
@@ -50,8 +52,8 @@ typedef struct {
   int              fd;
   uint64_t         fpos;
   smatrix_rmap_t   rmap;
-  long int         rmap_size;
-  long int         rmap_fpos;
+  uint64_t         rmap_size;
+  uint64_t         rmap_fpos;
 
   pthread_mutex_t  wlock;
 

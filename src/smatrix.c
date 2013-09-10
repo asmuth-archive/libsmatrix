@@ -18,6 +18,7 @@ smatrix_t* smatrix_open(const char* fname) {
     return NULL;
 
   pthread_mutex_init(&self->wlock, NULL);
+  pthread_rwlock_init(&self->rmap.lock, NULL);
 
 // FILE INIT
 
@@ -36,20 +37,16 @@ smatrix_t* smatrix_open(const char* fname) {
 
   if (1 || self->fpos == 0) {
     printf("NEW FILE!\n");
+    smatrix_falloc(self, SMATRIX_META_SIZE);
+
     self->rmap.size = SMATRIX_RMAP_INITIAL_SIZE;
     self->rmap.used = 0;
     self->rmap_size = 0;
-    self->fpos      = 0; // FIXPAUL header size
-    self->rmap_fpos = 42;
+    self->rmap_fpos = 0;
     self->rmap.data = malloc(sizeof(smatrix_row_t) * self->rmap.size);
-
-    if (self->rmap.data == NULL) {
-      free(self);
-      abort(); // FIXPAUL
-    }
-
     memset(self->rmap.data, 0, sizeof(smatrix_row_t) * self->rmap.size);
-    pthread_rwlock_init(&self->rmap.lock, NULL);
+
+    smatrix_rmap_sync(self);
   } else {
     printf("LOAD FILE!\n");
     smatrix_rmap_load(self);
@@ -68,6 +65,7 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
     abort();
   }
 
+  self->fpos = new;
   return old;
 }
 
@@ -194,7 +192,19 @@ void smatrix_rmap_load(smatrix_t* self) {
 }
 
 void smatrix_meta_sync(smatrix_t* self) {
+  char buf[SMATRIX_META_SIZE];
+
+  memset(&buf, 0, SMATRIX_META_SIZE);
+  memset(&buf, 0x17, 8);
+
+  // FIXPAUL what is byte ordering?
+  printf("WRITE FPOS %li\n", self->rmap_fpos);
+  memcpy(&buf[8],  &self->rmap_fpos, 8);
+  memcpy(&buf[16], &self->rmap_size, 8);
+
   printf("FIXPAUL: sync meta data \n");
+
+  pwrite(self->fd, &buf, SMATRIX_META_SIZE, 0);
 }
 
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {
