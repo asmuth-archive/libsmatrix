@@ -43,8 +43,8 @@ smatrix_t* smatrix_open(const char* fname) {
     self->rmap.used = 0;
     self->rmap_size = 0;
     self->rmap_fpos = 0;
-    self->rmap.data = malloc(sizeof(smatrix_row_t) * self->rmap.size);
-    memset(self->rmap.data, 0, sizeof(smatrix_row_t) * self->rmap.size);
+    self->rmap.data = malloc(sizeof(smatrix_rmap_slot_t) * self->rmap.size);
+    memset(self->rmap.data, 0, sizeof(smatrix_rmap_slot_t) * self->rmap.size);
 
     smatrix_rmap_sync(self);
   } else {
@@ -190,10 +190,36 @@ void smatrix_rmap_sync(smatrix_t* self) {
 }
 
 void smatrix_rmap_load(smatrix_t* self) {
+  int n = 0;
+  size_t read, rmap_bytes;
+  
+  rmap_bytes = self->rmap_size * 16;
   self->rmap.size = self->rmap_size;
   self->rmap.used = 0;
-  self->rmap.data = malloc(sizeof(smatrix_row_t) * self->rmap.size);
-  memset(self->rmap.data, 0, sizeof(smatrix_row_t) * self->rmap.size);
+  self->rmap.data = malloc(sizeof(smatrix_rmap_slot_t) * self->rmap.size);
+  memset(self->rmap.data, 0, sizeof(smatrix_rmap_slot_t) * self->rmap.size);
+
+  char* buf = malloc(rmap_bytes);
+  read = pread(self->fd, buf, rmap_bytes, self->rmap_fpos);
+
+  if (read != self->rmap.size * 16) {
+    printf("CANNOT LOAD RMATRIX\n"); // FIXPAUL
+    abort();
+  }
+
+  for (n = 0; n < self->rmap.size; n++) {
+    uint32_t key  = *((uint32_t *) (buf + n * 16 + 4));
+    uint32_t fpos = *((uint64_t *) (buf + n * 16 + 8));
+
+    if (fpos) {
+      printf("LOAD %i, %li\n", key, fpos);
+      self->rmap.used++;
+      self->rmap.data[n].key = key;
+      self->rmap.data[n].ptr = fpos;
+    }
+  }
+
+  free(buf);
 
   printf("LOAD RMAP %i @ %i\n", self->rmap_size, self->rmap_fpos);
 }

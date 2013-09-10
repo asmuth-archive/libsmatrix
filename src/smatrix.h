@@ -54,13 +54,11 @@ typedef struct {
   smatrix_rmap_t   rmap;
   uint64_t         rmap_size;
   uint64_t         rmap_fpos;
-
   pthread_mutex_t  wlock;
 
 
 
   pthread_rwlock_t lock;
-
   smatrix_vec_t**  data;
   long int         size;
 } smatrix_t;
