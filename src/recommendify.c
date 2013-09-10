@@ -41,19 +41,19 @@ void test_rmap(uint32_t key, int create) {
   }
 }
 
+void* test_rmap_fnord(void * xxx) {
+  int n = 0;
+
+  for (;; n++) {
+    smatrix_rmap_lookup(&db->rmap, n, n);
+  }
+}
+
 int main(int argc, char **argv) {
   int fd, opt = 1;
   struct sockaddr_in saddr;
 
-  print_version();
-
-  // FIXPAUL optparsing
-  (void) argc; (void) argv;
-
-  signal(SIGQUIT, quit);
-  signal(SIGINT, quit);
-  signal(SIGPIPE, SIG_IGN);
-
+  //print_version();
   db = smatrix_open("/var/tmp/reco.db");
 
   test_rmap(123, 0);
@@ -63,7 +63,9 @@ int main(int argc, char **argv) {
   test_rmap(123, 1);
   test_rmap(456, 0);
   test_rmap(143, 1);
+  smatrix_rmap_sync(db);
   test_rmap(153, 1);
+  smatrix_rmap_sync(db);
   test_rmap(163, 1);
   test_rmap(173, 1);
   test_rmap(183, 1);
@@ -72,8 +74,28 @@ int main(int argc, char **argv) {
   test_rmap(123, 0);
   test_rmap(133, 0);
   printf("USED %li\n", db->rmap.used);
-
   smatrix_rmap_sync(db);
+
+  sleep(5);
+
+  void* fnord;
+  pthread_t t[32];
+  int n;
+
+  for (n=0; n < 32; n++)
+    pthread_create(t + n, NULL, &test_rmap_fnord, NULL);
+
+  for (;;) 1 + 1;
+  //pthread_join(&t2, &fnord);
+
+  // FIXPAUL optparsing
+  (void) argc; (void) argv;
+
+  signal(SIGQUIT, quit);
+  signal(SIGINT, quit);
+  signal(SIGPIPE, SIG_IGN);
+
+
 /*
   saddr.sin_family = AF_INET;
   saddr.sin_addr.s_addr = htonl(INADDR_ANY);

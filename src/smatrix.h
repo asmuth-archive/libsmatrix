@@ -69,6 +69,10 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap);
 void smatrix_rmap_sync(smatrix_t* self);
 
 
+uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes);
+
+// ----
+
 uint32_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y);
 void smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value);
 void smatrix_incr(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value);

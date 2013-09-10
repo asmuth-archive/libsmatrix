@@ -47,6 +47,10 @@ smatrix_t* smatrix_open(const char* fname) {
   return self;
 }
 
+uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
+  return 42;
+}
+
 smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, smatrix_row_t* insert) {
   long int n, pos;
   smatrix_row_t* row;
@@ -98,6 +102,7 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
 
   pthread_rwlock_init(&new.lock, NULL);
 
+  printf("RESIZE!!!\n");
   new.used = 0;
   new.size = rmap->size * 2;
   new.data = malloc(sizeof(smatrix_row_t) * new.size);
@@ -133,6 +138,10 @@ void smatrix_rmap_sync(smatrix_t* self) {
   pthread_mutex_lock(&self->wlock);
 
   if (self->rmap_size != self->rmap.size) {
+    self->rmap_size = self->rmap.size;
+    self->rmap_fpos = smatrix_falloc(self, self->rmap_size);
+
+    printf("WRITE NEW RMAP TO fpos @%li\n", self->rmap_fpos);
     // FIXPAUL: write new rmap size + rmap pos in file header
     all_dirty = 1;
   }
