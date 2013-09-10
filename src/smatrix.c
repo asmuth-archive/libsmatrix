@@ -60,7 +60,7 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   uint64_t old = self->fpos;
   uint64_t new = old + bytes;
 
-  printf("TRUNCATE TO %li\n", new);
+  //printf("TRUNCATE TO %li\n", new);
   if (ftruncate(self->fd, new) == -1) {
     perror("FATAL ERROR: CANNOT TRUNCATE FILE"); // FIXPAUL
     abort();
@@ -112,7 +112,7 @@ smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, smatrix_r
   if (insert == NULL)
     return NULL;
 
-  printf("INSERTING::: %i\n", key);
+  //printf("INSERTING::: %i\n", key);
   pthread_rwlock_wrlock(&rmap->lock);
 
   if (rmap->data[pos].ptr) {

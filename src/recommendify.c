@@ -47,6 +47,9 @@ void* test_rmap_fnord(void * xxx) {
   for (;; n++) {
     int x = smatrix_rmap_get(db, n)->index;
 
+    if (n % 1000 == 0)
+      printf("NOW %i\n", n);
+
     if (x != n)
       abort();
   }
