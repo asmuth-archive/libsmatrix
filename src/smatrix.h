@@ -35,14 +35,16 @@ typedef struct {
 } smatrix_row_t;
 
 typedef struct {
+  smatrix_row_t*   data;
+  long int         size;
+  long int         used;
+} smatrix_rmap_t;
+
+typedef struct {
   FILE*            file;
+  smatrix_rmap_t   rmap;
+
   pthread_rwlock_t lock;
-
-
-  smatrix_row_t*   rmap;
-  long int         rmap_size;
-  long int         rmap_used;
-
   smatrix_vec_t**  data;
   long int         size;
 } smatrix_t;
@@ -50,7 +52,9 @@ typedef struct {
 smatrix_t* smatrix_open(const char* fname);
 void smatrix_close(smatrix_t* self);
 
-smatrix_row_t* smatrix_rmap_lookup(smatrix_t* self, uint32_t key, int create);
+smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, int create);
+
+
 
 uint32_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y);
 void smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value);

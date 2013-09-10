@@ -14,57 +14,58 @@
 smatrix_t* smatrix_open(const char* fname) {
   smatrix_t* self = malloc(sizeof(smatrix_t));
 
-  self->rmap_size = SMATRIX_RMAP_INITIAL_SIZE;
-  self->rmap_used = 0;
-  self->rmap = malloc(sizeof(smatrix_row_t) * self->rmap_size);
+  if (self == NULL)
+    return NULL;
 
-  if (self->rmap == NULL) {
+  self->rmap.size = SMATRIX_RMAP_INITIAL_SIZE;
+  self->rmap.used = 0;
+  self->rmap.data = malloc(sizeof(smatrix_row_t) * self->rmap.size);
+
+  if (self->rmap.data == NULL) {
     free(self);
     return NULL;
   }
 
-  memset(self->rmap, 0, sizeof(smatrix_row_t) * self->rmap_size);
+  memset(self->rmap.data, 0, sizeof(smatrix_row_t) * self->rmap.size);
 
   self->file = fopen(fname, "a+b");
 
   if (self->file == NULL) {
     perror("cannot open file");
-    free(self->rmap);
+    free(self->rmap.data);
     free(self);
     return NULL;
   }
 
-/*
-
-  memset(self->data, 0, sizeof(void *) * self->size);
-*/
-
-  pthread_rwlock_init(&self->lock, NULL);
+  //pthread_rwlock_init(&self->lock, NULL);
 
   return self;
 }
 
-smatrix_row_t* smatrix_rmap_lookup(smatrix_t* self, uint32_t key, int create) {
-  long int n, pos = key % self->rmap_size;
+smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, int create) {
+  long int n, pos = key % rmap->size;
 
-  for (n = 0; n < self->rmap_size; n++) {
-    if (self->rmap[pos].head == NULL)
+  for (n = 0; n < rmap->size; n++) {
+    if (rmap->data[pos].head == NULL)
       break;
 
-    if (self->rmap[pos].index == key)
-      return &self->rmap[pos];
+    if (rmap->data[pos].index == key)
+      return &rmap->data[pos];
 
-    pos = (pos + 1) % self->rmap_size;
+    pos = (pos + 1) % rmap->size;
   }
 
-  if (create) {
-    self->rmap_used++;
-    self->rmap[pos].index = key;
-    self->rmap[pos].head = 1;
-    return &self->rmap[pos];
+  if (!create)
+    return NULL;
+
+  if (rmap->used > rmap->size / 2) {
+    printf("RESIZE\n");
   }
 
-  return NULL;
+  rmap->used++;
+  rmap->data[pos].index = key;
+  rmap->data[pos].head = 1;
+  return &rmap->data[pos];
 }
 
 
@@ -230,9 +231,9 @@ void smatrix_close(smatrix_t* self) {
   }
 
   */
-  pthread_rwlock_destroy(&self->lock);
+  //pthread_rwlock_destroy(&self->lock);
 
-  free(self->rmap);
+  free(self->rmap.data);
   free(self);
 }
 

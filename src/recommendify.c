@@ -32,7 +32,7 @@ void quit() {
 }
 
 void test_rmap(uint32_t key, int create) {
-  smatrix_row_t* row = smatrix_rmap_lookup(db, key, create);
+  smatrix_row_t* row = smatrix_rmap_lookup(&db->rmap, key, create);
 
   if (row == NULL) {
     printf("%i: not found\n", key);
@@ -62,6 +62,15 @@ int main(int argc, char **argv) {
   test_rmap(456, 1);
   test_rmap(123, 1);
   test_rmap(456, 0);
+  test_rmap(143, 1);
+  test_rmap(153, 1);
+  test_rmap(163, 1);
+  test_rmap(173, 1);
+  test_rmap(183, 1);
+  test_rmap(193, 1);
+  test_rmap(203, 1);
+  test_rmap(123, 0);
+  test_rmap(133, 0);
 
 /*
   saddr.sin_family = AF_INET;
