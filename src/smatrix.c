@@ -50,8 +50,7 @@ smatrix_t* smatrix_open(const char* fname) {
   } else {
     printf("LOAD FILE!\n");
     smatrix_meta_load(self);
-    //smatrix_rmap_load(self);
-    abort();
+    smatrix_rmap_load(self);
   }
 
   return self;
@@ -95,6 +94,7 @@ smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, smatrix_r
   if (insert == NULL)
     return NULL;
 
+  printf("INSERTING:::\n");
   pthread_rwlock_wrlock(&rmap->lock);
 
   if (rmap->used > rmap->size / 2) {
@@ -190,6 +190,11 @@ void smatrix_rmap_sync(smatrix_t* self) {
 }
 
 void smatrix_rmap_load(smatrix_t* self) {
+  self->rmap.size = self->rmap_size;
+  self->rmap.used = 0;
+  self->rmap.data = malloc(sizeof(smatrix_row_t) * self->rmap.size);
+  memset(self->rmap.data, 0, sizeof(smatrix_row_t) * self->rmap.size);
+
   printf("LOAD RMAP %i @ %i\n", self->rmap_size, self->rmap_fpos);
 }
 

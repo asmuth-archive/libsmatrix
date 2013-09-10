@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
   printf("USED %li\n", db->rmap.used);
   smatrix_rmap_sync(db);
 
+  exit(0);
   sleep(5);
 
   void* fnord;
