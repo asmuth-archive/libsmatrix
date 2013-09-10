@@ -27,6 +27,7 @@ smatrix_t* smatrix_open(const char* fname) {
   }
 
   memset(self->rmap.data, 0, sizeof(smatrix_row_t) * self->rmap.size);
+  pthread_rwlock_init(&self->rmap.lock, NULL);
 
   self->file = fopen(fname, "a+b");
 
@@ -43,36 +44,54 @@ smatrix_t* smatrix_open(const char* fname) {
 }
 
 smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, smatrix_row_t* insert) {
-  long int n, pos = key % rmap->size;
+  long int n, pos;
+  smatrix_row_t* row;
+
+  pthread_rwlock_rdlock(&rmap->lock);
+  pos = key % rmap->size;
 
   for (n = 0; n < rmap->size; n++) {
     if (!rmap->data[pos].ptr)
       break;
 
-    if (rmap->data[pos].key == key)
-      return rmap->data[pos].ptr;
+    if (rmap->data[pos].key == key) {
+      row = rmap->data[pos].ptr;
+      goto rmap_unlock;
+    }
 
     pos = (pos + 1) % rmap->size;
   }
 
+  pthread_rwlock_unlock(&rmap->lock);
+
   if (insert == NULL)
     return NULL;
 
+  pthread_rwlock_wrlock(&rmap->lock);
+
   if (rmap->used > rmap->size / 2) {
     smatrix_rmap_resize(rmap);
+    pthread_rwlock_unlock(&rmap->lock);
     return smatrix_rmap_lookup(rmap, key, insert);
   }
 
   rmap->used++;
   rmap->data[pos].key = key;
   rmap->data[pos].ptr = insert;
-  return rmap->data[pos].ptr;
+  row = rmap->data[pos].ptr;
+
+rmap_unlock:
+
+  pthread_rwlock_unlock(&rmap->lock);
+  return row;
 }
 
 void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
   int n;
   smatrix_rmap_t new;
   smatrix_row_t* row;
+
+  pthread_rwlock_init(&new.lock, NULL);
 
   new.used = 0;
   new.size = rmap->size * 2;
@@ -91,6 +110,8 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
 
     smatrix_rmap_lookup(&new, rmap->data[n].key, rmap->data[n].ptr);
   }
+
+  pthread_rwlock_destroy(&new.lock);
 
   rmap->data = new.data;
   rmap->size = new.size;
@@ -259,9 +280,10 @@ void smatrix_close(smatrix_t* self) {
   }
 
   */
-  //pthread_rwlock_destroy(&self->lock);
 
+  pthread_rwlock_destroy(&self->rmap.lock);
   free(self->rmap.data);
+
   free(self);
 }
 

@@ -42,6 +42,7 @@ typedef struct {
   smatrix_rmap_slot_t* data;
   long int             size;
   long int             used;
+  pthread_rwlock_t     lock;
 } smatrix_rmap_t;
 
 typedef struct {
