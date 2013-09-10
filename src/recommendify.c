@@ -44,8 +44,9 @@ int main(int argc, char **argv) {
   signal(SIGINT, quit);
   signal(SIGPIPE, SIG_IGN);
 
-  db = smatrix_init();
+  db = smatrix_open("/var/tmp/reco.db");
 
+/*
   saddr.sin_family = AF_INET;
   saddr.sin_addr.s_addr = htonl(INADDR_ANY);
   saddr.sin_port = htons(2323);
@@ -87,7 +88,9 @@ int main(int argc, char **argv) {
   }
 
   close(ssock);
-  smatrix_free(db);
+*/
+
+  smatrix_close(db);
   return 0;
 }
 

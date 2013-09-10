@@ -11,9 +11,18 @@
 
 #include "smatrix.h"
 
-smatrix_t* smatrix_init() {
+smatrix_t* smatrix_open(const char* fname) {
   smatrix_t* self = malloc(sizeof(smatrix_t));
 
+  self->file = fopen(fname, "a+b");
+
+  if (self->file == NULL) {
+    perror("cannot open file");
+    free(self);
+    return NULL;
+  }
+
+/*
   self->size = SMATRIX_INITIAL_SIZE;
   self->data = malloc(sizeof(void *) * self->size);
 
@@ -23,6 +32,8 @@ smatrix_t* smatrix_init() {
   }
 
   memset(self->data, 0, sizeof(void *) * self->size);
+*/
+
   pthread_rwlock_init(&self->lock, NULL);
 
   return self;
@@ -175,10 +186,10 @@ void smatrix_truncate(smatrix_vec_t** row) {
   smatrix_vec_decref(delete);
 }
 
-void smatrix_free(smatrix_t* self) {
+void smatrix_close(smatrix_t* self) {
   smatrix_vec_t *cur, *tmp;
   uint32_t n;
-
+/*
   for (n = 0; n < self->size; n++) {
     cur = self->data[n];
 
@@ -189,9 +200,10 @@ void smatrix_free(smatrix_t* self) {
     }
   }
 
+  */
   pthread_rwlock_destroy(&self->lock);
 
-  free(self->data);
+  //free(self->data);
   free(self);
 }
 
