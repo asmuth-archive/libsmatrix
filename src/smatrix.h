@@ -32,6 +32,7 @@ struct smatrix_vec_s {
 typedef struct {
   uint32_t         flags;
   uint32_t         index;
+  uint64_t         fpos;
   smatrix_vec_t*   head;
 } smatrix_row_t;
 
@@ -66,7 +67,7 @@ typedef struct {
 smatrix_t* smatrix_open(const char* fname);
 void smatrix_close(smatrix_t* self);
 
-smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, smatrix_row_t* insert);
+smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, int insert);
 void smatrix_rmap_resize(smatrix_rmap_t* rmap);
 void smatrix_rmap_sync(smatrix_t* self);
 void smatrix_rmap_load(smatrix_t* self);
