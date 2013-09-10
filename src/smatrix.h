@@ -47,6 +47,8 @@ typedef struct {
 
 typedef struct {
   FILE*            file;
+  int              fd;
+  uint64_t         fpos;
   smatrix_rmap_t   rmap;
   long int         rmap_size;
   long int         rmap_fpos;

@@ -22,8 +22,10 @@ smatrix_t* smatrix_open(const char* fname) {
   self->rmap.size = SMATRIX_RMAP_INITIAL_SIZE;
   self->rmap.used = 0;
   self->rmap.data = malloc(sizeof(smatrix_row_t) * self->rmap.size);
+
   self->rmap_size = 0;
   self->rmap_fpos = 23;
+  self->fpos      = 0;
 
   if (self->rmap.data == NULL) {
     free(self);
@@ -42,13 +44,24 @@ smatrix_t* smatrix_open(const char* fname) {
     return NULL;
   }
 
+  self->fd = fileno(self->file);
+
   //pthread_rwlock_init(&self->lock, NULL);
 
   return self;
 }
 
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
-  return 42;
+  uint64_t old = self->fpos;
+  uint64_t new = old + bytes;
+
+  printf("TRUNCATE TO %li\n", new);
+  if (ftruncate(self->fd, new) == -1) {
+    perror("FATAL ERROR: CANNOT TRUNCATE FILE"); // FIXPAUL
+    abort();
+  }
+
+  return old;
 }
 
 smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, smatrix_row_t* insert) {
@@ -96,7 +109,7 @@ rmap_unlock:
 
 void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
   int n;
-  char* del;
+  void* del;
   smatrix_rmap_t new;
   smatrix_row_t* row;
 
@@ -139,7 +152,7 @@ void smatrix_rmap_sync(smatrix_t* self) {
 
   if (self->rmap_size != self->rmap.size) {
     self->rmap_size = self->rmap.size;
-    self->rmap_fpos = smatrix_falloc(self, self->rmap_size);
+    self->rmap_fpos = smatrix_falloc(self, self->rmap_size * 16);
 
     printf("WRITE NEW RMAP TO fpos @%li\n", self->rmap_fpos);
     // FIXPAUL: write new rmap size + rmap pos in file header
