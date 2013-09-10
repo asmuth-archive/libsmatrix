@@ -70,6 +70,24 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   return old;
 }
 
+smatrix_row_t* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
+  smatrix_row_t* row = smatrix_rmap_lookup(&self->rmap, key, 0);
+
+  if (row == NULL) {
+    row = malloc(sizeof(smatrix_row_t)); // FIXPAUL never freed :(
+    row->flags = 0;
+    row->index = key;
+    row->fpos = 666;
+
+    if (smatrix_rmap_lookup(&self->rmap, key, row) != row) {
+      free(row);
+      return smatrix_rmap_lookup(&self->rmap, key, row);
+    }
+  }
+
+  return row;
+}
+
 smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, smatrix_row_t* insert) {
   long int n, pos;
   smatrix_row_t* row;
@@ -179,7 +197,7 @@ void smatrix_rmap_sync(smatrix_t* self) {
     // FIXPAUL what is byte ordering?
     memset(&slot_buf, 0, 16);
     memcpy(&slot_buf[4], &self->rmap.data[n].key, 4);
-    memcpy(&slot_buf[8], &self->rmap.data[n].ptr, 8); // FIXPAUL copy foffset
+    memcpy(&slot_buf[8], &self->rmap.data[n].ptr->fpos, 8);
 
     printf("PERSIST %i->%p @ %li\n", self->rmap.data[n].key, self->rmap.data[n].ptr, self->rmap_fpos + (n * 16));
     pwrite(self->fd, &slot_buf, 16, self->rmap_fpos + (n * 16));
@@ -212,10 +230,12 @@ void smatrix_rmap_load(smatrix_t* self) {
     uint32_t fpos = *((uint64_t *) (buf + n * 16 + 8));
 
     if (fpos) {
-      printf("LOAD %i, %li\n", key, fpos);
       self->rmap.used++;
       self->rmap.data[n].key = key;
-      self->rmap.data[n].ptr = fpos;
+      self->rmap.data[n].ptr = malloc(sizeof(smatrix_row_t));
+      self->rmap.data[n].ptr->flags = 0;
+      self->rmap.data[n].ptr->index = key;
+      self->rmap.data[n].ptr->fpos = fpos;
     }
   }
 

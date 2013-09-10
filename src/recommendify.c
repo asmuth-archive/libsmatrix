@@ -32,7 +32,7 @@ void quit() {
 }
 
 void test_rmap(uint32_t key, int create) {
-  smatrix_row_t* row = smatrix_rmap_lookup(&db->rmap, key, key);
+  smatrix_row_t* row = smatrix_rmap_get(db, key);
 
   if (row == NULL) {
     printf("%i: not found\n", key);
@@ -45,7 +45,7 @@ void* test_rmap_fnord(void * xxx) {
   int n = 0;
 
   for (;; n++) {
-    smatrix_rmap_lookup(&db->rmap, n, n);
+    smatrix_rmap_get(db, n);
   }
 }
 
