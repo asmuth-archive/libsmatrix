@@ -46,6 +46,8 @@ smatrix_t* smatrix_open(const char* fname) {
 
   self->fd = fileno(self->file);
 
+  smatrix_rmap_load(self);
+
   //pthread_rwlock_init(&self->lock, NULL);
 
   return self;
@@ -156,7 +158,9 @@ void smatrix_rmap_sync(smatrix_t* self) {
     self->rmap_fpos = smatrix_falloc(self, self->rmap_size * 16);
 
     printf("WRITE NEW RMAP TO fpos @%li\n", self->rmap_fpos);
+    smatrix_meta_sync(self);
     // FIXPAUL: write new rmap size + rmap pos in file header
+
     all_dirty = 1;
   }
 
@@ -177,8 +181,15 @@ void smatrix_rmap_sync(smatrix_t* self) {
   }
 
   pthread_rwlock_unlock(&self->rmap.lock);
-
   pthread_mutex_unlock(&self->wlock);
+}
+
+void smatrix_rmap_load(smatrix_t* self) {
+  printf("LOAD RMAP %i @ %i\n", self->rmap_size, self->rmap_fpos);
+}
+
+void smatrix_meta_sync(smatrix_t* self) {
+  printf("FIXPAUL: sync meta data \n");
 }
 
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {
