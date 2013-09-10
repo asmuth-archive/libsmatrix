@@ -28,6 +28,7 @@ struct smatrix_vec_s {
 };
 
 typedef struct {
+  uint32_t        flags;
   uint32_t        index;
   uint32_t        length;
   uint64_t        foffset;
@@ -53,7 +54,7 @@ smatrix_t* smatrix_open(const char* fname);
 void smatrix_close(smatrix_t* self);
 
 smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, int create);
-
+void smatrix_rmap_resize(smatrix_rmap_t* rmap);
 
 
 uint32_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y);
