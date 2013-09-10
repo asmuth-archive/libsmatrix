@@ -28,17 +28,20 @@ struct smatrix_vec_s {
 };
 
 typedef struct {
-  uint32_t        flags;
-  uint32_t        index;
-  uint32_t        length;
-  uint64_t        foffset;
-  smatrix_vec_t*  head;
+  uint32_t         flags;
+  uint32_t         index;
+  smatrix_vec_t*   head;
 } smatrix_row_t;
 
 typedef struct {
-  smatrix_row_t*   data;
-  long int         size;
-  long int         used;
+  uint32_t         key;
+  smatrix_row_t*   ptr;
+} smatrix_rmap_slot_t;
+
+typedef struct {
+  smatrix_rmap_slot_t* data;
+  long int             size;
+  long int             used;
 } smatrix_rmap_t;
 
 typedef struct {
@@ -53,7 +56,7 @@ typedef struct {
 smatrix_t* smatrix_open(const char* fname);
 void smatrix_close(smatrix_t* self);
 
-smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, int create);
+smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, smatrix_row_t* insert);
 void smatrix_rmap_resize(smatrix_rmap_t* rmap);
 
 

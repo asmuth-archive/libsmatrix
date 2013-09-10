@@ -42,31 +42,31 @@ smatrix_t* smatrix_open(const char* fname) {
   return self;
 }
 
-smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, int create) {
+smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, smatrix_row_t* insert) {
   long int n, pos = key % rmap->size;
 
   for (n = 0; n < rmap->size; n++) {
-    if (!rmap->data[pos].flags)
+    if (!rmap->data[pos].ptr)
       break;
 
-    if (rmap->data[pos].index == key)
-      return &rmap->data[pos];
+    if (rmap->data[pos].key == key)
+      return rmap->data[pos].ptr;
 
     pos = (pos + 1) % rmap->size;
   }
 
-  if (!create)
+  if (insert == NULL)
     return NULL;
 
   if (rmap->used > rmap->size / 2) {
     smatrix_rmap_resize(rmap);
-    return smatrix_rmap_lookup(rmap, key, create);
+    return smatrix_rmap_lookup(rmap, key, insert);
   }
 
   rmap->used++;
-  rmap->data[pos].index = key;
-  rmap->data[pos].flags = 1;
-  return &rmap->data[pos];
+  rmap->data[pos].key = key;
+  rmap->data[pos].ptr = insert;
+  return rmap->data[pos].ptr;
 }
 
 void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
@@ -86,21 +86,10 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
   }
 
   for (n = 0; n < rmap->size; n++) {
-    if (!rmap->data[n].flags)
+    if (!rmap->data[n].ptr)
       continue;
 
-    row = smatrix_rmap_lookup(&new, rmap->data[n].index, 1);
-
-    if (row == NULL) {
-      printf("RMAP RESIZE FAILED (COPY)!!!\n"); // FIXPAUL
-      abort();
-    }
-
-    row->index   = rmap->data[n].index;
-    row->head    = rmap->data[n].head;
-    row->length  = rmap->data[n].length;
-    row->foffset = rmap->data[n].foffset;
-    row->flags   = rmap->data[n].flags;
+    smatrix_rmap_lookup(&new, rmap->data[n].key, rmap->data[n].ptr);
   }
 
   rmap->data = new.data;
