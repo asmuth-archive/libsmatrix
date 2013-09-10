@@ -92,6 +92,7 @@ rmap_unlock:
 
 void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
   int n;
+  char* del;
   smatrix_rmap_t new;
   smatrix_row_t* row;
 
@@ -116,10 +117,13 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
   }
 
   pthread_rwlock_destroy(&new.lock);
+  del = rmap->data;
 
   rmap->data = new.data;
   rmap->size = new.size;
   rmap->used = new.used;
+
+  free(del);
 }
 
 void smatrix_rmap_sync(smatrix_t* self) {
