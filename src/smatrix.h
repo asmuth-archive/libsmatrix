@@ -51,7 +51,6 @@ typedef struct {
 } smatrix_rmap_t;
 
 typedef struct {
-  FILE*            file;
   int              fd;
   uint64_t         fpos;
   smatrix_rmap_t   rmap;

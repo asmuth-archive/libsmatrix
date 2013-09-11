@@ -62,6 +62,9 @@ int main(int argc, char **argv) {
   //print_version();
   db = smatrix_open("/var/tmp/reco.db");
 
+  if (db == NULL)
+    abort();
+
   test_rmap(123, 0);
   test_rmap(123, 1);
   test_rmap(133, 1);

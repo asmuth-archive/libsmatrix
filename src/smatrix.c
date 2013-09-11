@@ -8,6 +8,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "smatrix.h"
 
@@ -22,18 +25,16 @@ smatrix_t* smatrix_open(const char* fname) {
 
 // FILE INIT
 
-  self->file = fopen(fname, "a+b");
+  self->fd = open(fname, O_RDWR | O_CREAT, 00600);
 
-  if (self->file == NULL) {
+  if (self->fd == -1) {
     perror("cannot open file");
     free(self->rmap.data);
     free(self);
     return NULL;
   }
 
-  self->fd = fileno(self->file);
-  fseek(self->file, 0, SEEK_END);
-  self->fpos = ftell(self->file);
+  self->fpos = lseek(self->fd, 0, SEEK_END);
 
   if (self->fpos == 0) {
     printf("NEW FILE!\n");
