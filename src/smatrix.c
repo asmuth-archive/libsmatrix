@@ -207,6 +207,7 @@ void smatrix_rmap_sync(smatrix_t* self) {
     printf("PERSIST %i->%p @ %li\n", self->rmap.data[n].key, self->rmap.data[n].ptr, self->rmap_fpos + (n * 16));
     pwrite(self->fd, &slot_buf, 16, self->rmap_fpos + (n * 16));
 
+    // FIXPAUL flag unset needs to be a compare and swap loop
     self->rmap.data[n].ptr->flags &= ~SMATRIX_ROW_FLAG_DIRTY;
   }
 
