@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
   smatrix_rmap_sync(db);
 
   //sleep(5);
-  test_rmap_fnord(NULL);
+  //test_rmap_fnord(NULL);
   exit(0);
 
   void* fnord;

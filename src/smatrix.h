@@ -19,6 +19,8 @@
 
 #define SMATRIX_META_SIZE 512
 
+#define SMATRIX_ROW_FLAG_DIRTY 1
+
 typedef struct smatrix_vec_s smatrix_vec_t;
 
 struct smatrix_vec_s {

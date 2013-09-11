@@ -76,7 +76,7 @@ smatrix_row_t* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
 
   if (row == NULL) {
     row = malloc(sizeof(smatrix_row_t)); // FIXPAUL never freed :(
-    row->flags = 0;
+    row->flags = SMATRIX_ROW_FLAG_DIRTY;
     row->index = key;
     row->fpos = smatrix_falloc(self, 666);
 
@@ -176,7 +176,7 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
 }
 
 void smatrix_rmap_sync(smatrix_t* self) {
-  int n, all_dirty = 1;
+  int n, all_dirty = 0;
   char slot_buf[16];
 
   pthread_rwlock_rdlock(&self->rmap.lock);
@@ -197,7 +197,7 @@ void smatrix_rmap_sync(smatrix_t* self) {
     if (!self->rmap.data[n].ptr)
       continue;
 
-    if (!all_dirty)
+    if ((self->rmap.data[n].ptr->flags & SMATRIX_ROW_FLAG_DIRTY) == 0 && !all_dirty)
       continue;
 
     // FIXPAUL what is byte ordering?
@@ -207,6 +207,8 @@ void smatrix_rmap_sync(smatrix_t* self) {
 
     printf("PERSIST %i->%p @ %li\n", self->rmap.data[n].key, self->rmap.data[n].ptr, self->rmap_fpos + (n * 16));
     pwrite(self->fd, &slot_buf, 16, self->rmap_fpos + (n * 16));
+
+    self->rmap.data[n].ptr->flags &= ~SMATRIX_ROW_FLAG_DIRTY;
   }
 
   pthread_rwlock_unlock(&self->rmap.lock);
