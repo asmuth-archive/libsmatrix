@@ -188,7 +188,6 @@ void smatrix_rmap_sync(smatrix_t* self) {
 
     printf("WRITE NEW RMAP TO fpos @%li\n", self->rmap_fpos);
     smatrix_meta_sync(self);
-    // FIXPAUL: write new rmap size + rmap pos in file header
 
     all_dirty = 1;
   }
@@ -248,8 +247,6 @@ void smatrix_rmap_load(smatrix_t* self) {
   }
 
   free(buf);
-
-  printf("LOAD RMAP %i @ %i\n", self->rmap_size, self->rmap_fpos);
 }
 
 void smatrix_meta_sync(smatrix_t* self) {
@@ -262,8 +259,6 @@ void smatrix_meta_sync(smatrix_t* self) {
   printf("WRITE FPOS %li\n", self->rmap_fpos);
   memcpy(&buf[8],  &self->rmap_fpos, 8);
   memcpy(&buf[16], &self->rmap_size, 8);
-
-  printf("FIXPAUL: sync meta data \n");
 
   pwrite(self->fd, &buf, SMATRIX_META_SIZE, 0);
 }
