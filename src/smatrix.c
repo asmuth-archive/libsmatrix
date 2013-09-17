@@ -73,8 +73,16 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 }
 
 smatrix_row_t* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
-  smatrix_row_t* row = smatrix_rmap_lookup(&self->rmap, key, 0);
 
+
+  pthread_rwlock_rdlock(&self->rmap.lock);
+
+  smatrix_row_t* row = smatrix_rmap_lookup(&self->rmap, key);
+  printf("found: %p\n", row);
+
+  pthread_rwlock_unlock(&self->rmap.lock);
+
+/*
   if (row == NULL) {
     row = malloc(sizeof(smatrix_row_t)); // FIXPAUL never freed :(
     row->flags = SMATRIX_ROW_FLAG_DIRTY;
@@ -86,31 +94,29 @@ smatrix_row_t* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
       return smatrix_rmap_lookup(&self->rmap, key, row);
     }
   }
-
+*/
   return row;
 }
 
-smatrix_row_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key, smatrix_row_t* insert) {
+smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key) {
   long int n, pos;
   smatrix_row_t* row;
 
-  pthread_rwlock_rdlock(&rmap->lock);
   pos = key % rmap->size;
 
   for (n = 0; n < rmap->size; n++) {
     if (!rmap->data[pos].ptr)
       break;
 
-    if (rmap->data[pos].key == key) {
-      row = rmap->data[pos].ptr;
-      goto rmap_unlock;
-    }
+    if (rmap->data[pos].key == key)
+      break;
 
     pos = (pos + 1) % rmap->size;
   }
 
-  pthread_rwlock_unlock(&rmap->lock);
+  return &rmap->data[pos];
 
+/*
   if (insert == NULL)
     return NULL;
 
@@ -137,6 +143,7 @@ rmap_unlock:
 
   pthread_rwlock_unlock(&rmap->lock);
   return row;
+*/
 }
 
 void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
@@ -163,7 +170,8 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
     if (!rmap->data[n].ptr)
       continue;
 
-    smatrix_rmap_lookup(&new, rmap->data[n].key, rmap->data[n].ptr);
+    // FIXPAUL reinsert
+    //smatrix_rmap_lookup(&new, rmap->data[n].key, rmap->data[n].ptr);
   }
 
   pthread_rwlock_destroy(&new.lock);

@@ -72,9 +72,9 @@ int main(int argc, char **argv) {
   test_rmap(123, 1);
   test_rmap(456, 0);
   test_rmap(143, 1);
-  smatrix_rmap_sync(db);
+  //smatrix_rmap_sync(db);
   test_rmap(153, 1);
-  smatrix_rmap_sync(db);
+  //smatrix_rmap_sync(db);
   test_rmap(163, 1);
   test_rmap(173, 1);
   test_rmap(183, 1);
@@ -83,7 +83,7 @@ int main(int argc, char **argv) {
   test_rmap(123, 0);
   test_rmap(133, 0);
   printf("USED %li\n", db->rmap.used);
-  smatrix_rmap_sync(db);
+  //smatrix_rmap_sync(db);
 
   //sleep(5);
   //test_rmap_fnord(NULL);
