@@ -72,6 +72,8 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   return old;
 }
 
+
+// you need to hold a read lock on rmap to call this function safely
 smatrix_row_t* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
   smatrix_row_t* row;
   smatrix_rmap_slot_t* slot;
@@ -89,6 +91,36 @@ smatrix_row_t* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
 
   printf("found: %p\n", row);
   return row;
+}
+
+
+// you need to hold a write lock on rmap to call this function safely
+smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, uint32_t key) {
+  smatrix_rmap_t* rmap = &self->rmap;
+  smatrix_rmap_slot_t* slot;
+
+  //pthread_rwlock_wrlock(rmap->lock);
+
+  if (rmap->used > rmap->size / 2) {
+    smatrix_rmap_resize(rmap);
+  }
+
+  slot = smatrix_rmap_lookup(&self->rmap, key);
+
+  if (slot == NULL) {
+    abort();
+  } else if (slot->key == key) {
+    return;
+  }
+
+  printf("INSERTING::: %i\n", key);
+
+  rmap->used++;
+  rmap->data[pos].key = key;
+  rmap->data[pos].ptr = 1; // FIXPAUL this is uuuuuugly
+
+  return &rmap->data[pos];
+  //pthread_rwlock_unlock(rmap->lock);
 }
 
 /*
@@ -127,30 +159,7 @@ smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key) {
   if (insert == NULL)
     return NULL;
 
-  //printf("INSERTING::: %i\n", key);
-  pthread_rwlock_wrlock(&rmap->lock);
-
-  if (rmap->data[pos].ptr) {
-    pthread_rwlock_unlock(&rmap->lock);
-    return smatrix_rmap_lookup(rmap, key, insert);
-  }
-
-  if (rmap->used > rmap->size / 2) {
-    smatrix_rmap_resize(rmap);
-    pthread_rwlock_unlock(&rmap->lock);
-    return smatrix_rmap_lookup(rmap, key, insert);
-  }
-
-  rmap->used++;
-  rmap->data[pos].key = key;
-  rmap->data[pos].ptr = insert;
-  row = rmap->data[pos].ptr;
-
-rmap_unlock:
-
-  pthread_rwlock_unlock(&rmap->lock);
-  return row;
-*/
+  //printf("I*/
 }
 
 void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
