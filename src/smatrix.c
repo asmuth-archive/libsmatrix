@@ -73,14 +73,23 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 }
 
 smatrix_row_t* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
-
+  smatrix_row_t* row;
+  smatrix_rmap_slot_t* slot;
 
   pthread_rwlock_rdlock(&self->rmap.lock);
+  slot = smatrix_rmap_lookup(&self->rmap, key);
 
-  smatrix_row_t* row = smatrix_rmap_lookup(&self->rmap, key);
-  printf("found: %p\n", row);
+  if (slot && slot->key == key) {
+    row = slot->ptr;
+  } else {
+    row =  NULL;
+  }
 
   pthread_rwlock_unlock(&self->rmap.lock);
+
+  printf("found: %p\n", row);
+  return row;
+}
 
 /*
   if (row == NULL) {
@@ -95,8 +104,6 @@ smatrix_row_t* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
     }
   }
 */
-  return row;
-}
 
 smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key) {
   long int n, pos;
