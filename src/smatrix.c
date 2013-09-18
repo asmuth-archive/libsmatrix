@@ -21,7 +21,6 @@ smatrix_t* smatrix_open(const char* fname) {
     return NULL;
 
   pthread_mutex_init(&self->wlock, NULL);
-  pthread_rwlock_init(&self->rmap.lock, NULL);
 
 // FILE INIT
 
@@ -38,18 +37,15 @@ smatrix_t* smatrix_open(const char* fname) {
 
   if (self->fpos == 0) {
     printf("NEW FILE!\n");
-    smatrix_falloc(self, SMATRIX_META_SIZE);
 
-    self->rmap.size = SMATRIX_RMAP_INITIAL_SIZE;
-    self->rmap.used = 0;
-    self->rmap_size = 0;
-    self->rmap_fpos = 0;
-    self->rmap.data = malloc(sizeof(smatrix_rmap_slot_t) * self->rmap.size);
-    memset(self->rmap.data, 0, sizeof(smatrix_rmap_slot_t) * self->rmap.size);
+    smatrix_falloc(self, SMATRIX_META_SIZE);
+    smatrix_rmap_init(self, &self->rmap, SMATRIX_RMAP_INITIAL_SIZE);
+    self->rmap_fpos = self->rmap.fpos;
+    smatrix_meta_sync(self);
   } else {
     printf("LOAD FILE!\n");
     smatrix_meta_load(self);
-    smatrix_rmap_load(self);
+    //smatrix_rmap_load(self);
   }
 
   return self;
@@ -70,6 +66,22 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   return old;
 }
 
+void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
+  size_t data_size = sizeof(smatrix_rmap_slot_t) * size;
+
+  rmap->size = size;
+  rmap->used = 0;
+  rmap->fpos = smatrix_falloc(self, data_size); // FIXPAUL: header size missing
+  rmap->data = malloc(data_size);
+
+  if (rmap->data == NULL) {
+    printf("MALLOC DATA FAILED IN RMAP_INIT\n"); //FIXPAUL
+    abort();
+  }
+
+  memset(rmap->data, 0, data_size);
+  pthread_rwlock_init(&rmap->lock, NULL);
+}
 
 // you need to hold a read lock on rmap to call this function safely
 void* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
