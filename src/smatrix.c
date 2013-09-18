@@ -203,11 +203,17 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
 }
 
 // the caller of this must hold a read lock on rmap
+// FIXPAUL: this is doing waaaay to many pwrite syscalls for a large, dirty rmap...
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
   long int pos = 0, fpos;
   char slot_buf[16] = {0};
 
   fpos = rmap->fpos;
+
+  // FIXPAUL: what is byte ordering?
+  memset(&slot_buf[0], 0x23,          8);
+  memcpy(&slot_buf[8], &rmap->size,   8);
+  pwrite(self->fd, &slot_buf, 16, fpos); // FIXPAUL write needs to be checked
 
   for (pos = 0; pos < rmap->size; pos++) {
     fpos += 16;
@@ -219,11 +225,12 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
       continue;
 
     // FIXPAUL what is byte ordering?
+    memset(&slot_buf[0], 0,                      4);
     memcpy(&slot_buf[4], &rmap->data[pos].key,   4);
     memcpy(&slot_buf[8], &rmap->data[pos].value, 8);
 
     printf("PERSIST %i->%p @ %li\n", rmap->data[pos].key, rmap->data[pos].ptr, fpos);
-    pwrite(self->fd, &slot_buf, 16, fpos);
+    pwrite(self->fd, &slot_buf, 16, fpos); // FIXPAUL write needs to be checked
 
     // FIXPAUL flag unset needs to be a compare and swap loop as we only hold a read lock
     rmap->data[pos].flags &= ~SMATRIX_ROW_FLAG_DIRTY;
