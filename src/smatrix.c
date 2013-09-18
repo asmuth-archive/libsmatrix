@@ -46,8 +46,6 @@ smatrix_t* smatrix_open(const char* fname) {
     self->rmap_fpos = 0;
     self->rmap.data = malloc(sizeof(smatrix_rmap_slot_t) * self->rmap.size);
     memset(self->rmap.data, 0, sizeof(smatrix_rmap_slot_t) * self->rmap.size);
-
-    smatrix_rmap_sync(self);
   } else {
     printf("LOAD FILE!\n");
     smatrix_meta_load(self);
@@ -157,7 +155,6 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
   void* del;
   long int pos;
 
-  printf("resize rmap size %li (%li used)\n", rmap->size, rmap->used);
   printf("RESIZE!!!\n");
 
   new.used = 0;
@@ -174,7 +171,6 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
     if (!rmap->data[pos].ptr)
       continue;
 
-    printf("FIXPAUL: reinsert\n");
     slot = smatrix_rmap_insert(&new, rmap->data[pos].key);
 
     if (slot == NULL) {
@@ -194,44 +190,32 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
   free(del);
 }
 
-void smatrix_rmap_sync(smatrix_t* self) {
-  int n, all_dirty = 0;
-  char slot_buf[16];
+// the caller of this must hold a read lock on rmap
+void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
+  long int pos = 0, fpos;
+  char slot_buf[16] = {0};
 
-  pthread_rwlock_rdlock(&self->rmap.lock);
-  pthread_mutex_lock(&self->wlock);
+  fpos = rmap->fpos;
 
-  if (self->rmap_size != self->rmap.size) {
-    self->rmap_size = self->rmap.size;
-    self->rmap_fpos = smatrix_falloc(self, self->rmap_size * 16);
+  for (pos = 0; pos < rmap->size; pos++) {
+    fpos += 16;
 
-    printf("WRITE NEW RMAP TO fpos @%li\n", self->rmap_fpos);
-    smatrix_meta_sync(self);
-
-    all_dirty = 1;
-  }
-
-  for (n = 0; n < self->rmap.size; n++) {
-    if (!self->rmap.data[n].ptr)
+    if (!rmap->data[pos].ptr)
       continue;
 
-    if ((self->rmap.data[n].ptr->flags & SMATRIX_ROW_FLAG_DIRTY) == 0 && !all_dirty)
+    if (0 && rmap->data[pos].flags & SMATRIX_ROW_FLAG_DIRTY) // FIXPAUL
       continue;
 
     // FIXPAUL what is byte ordering?
-    memset(&slot_buf, 0, 16);
-    memcpy(&slot_buf[4], &self->rmap.data[n].key, 4);
-    memcpy(&slot_buf[8], &self->rmap.data[n].ptr->fpos, 8);
+    memcpy(&slot_buf[4], &rmap->data[pos].key,   4);
+    memcpy(&slot_buf[8], &rmap->data[pos].value, 8);
 
-    printf("PERSIST %i->%p @ %li\n", self->rmap.data[n].key, self->rmap.data[n].ptr, self->rmap_fpos + (n * 16));
-    pwrite(self->fd, &slot_buf, 16, self->rmap_fpos + (n * 16));
+    printf("PERSIST %i->%p @ %li\n", rmap->data[pos].key, rmap->data[pos].ptr, fpos);
+    pwrite(self->fd, &slot_buf, 16, fpos);
 
-    // FIXPAUL flag unset needs to be a compare and swap loop
-    self->rmap.data[n].ptr->flags &= ~SMATRIX_ROW_FLAG_DIRTY;
+    // FIXPAUL flag unset needs to be a compare and swap loop as we only hold a read lock
+    rmap->data[pos].flags &= ~SMATRIX_ROW_FLAG_DIRTY;
   }
-
-  pthread_rwlock_unlock(&self->rmap.lock);
-  pthread_mutex_unlock(&self->wlock);
 }
 
 void smatrix_rmap_load(smatrix_t* self) {
@@ -254,15 +238,13 @@ void smatrix_rmap_load(smatrix_t* self) {
 
   for (n = 0; n < self->rmap.size; n++) {
     uint32_t key  = *((uint32_t *) (buf + n * 16 + 4));
-    uint32_t fpos = *((uint64_t *) (buf + n * 16 + 8));
+    uint32_t val  = *((uint64_t *) (buf + n * 16 + 8));
 
-    if (fpos) {
+    if (val) {
       self->rmap.used++;
       self->rmap.data[n].key = key;
-      self->rmap.data[n].ptr = malloc(sizeof(smatrix_row_t));
-      self->rmap.data[n].ptr->flags = 0;
-      self->rmap.data[n].ptr->index = key;
-      self->rmap.data[n].ptr->fpos = fpos;
+      self->rmap.data[n].flags = 0;
+      self->rmap.data[n].value = val;
     }
   }
 
