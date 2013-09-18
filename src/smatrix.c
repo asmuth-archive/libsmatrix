@@ -71,12 +71,16 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
 
   rmap->size = size;
   rmap->used = 0;
-  rmap->fpos = smatrix_falloc(self, data_size); // FIXPAUL: header size missing
   rmap->data = malloc(data_size);
 
   if (rmap->data == NULL) {
     printf("MALLOC DATA FAILED IN RMAP_INIT\n"); //FIXPAUL
     abort();
+  }
+
+  if (!rmap->fpos) {
+    printf("FALLLLLOC %li\n", size * 16 + 16);
+    rmap->fpos = smatrix_falloc(self, size * 16 + 16);
   }
 
   memset(rmap->data, 0, data_size);
@@ -242,6 +246,8 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   char meta_buf[16] = {0};
   size_t read, rmap_bytes;
 
+  uint64_t pos;
+
   printf("READ AT %li\n", rmap->fpos);
   read = pread(self->fd, &meta_buf, 16, rmap->fpos);
 
@@ -250,51 +256,47 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
     abort();
   }
 
-  //int n; for(n=0; n < 16; n++) printf("#### c: %x\n", meta_buf[n]);
-
   if (memcmp(&meta_buf, &SMATRIX_RMAP_MAGIC, SMATRIX_RMAP_MAGIC_SIZE)) {
     printf("FILE IS CORRUPT\n"); // FIXPAUL
     abort();
   }
 
-  // what is big endian?
+  // FIXPAUL what is big endian?
   memcpy(&rmap->size, &meta_buf[8], 8);
 
   printf("RMAP SIZE is %i\n", rmap->size);
 
-  abort();
+  smatrix_rmap_init(self, rmap, rmap->size);
 
-  /*
-  int n = 0;
-
-  rmap_bytes = self->rmap_size * 16;
-  self->rmap.size = self->rmap_size;
-  self->rmap.used = 0;
-  self->rmap.data = malloc(sizeof(smatrix_rmap_slot_t) * self->rmap.size);
-  memset(self->rmap.data, 0, sizeof(smatrix_rmap_slot_t) * self->rmap.size);
-
+  rmap_bytes = rmap->size * 16;
   char* buf = malloc(rmap_bytes);
-  read = pread(self->fd, buf, rmap_bytes, self->rmap_fpos);
 
-  if (read != self->rmap.size * 16) {
+  if (buf == NULL) {
+    printf("MALLOC FAILED!\n");
+    abort();
+  }
+
+  read = pread(self->fd, buf, rmap_bytes, rmap->fpos + 16);
+
+  if (read != rmap_bytes) {
     printf("CANNOT LOAD RMATRIX\n"); // FIXPAUL
     abort();
   }
 
-  for (n = 0; n < self->rmap.size; n++) {
-    uint32_t key  = *((uint32_t *) (buf + n * 16 + 4));
-    uint32_t val  = *((uint64_t *) (buf + n * 16 + 8));
+  // byte ordering FIXPAUL
+  for (pos = 0; pos < rmap->size; pos++) {
+    memcpy(&rmap->data[pos].value, buf + pos * 16 + 8, 8);
 
-    if (val) {
+    //if (rmap->data[pos].value) {
+      memcpy(&rmap->data[pos].key, buf + pos * 16 + 4, 4);
       self->rmap.used++;
-      self->rmap.data[n].key = key;
-      self->rmap.data[n].flags = 0;
-      self->rmap.data[n].value = val;
-    }
+      self->rmap.data[pos].flags = 0;
+      self->rmap.data[pos].ptr = 1; // FIXPAUL set the used flag instead
+    //}
+    printf("LOAD %i\n", rmap->data[pos].key);
   }
 
   free(buf);
-  */
 }
 
 void smatrix_meta_sync(smatrix_t* self) {
@@ -413,7 +415,7 @@ smatrix_vec_t* smatrix_insert(smatrix_vec_t** row, uint32_t y) {
   next = *cur;
 
   *cur = new = malloc(sizeof(smatrix_vec_t));
-  new->value = 0;
+  new->value = 666; // FIXPAUL
   new->index = y;
   new->flags = 0;
   new->next  = next;
