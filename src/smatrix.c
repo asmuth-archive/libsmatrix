@@ -177,12 +177,13 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   new.used = 0;
   new.size = rmap->size * 2;
   new.data = malloc(sizeof(smatrix_rmap_slot_t) * new.size);
-  memset(new.data, 0, sizeof(smatrix_rmap_slot_t) * new.size);
 
   if (new.data == NULL) {
     printf("RMAP RESIZE FAILED (MALLOC)!!!\n"); // FIXPAUL
     abort();
   }
+
+  memset(new.data, 0, sizeof(smatrix_rmap_slot_t) * new.size);
 
   for (pos = 0; pos < rmap->size; pos++) {
     if (!rmap->data[pos].ptr)
@@ -209,6 +210,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 
 // the caller of this must hold a read lock on rmap
 // FIXPAUL: this is doing waaaay to many pwrite syscalls for a large, dirty rmap...
+// FIXPAUL: also, the meta info needs to be written only on the first write
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
   long int pos = 0, fpos;
   char slot_buf[16] = {0};
