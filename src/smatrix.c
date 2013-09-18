@@ -43,8 +43,9 @@ smatrix_t* smatrix_open(const char* fname) {
   } else {
     printf("LOAD FILE!\n");
     smatrix_meta_load(self);
+    self->rmap.fpos = self->rmap_fpos;
     printf("HEAD RMAP IS AT POS %li\n", self->rmap_fpos);
-    smatrix_rmap_load(self, &self->rmap, self->rmap_fpos);
+    smatrix_rmap_load(self, &self->rmap);
   }
 
   return self;
@@ -237,11 +238,34 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
   }
 }
 
-void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t fpos) {
-  printf("FIXPAUL: load rmap\n");
+void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
+  char meta_buf[16] = {0};
+  size_t read, rmap_bytes;
+
+  printf("READ AT %li\n", rmap->fpos);
+  read = pread(self->fd, &meta_buf, 16, rmap->fpos);
+
+  if (read != 16) {
+    printf("CANNOT LOAD RMATRIX\n"); // FIXPAUL
+    abort();
+  }
+
+  //int n; for(n=0; n < 16; n++) printf("#### c: %x\n", meta_buf[n]);
+
+  if (memcmp(&meta_buf, &SMATRIX_RMAP_MAGIC, SMATRIX_RMAP_MAGIC_SIZE)) {
+    printf("FILE IS CORRUPT\n"); // FIXPAUL
+    abort();
+  }
+
+  // what is big endian?
+  memcpy(&rmap->size, &meta_buf[8], 8);
+
+  printf("RMAP SIZE is %i\n", rmap->size);
+
+  abort();
+
   /*
   int n = 0;
-  size_t read, rmap_bytes;
 
   rmap_bytes = self->rmap_size * 16;
   self->rmap.size = self->rmap_size;

@@ -21,6 +21,9 @@
 
 #define SMATRIX_ROW_FLAG_DIRTY 1
 
+#define SMATRIX_RMAP_MAGIC "\x23\x23\x23\x23\x23\x23\x23\x23"
+#define SMATRIX_RMAP_MAGIC_SIZE 8
+
 typedef struct smatrix_vec_s smatrix_vec_t;
 
 struct smatrix_vec_s {
@@ -76,7 +79,7 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size);
 smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key);
 smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_rmap_t* rmap, uint32_t key);
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap);
-void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t fpos);
+void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_resize(smatrix_rmap_t* rmap);
 
 void smatrix_meta_sync(smatrix_t* self);
