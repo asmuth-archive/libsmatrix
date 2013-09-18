@@ -74,23 +74,22 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 
 
 // you need to hold a read lock on rmap to call this function safely
-smatrix_row_t* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
-  smatrix_row_t* row;
+void* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
+  void *ret;
   smatrix_rmap_slot_t* slot;
 
   pthread_rwlock_rdlock(&self->rmap.lock);
   slot = smatrix_rmap_lookup(&self->rmap, key);
 
   if (slot && slot->key == key) {
-    row = slot->ptr;
+    ret = slot->ptr;
   } else {
-    row =  NULL;
+    ret = NULL;
   }
 
   pthread_rwlock_unlock(&self->rmap.lock);
 
-  printf("found: %p\n", row);
-  return row;
+  return ret;
 }
 
 
@@ -98,8 +97,6 @@ smatrix_row_t* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
 smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, uint32_t key) {
   smatrix_rmap_t* rmap = &self->rmap;
   smatrix_rmap_slot_t* slot;
-
-  //pthread_rwlock_wrlock(rmap->lock);
 
   if (rmap->used > rmap->size / 2) {
     smatrix_rmap_resize(rmap);
@@ -116,11 +113,10 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, uint32_t key) {
   printf("INSERTING::: %i\n", key);
 
   rmap->used++;
-  rmap->data[pos].key = key;
-  rmap->data[pos].ptr = 1; // FIXPAUL this is uuuuuugly
+  slot->key = key;
+  slot->ptr = 1; // FIXPAUL this is uuuuuugly
 
-  return &rmap->data[pos];
-  //pthread_rwlock_unlock(rmap->lock);
+  return slot;
 }
 
 /*
@@ -137,9 +133,9 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, uint32_t key) {
   }
 */
 
+// you need to hold a read or write lock on rmap to call this function safely
 smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key) {
   long int n, pos;
-  smatrix_row_t* row;
 
   pos = key % rmap->size;
 
@@ -154,28 +150,20 @@ smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key) {
   }
 
   return &rmap->data[pos];
-
-/*
-  if (insert == NULL)
-    return NULL;
-
-  //printf("I*/
 }
 
 void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
   int n;
   void* del;
-  smatrix_rmap_t new;
-  smatrix_row_t* row;
 
-  pthread_rwlock_init(&new.lock, NULL);
+  smatrix_rmap_t new;
 
   printf("RESIZE!!!\n");
+
   new.used = 0;
   new.size = rmap->size * 2;
-  new.data = malloc(sizeof(smatrix_row_t) * new.size);
-
-  memset(new.data, 0, sizeof(smatrix_row_t) * new.size);
+  new.data = malloc(sizeof(smatrix_rmap_slot_t) * new.size);
+  memset(new.data, 0, sizeof(smatrix_rmap_slot_t) * new.size);
 
   if (new.data == NULL) {
     printf("RMAP RESIZE FAILED (MALLOC)!!!\n"); // FIXPAUL
@@ -186,11 +174,10 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
     if (!rmap->data[n].ptr)
       continue;
 
-    // FIXPAUL reinsert
+    printf("FIXPAUL: reinsert\n");
     //smatrix_rmap_lookup(&new, rmap->data[n].key, rmap->data[n].ptr);
   }
 
-  pthread_rwlock_destroy(&new.lock);
   del = rmap->data;
 
   rmap->data = new.data;
