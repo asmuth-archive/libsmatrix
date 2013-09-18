@@ -94,27 +94,26 @@ void* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
 
 
 // you need to hold a write lock on rmap to call this function safely
-smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, uint32_t key) {
-  smatrix_rmap_t* rmap = &self->rmap;
+smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_rmap_t* rmap, uint32_t key) {
   smatrix_rmap_slot_t* slot;
 
   if (rmap->used > rmap->size / 2) {
     smatrix_rmap_resize(rmap);
   }
 
-  slot = smatrix_rmap_lookup(&self->rmap, key);
+  slot = smatrix_rmap_lookup(rmap, key);
 
   if (slot == NULL) {
     abort();
-  } else if (slot->key == key) {
-    return;
   }
 
   printf("INSERTING::: %i\n", key);
 
-  rmap->used++;
-  slot->key = key;
-  slot->ptr = 1; // FIXPAUL this is uuuuuugly
+  if (slot->key != key) {
+    rmap->used++;
+    slot->key = key;
+    slot->ptr = 1; // FIXPAUL this is uuuuuugly
+  }
 
   return slot;
 }
@@ -153,11 +152,12 @@ smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key) {
 }
 
 void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
-  int n;
-  void* del;
-
+  smatrix_rmap_slot_t* slot;
   smatrix_rmap_t new;
+  void* del;
+  long int pos;
 
+  printf("resize rmap size %li (%li used)\n", rmap->size, rmap->used);
   printf("RESIZE!!!\n");
 
   new.used = 0;
@@ -170,12 +170,19 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
     abort();
   }
 
-  for (n = 0; n < rmap->size; n++) {
-    if (!rmap->data[n].ptr)
+  for (pos = 0; pos < rmap->size; pos++) {
+    if (!rmap->data[pos].ptr)
       continue;
 
     printf("FIXPAUL: reinsert\n");
-    //smatrix_rmap_lookup(&new, rmap->data[n].key, rmap->data[n].ptr);
+    slot = smatrix_rmap_insert(&new, rmap->data[pos].key);
+
+    if (slot == NULL) {
+      printf("RMAP RESIZE FAILED (INSERT)!!!\n"); // FIXPAUL
+      abort();
+    }
+
+    slot->ptr = rmap->data[pos].ptr;
   }
 
   del = rmap->data;

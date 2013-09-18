@@ -32,15 +32,17 @@ void quit() {
 }
 
 void test_rmap(uint32_t key, int create) {
-  smatrix_row_t* row = smatrix_rmap_get(db, key);
+  void* ptr = smatrix_rmap_get(db, key);
 
-  if (row == NULL) {
+  if (ptr == NULL) {
     printf("%i: not found\n", key);
+    smatrix_rmap_insert(&db->rmap, key);
   } else {
-    printf("%i: found (%i)\n", key, row);
+    printf("%i: found (%i)\n", key, ptr);
   }
 }
 
+/*
 void* test_rmap_fnord(void * xxx) {
   int n = 0;
 
@@ -54,6 +56,7 @@ void* test_rmap_fnord(void * xxx) {
       abort();
   }
 }
+*/
 
 int main(int argc, char **argv) {
   int fd, opt = 1;
@@ -77,6 +80,7 @@ int main(int argc, char **argv) {
   //smatrix_rmap_sync(db);
   test_rmap(163, 1);
   test_rmap(173, 1);
+  test_rmap(123, 0);
   test_rmap(183, 1);
   test_rmap(193, 1);
   test_rmap(203, 1);
@@ -88,7 +92,7 @@ int main(int argc, char **argv) {
   //sleep(5);
   //test_rmap_fnord(NULL);
   exit(0);
-
+/*
   void* fnord;
   pthread_t t[32];
   int n;
@@ -105,7 +109,7 @@ int main(int argc, char **argv) {
   signal(SIGQUIT, quit);
   signal(SIGINT, quit);
   signal(SIGPIPE, SIG_IGN);
-
+*/
 
 /*
   saddr.sin_family = AF_INET;
