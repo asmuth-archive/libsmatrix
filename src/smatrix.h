@@ -57,11 +57,7 @@ typedef struct {
   int              fd;
   uint64_t         fpos;
   smatrix_rmap_t   rmap;
-  uint64_t         rmap_size;
   uint64_t         rmap_fpos;
-  pthread_mutex_t  wlock;
-
-
 
   pthread_rwlock_t lock;
   smatrix_vec_t**  data;
@@ -80,12 +76,8 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size);
 smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key);
 smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_rmap_t* rmap, uint32_t key);
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap);
-
-
-
-
+void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t fpos);
 void smatrix_rmap_resize(smatrix_rmap_t* rmap);
-void smatrix_rmap_load(smatrix_t* self);
 
 void smatrix_meta_sync(smatrix_t* self);
 void smatrix_meta_load(smatrix_t* self);

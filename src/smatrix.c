@@ -20,8 +20,6 @@ smatrix_t* smatrix_open(const char* fname) {
   if (self == NULL)
     return NULL;
 
-  pthread_mutex_init(&self->wlock, NULL);
-
 // FILE INIT
 
   self->fd = open(fname, O_RDWR | O_CREAT, 00600);
@@ -45,7 +43,8 @@ smatrix_t* smatrix_open(const char* fname) {
   } else {
     printf("LOAD FILE!\n");
     smatrix_meta_load(self);
-    //smatrix_rmap_load(self);
+    printf("HEAD RMAP IS AT POS %li\n", self->rmap_fpos);
+    smatrix_rmap_load(self, &self->rmap, self->rmap_fpos);
   }
 
   return self;
@@ -168,6 +167,7 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
   long int pos;
 
   printf("RESIZE!!!\n");
+  // FIXPAUL: big problem, this doesnt re-falloc
 
   new.used = 0;
   new.size = rmap->size * 2;
@@ -230,7 +230,9 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
   }
 }
 
-void smatrix_rmap_load(smatrix_t* self) {
+void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t fpos) {
+  printf("FIXPAUL: load rmap\n");
+  /*
   int n = 0;
   size_t read, rmap_bytes;
 
@@ -261,6 +263,7 @@ void smatrix_rmap_load(smatrix_t* self) {
   }
 
   free(buf);
+  */
 }
 
 void smatrix_meta_sync(smatrix_t* self) {
@@ -272,7 +275,6 @@ void smatrix_meta_sync(smatrix_t* self) {
   // FIXPAUL what is byte ordering?
   printf("WRITE FPOS %li\n", self->rmap_fpos);
   memcpy(&buf[8],  &self->rmap_fpos, 8);
-  memcpy(&buf[16], &self->rmap_size, 8);
 
   pwrite(self->fd, &buf, SMATRIX_META_SIZE, 0);
 }
@@ -293,9 +295,8 @@ void smatrix_meta_load(smatrix_t* self) {
     abort();
   }
 
-  // because f**k other endianess, thats why...
+  // FIXPAUL because f**k other endianess, thats why...
   memcpy(&self->rmap_fpos, &buf[8],  8);
-  memcpy(&self->rmap_size, &buf[16], 8);
 }
 
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {
@@ -461,10 +462,6 @@ void smatrix_close(smatrix_t* self) {
 
   */
 
-  pthread_mutex_destroy(&self->wlock);
-  pthread_rwlock_destroy(&self->rmap.lock);
-
-  free(self->rmap.data);
   free(self);
 }
 
