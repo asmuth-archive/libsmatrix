@@ -88,12 +88,12 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
 }
 
 // you need to hold a read lock on rmap to call this function safely
-void* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
+void* smatrix_rmap_get(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
   void *ret;
   smatrix_rmap_slot_t* slot;
 
   pthread_rwlock_rdlock(&self->rmap.lock);
-  slot = smatrix_rmap_lookup(&self->rmap, key);
+  slot = smatrix_rmap_lookup(self, &self->rmap, key);
 
   if (slot && slot->key == key) {
     ret = slot->ptr;
@@ -108,14 +108,14 @@ void* smatrix_rmap_get(smatrix_t* self, uint32_t key) {
 
 
 // you need to hold a write lock on rmap to call this function safely
-smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_rmap_t* rmap, uint32_t key) {
+smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
   smatrix_rmap_slot_t* slot;
 
   if (rmap->used > rmap->size / 2) {
-    smatrix_rmap_resize(rmap);
+    smatrix_rmap_resize(self, rmap);
   }
 
-  slot = smatrix_rmap_lookup(rmap, key);
+  slot = smatrix_rmap_lookup(self, rmap, key);
 
   if (slot == NULL) {
     abort();
@@ -147,7 +147,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_rmap_t* rmap, uint32_t key) {
 */
 
 // you need to hold a read or write lock on rmap to call this function safely
-smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key) {
+smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
   long int n, pos;
 
   pos = key % rmap->size;
@@ -165,7 +165,7 @@ smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_rmap_t* rmap, uint32_t key) {
   return &rmap->data[pos];
 }
 
-void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
+void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   smatrix_rmap_slot_t* slot;
   smatrix_rmap_t new;
   void* del;
@@ -188,7 +188,7 @@ void smatrix_rmap_resize(smatrix_rmap_t* rmap) {
     if (!rmap->data[pos].ptr)
       continue;
 
-    slot = smatrix_rmap_insert(&new, rmap->data[pos].key);
+    slot = smatrix_rmap_insert(self, &new, rmap->data[pos].key);
 
     if (slot == NULL) {
       printf("RMAP RESIZE FAILED (INSERT)!!!\n"); // FIXPAUL

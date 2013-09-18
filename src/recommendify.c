@@ -32,11 +32,11 @@ void quit() {
 }
 
 void test_rmap(uint32_t key, int create) {
-  void* ptr = smatrix_rmap_get(db, key);
+  void* ptr = smatrix_rmap_get(db, &db->rmap, key);
 
   if (ptr == NULL) {
     printf("%i: not found\n", key);
-    smatrix_rmap_insert(&db->rmap, key);
+    smatrix_rmap_insert(db, &db->rmap, key);
   } else {
     printf("%i: found (%i)\n", key, ptr);
   }
