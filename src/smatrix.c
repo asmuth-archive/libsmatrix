@@ -75,9 +75,9 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
     abort();
   }
 
-  //memset(fnord, 0x42, bytes);
-  //pwrite(self->fd, fnord, bytes, fpos);
-  //free(fnord);
+  memset(fnord, 0x42, bytes);
+  pwrite(self->fd, fnord, bytes, fpos);
+  free(fnord);
 }
 
 void smatrix_sync(smatrix_t* self) {
