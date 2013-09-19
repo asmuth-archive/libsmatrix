@@ -101,17 +101,15 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
 }
 
 // this method will be removed later
-void* smatrix_rmap_get(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
-  void *ret;
+uint64_t smatrix_rmap_get(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
+  uint64_t ret = 0;
   smatrix_rmap_slot_t* slot;
 
   pthread_rwlock_rdlock(&self->rmap.lock);
   slot = smatrix_rmap_lookup(self, &self->rmap, key);
 
   if (slot && slot->key == key) {
-    ret = slot->ptr;
-  } else {
-    ret = NULL;
+    ret = slot->value++; // ;)
   }
 
   pthread_rwlock_unlock(&self->rmap.lock);
@@ -138,8 +136,8 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
 
   if (slot->key != key) {
     rmap->used++;
-    slot->key = key;
-    slot->ptr = SMATRIX_ROW_FLAG_USED | SMATRIX_ROW_FLAG_DIRTY;
+    slot->key   = key;
+    slot->flags = SMATRIX_ROW_FLAG_USED | SMATRIX_ROW_FLAG_DIRTY;
   }
 
   return slot;
@@ -214,7 +212,8 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
       abort();
     }
 
-    slot->ptr = rmap->data[pos].ptr;
+    slot->value = rmap->data[pos].value;
+    slot->ptr   = rmap->data[pos].ptr;
   }
 
   old_data = rmap->data;
@@ -257,7 +256,7 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
     memcpy(&slot_buf[4], &rmap->data[pos].key,   4);
     memcpy(&slot_buf[8], &rmap->data[pos].value, 8);
 
-    printf("PERSIST %i->%p @ %li\n", rmap->data[pos].key, rmap->data[pos].ptr, fpos);
+    printf("PERSIST %i->%lu @ %li\n", rmap->data[pos].key, rmap->data[pos].value, fpos);
     pwrite(self->fd, &slot_buf, 16, fpos); // FIXPAUL write needs to be checked
 
     // FIXPAUL flag unset needs to be a compare and swap loop as we only hold a read lock

@@ -71,7 +71,7 @@ void smatrix_sync(smatrix_t* self);
 void smatrix_close(smatrix_t* self);
 
 
-void* smatrix_rmap_get(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
+uint64_t smatrix_rmap_get(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key); // will be removed later
 
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size);
 smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
