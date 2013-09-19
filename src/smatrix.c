@@ -65,13 +65,19 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 
 // FIXPAUL: this needs to be atomic (compare and swap!) or locked
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
-  printf("FREED %lu bytes @ %lu\n", fpos, bytes);
+  printf("FREED %lu bytes @ %lu\n", bytes, fpos);
 
   // FIXPAUL DEBUG ONLY ;)
   char* fnord = malloc(bytes);
-  memset(fnord, 0x42, bytes);
-  pwrite(self->fd, fnord, bytes, fpos);
-  free(fnord);
+
+  if (fnord == NULL) {
+    printf("ABORT YOYO\n");
+    abort();
+  }
+
+  //memset(fnord, 0x42, bytes);
+  //pwrite(self->fd, fnord, bytes, fpos);
+  //free(fnord);
 }
 
 void smatrix_sync(smatrix_t* self) {
@@ -137,6 +143,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
   if (slot->key != key) {
     rmap->used++;
     slot->key   = key;
+    slot->value = 0;
     slot->flags = SMATRIX_ROW_FLAG_USED | SMATRIX_ROW_FLAG_DIRTY;
   }
 
@@ -164,7 +171,7 @@ smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, 
   pos = key % rmap->size;
 
   for (n = 0; n < rmap->size; n++) {
-    if (rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED == 0)
+    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
       break;
 
     if (rmap->data[pos].key == key)
@@ -184,22 +191,24 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   uint64_t old_fpos, old_size, new_size = rmap->size * 2;
 
-  size_t old_bytes = sizeof(smatrix_rmap_slot_t) * rmap->size;
-  size_t new_bytes = sizeof(smatrix_rmap_slot_t) * new_size;
-
+  size_t old_bytes_disk = 16 * rmap->size + 16;
+  size_t old_bytes_mem = sizeof(smatrix_rmap_slot_t) * rmap->size;
+  size_t new_bytes_disk = 16 * new_size + 16;
+  size_t new_bytes_mem = sizeof(smatrix_rmap_slot_t) * new_size;
+  printf("old rmap size: %lu, bytes: %lu", rmap->size, old_bytes_disk);
   printf("RESIZE!!!\n");
   // FIXPAUL: big problem, this doesnt re-falloc
 
   new.used = 0;
   new.size = new_size;
-  new.data = malloc(new_bytes);
+  new.data = malloc(new_bytes_mem);
 
   if (new.data == NULL) {
     printf("RMAP RESIZE FAILED (MALLOC)!!!\n"); // FIXPAUL
     abort();
   }
 
-  memset(new.data, 0, new_bytes);
+  memset(new.data, 0, new_bytes_mem);
 
   for (pos = 0; pos < rmap->size; pos++) {
     if (!rmap->data[pos].value)
@@ -219,12 +228,12 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   old_data = rmap->data;
   old_fpos = rmap->fpos;
 
-  rmap->fpos = smatrix_falloc(self, new_bytes + 16);
+  rmap->fpos = smatrix_falloc(self, new_bytes_disk);
   rmap->data = new.data;
   rmap->size = new.size;
   rmap->used = new.used;
 
-  smatrix_ffree(self, old_fpos, old_bytes + 16);
+  smatrix_ffree(self, old_fpos, old_bytes_disk);
   free(old_data);
 }
 
@@ -310,11 +319,12 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
     memcpy(&rmap->data[pos].value, buf + pos * 16 + 8, 8);
 
     if (rmap->data[pos].value) {
+      int xxx; for (xxx=0; xxx < 8; xxx++) printf("%x-", buf + pos * 16 + 8 + xxx); printf("\n");
       memcpy(&rmap->data[pos].key, buf + pos * 16 + 4, 4);
       self->rmap.used++;
       self->rmap.data[pos].flags = SMATRIX_ROW_FLAG_USED;
+      printf("LOAD %i (%lu)\n", rmap->data[pos].key, rmap->data[pos].value);
     }
-    //printf("LOAD %i\n", rmap->data[pos].key);
   }
 
   free(buf);
