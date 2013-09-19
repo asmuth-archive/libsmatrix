@@ -100,7 +100,7 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
   pthread_rwlock_init(&rmap->lock, NULL);
 }
 
-// you need to hold a read lock on rmap to call this function safely
+// this method will be removed later
 void* smatrix_rmap_get(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
   void *ret;
   smatrix_rmap_slot_t* slot;
@@ -139,7 +139,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
   if (slot->key != key) {
     rmap->used++;
     slot->key = key;
-    slot->ptr = 1; // FIXPAUL this is uuuuuugly
+    slot->ptr = SMATRIX_ROW_FLAG_USED | SMATRIX_ROW_FLAG_DIRTY;
   }
 
   return slot;
@@ -166,7 +166,7 @@ smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, 
   pos = key % rmap->size;
 
   for (n = 0; n < rmap->size; n++) {
-    if (!rmap->data[pos].ptr)
+    if (rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED == 0)
       break;
 
     if (rmap->data[pos].key == key)
@@ -310,13 +310,12 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   for (pos = 0; pos < rmap->size; pos++) {
     memcpy(&rmap->data[pos].value, buf + pos * 16 + 8, 8);
 
-    //if (rmap->data[pos].value) {
+    if (rmap->data[pos].value) {
       memcpy(&rmap->data[pos].key, buf + pos * 16 + 4, 4);
       self->rmap.used++;
-      self->rmap.data[pos].flags = 0;
-      self->rmap.data[pos].ptr = 1; // FIXPAUL set the used flag instead
-    //}
-    printf("LOAD %i\n", rmap->data[pos].key);
+      self->rmap.data[pos].flags = SMATRIX_ROW_FLAG_USED;
+    }
+    //printf("LOAD %i\n", rmap->data[pos].key);
   }
 
   free(buf);
