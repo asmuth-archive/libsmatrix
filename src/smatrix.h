@@ -85,6 +85,7 @@ void smatrix_meta_load(smatrix_t* self);
 
 
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes);
+void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes);
 
 // ----
 

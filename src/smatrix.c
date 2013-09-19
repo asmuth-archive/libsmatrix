@@ -51,7 +51,7 @@ smatrix_t* smatrix_open(const char* fname) {
   return self;
 }
 
-// FIXPAUL: this needs to be atomic (compare and swap!)
+// FIXPAUL: this needs to be atomic (compare and swap!) or locked
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   uint64_t old = self->fpos;
   uint64_t new = old + bytes;
@@ -64,6 +64,11 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 
   self->fpos = new;
   return old;
+}
+
+// FIXPAUL: this needs to be atomic (compare and swap!) or locked
+void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
+  printf("FREED %lu bytes @ %lu\n", fpos, bytes);
 }
 
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
@@ -171,7 +176,9 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   void* old_data;
   long int pos;
 
-  uint64_t old_fpos, new_size = rmap->size * 2;
+  uint64_t old_fpos, old_size, new_size = rmap->size * 2;
+
+  size_t old_bytes = sizeof(smatrix_rmap_slot_t) * rmap->size;
   size_t new_bytes = sizeof(smatrix_rmap_slot_t) * new_size;
 
   printf("RESIZE!!!\n");
@@ -205,12 +212,12 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   old_data = rmap->data;
   old_fpos = rmap->fpos;
 
-  rmap->fpos = smatrix_falloc(self, new_size + 16);
+  rmap->fpos = smatrix_falloc(self, new_bytes + 16);
   rmap->data = new.data;
   rmap->size = new.size;
   rmap->used = new.used;
 
-
+  smatrix_ffree(self, old_fpos, old_bytes + 16);
   free(old_data);
 }
 
