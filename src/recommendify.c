@@ -70,8 +70,7 @@ int main(int argc, char **argv) {
 
   test_rmap(123, 0);
   test_rmap(123, 1);
-  smatrix_rmap_sync(db, &db->rmap);
-  smatrix_meta_sync(db);
+  smatrix_sync(db);
   abort();
   test_rmap(123, 1);
   test_rmap(133, 1);

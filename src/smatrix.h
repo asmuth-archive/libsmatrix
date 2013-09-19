@@ -66,6 +66,7 @@ typedef struct {
 } smatrix_t;
 
 smatrix_t* smatrix_open(const char* fname);
+void smatrix_sync(smatrix_t* self);
 void smatrix_close(smatrix_t* self);
 
 
@@ -91,8 +92,6 @@ uint32_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y);
 void smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value);
 void smatrix_incr(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value);
 int smatrix_foreach(smatrix_t* self, uint32_t x);
-void smatrix_sync(smatrix_t* self, uint32_t x);
-
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create);
 smatrix_vec_t* smatrix_insert(smatrix_vec_t** row, uint32_t y);
 void smatrix_resize(smatrix_t* self, uint32_t min_size);

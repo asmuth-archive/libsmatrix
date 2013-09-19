@@ -68,6 +68,11 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
   printf("FREED %lu bytes @ %lu\n", fpos, bytes);
 }
 
+void smatrix_sync(smatrix_t* self) {
+  smatrix_rmap_sync(self, &self->rmap);
+  smatrix_meta_sync(self);
+}
+
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
   size_t data_size = sizeof(smatrix_rmap_slot_t) * size;
 
