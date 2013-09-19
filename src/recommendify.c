@@ -69,6 +69,8 @@ int main(int argc, char **argv) {
     abort();
 
   test_rmap(123, 0);
+  test_rmap(123, 1);
+  smatrix_rmap_sync(db, &db->rmap);
   abort();
   test_rmap(123, 1);
   test_rmap(133, 1);
