@@ -66,6 +66,12 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 // FIXPAUL: this needs to be atomic (compare and swap!) or locked
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
   printf("FREED %lu bytes @ %lu\n", fpos, bytes);
+
+  // FIXPAUL DEBUG ONLY ;)
+  char* fnord = malloc(bytes);
+  memset(fnord, 0x42, bytes);
+  pwrite(self->fd, fnord, bytes, fpos);
+  free(fnord);
 }
 
 void smatrix_sync(smatrix_t* self) {
