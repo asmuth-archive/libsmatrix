@@ -38,13 +38,10 @@ smatrix_t* smatrix_open(const char* fname) {
 
     smatrix_falloc(self, SMATRIX_META_SIZE);
     smatrix_rmap_init(self, &self->rmap, SMATRIX_RMAP_INITIAL_SIZE);
-    self->rmap_fpos = self->rmap.fpos;
     smatrix_meta_sync(self);
   } else {
     printf("LOAD FILE!\n");
     smatrix_meta_load(self);
-    self->rmap.fpos = self->rmap_fpos;
-    printf("HEAD RMAP IS AT POS %li\n", self->rmap_fpos);
     smatrix_rmap_load(self, &self->rmap);
   }
 
@@ -321,8 +318,8 @@ void smatrix_meta_sync(smatrix_t* self) {
   memset(&buf, 0x17, 8);
 
   // FIXPAUL what is byte ordering?
-  printf("WRITE FPOS %li\n", self->rmap_fpos);
-  memcpy(&buf[8],  &self->rmap_fpos, 8);
+  printf("WRITE FPOS %li\n", self->rmap.fpos);
+  memcpy(&buf[8],  &self->rmap.fpos, 8);
 
   pwrite(self->fd, &buf, SMATRIX_META_SIZE, 0);
 }
@@ -344,7 +341,7 @@ void smatrix_meta_load(smatrix_t* self) {
   }
 
   // FIXPAUL because f**k other endianess, thats why...
-  memcpy(&self->rmap_fpos, &buf[8],  8);
+  memcpy(&self->rmap.fpos, &buf[8],  8);
 }
 
 smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {

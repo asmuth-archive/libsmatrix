@@ -60,8 +60,6 @@ typedef struct {
   int              fd;
   uint64_t         fpos;
   smatrix_rmap_t   rmap;
-  uint64_t         rmap_fpos;
-
   pthread_rwlock_t lock;
   smatrix_vec_t**  data;
   long int         size;
