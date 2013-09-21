@@ -184,6 +184,7 @@ smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, 
   return &rmap->data[pos];
 }
 
+// you need to hold a write lock on rmap in order to call this function safely
 void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   smatrix_rmap_slot_t* slot;
   smatrix_rmap_t new;
@@ -194,7 +195,6 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   size_t old_bytes_disk = 16 * rmap->size + 16;
   size_t new_bytes_disk = 16 * new_size + 16;
   size_t new_bytes_mem = sizeof(smatrix_rmap_slot_t) * new_size;
-  printf("old rmap size: %llu, bytes: %lu", rmap->size, old_bytes_disk);
   printf("RESIZE!!!\n");
   // FIXPAUL: big problem, this doesnt re-falloc
 
@@ -256,7 +256,7 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
     if (!rmap->data[pos].value)
       continue;
 
-    if (0 && rmap->data[pos].flags & SMATRIX_ROW_FLAG_DIRTY) // FIXPAUL
+    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_DIRTY) == 0)
       continue;
 
     // FIXPAUL what is byte ordering?

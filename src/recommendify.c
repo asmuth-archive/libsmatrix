@@ -82,7 +82,6 @@ int main(int argc, char **argv) {
   smatrix_sync(db);
   test_rmap(173, 1);
   smatrix_sync(db);
-  abort();
   test_rmap(123, 0);
   test_rmap(183, 1);
   test_rmap(193, 1);
@@ -91,11 +90,10 @@ int main(int argc, char **argv) {
   test_rmap(133, 0);
   smatrix_sync(db);
   printf("USED %llu\n", db->rmap.used);
-  //smatrix_rmap_sync(db);
+  exit(0);
 
   //sleep(5);
   //test_rmap_fnord(NULL);
-  exit(0);
 /*
   void* fnord;
   pthread_t t[32];
