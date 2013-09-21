@@ -15,6 +15,15 @@
 
 #include "smatrix.h"
 
+// TODO
+//  + constant-ify all the magic numbers
+//  + convert endianess when loading/saving to disk
+//  + proper error handling / return codes for smatrix_open
+//  + resize headers a sane sizes
+//  + yield mem func / max mem limit
+//  + malloc wrapper, yield all used mem on malloc failure
+//  + file free list
+
 smatrix_t* smatrix_open(const char* fname) {
   smatrix_t* self = malloc(sizeof(smatrix_t));
 
@@ -171,6 +180,7 @@ smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, 
 
   pos = key % rmap->size;
 
+  // linear probing
   for (n = 0; n < rmap->size; n++) {
     if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
       break;
@@ -196,7 +206,6 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   size_t new_bytes_disk = 16 * new_size + 16;
   size_t new_bytes_mem = sizeof(smatrix_rmap_slot_t) * new_size;
   printf("RESIZE!!!\n");
-  // FIXPAUL: big problem, this doesnt re-falloc
 
   new.used = 0;
   new.size = new_size;
@@ -318,7 +327,6 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
     memcpy(&rmap->data[pos].value, buf + pos * 16 + 8, 8);
 
     if (rmap->data[pos].value) {
-      //int xxx; for (xxx=0; xxx < 8; xxx++) printf("%x-", buf + pos * 16 + 8 + xxx); printf("\n");
       memcpy(&rmap->data[pos].key, buf + pos * 16 + 4, 4);
       self->rmap.used++;
       self->rmap.data[pos].flags = SMATRIX_ROW_FLAG_USED;
