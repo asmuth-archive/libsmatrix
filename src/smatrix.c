@@ -1,4 +1,4 @@
-// This file is part of the "recommendify" project
+// This file is part of the "libsmatrix" project
 //   (c) 2011-2013 Paul Asmuth <paul@paulasmuth.com>
 //
 // Licensed under the MIT License (the "License"); you may not use this
@@ -130,7 +130,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
   smatrix_rmap_slot_t* slot;
 
   if (rmap->used > rmap->size / 2) {
-    smatrix_rmap_resize(self, rmap);
+    smatrix_rmap_resize(self, rmap); // FIXPAUL keep track of old rmap fpos and persist to parent rmap if changed!
   }
 
   slot = smatrix_rmap_lookup(self, rmap, key);
