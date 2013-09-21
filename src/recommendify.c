@@ -38,7 +38,7 @@ void test_rmap(uint32_t key, int create) {
     printf("%i: not found\n", key);
     smatrix_rmap_insert(db, &db->rmap, key)->value = 999;
   } else {
-    printf("%i: found (%lu)\n", key, value);
+    printf("%i: found (%llu)\n", key, value);
   }
 }
 
@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
   test_rmap(123, 0);
   test_rmap(133, 0);
   smatrix_sync(db);
-  printf("USED %li\n", db->rmap.used);
+  printf("USED %llu\n", db->rmap.used);
   //smatrix_rmap_sync(db);
 
   //sleep(5);

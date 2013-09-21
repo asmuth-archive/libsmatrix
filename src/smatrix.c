@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <unistd.h>
 
 #include "smatrix.h"
 
@@ -65,7 +66,7 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 
 // FIXPAUL: this needs to be atomic (compare and swap!) or locked
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
-  printf("FREED %lu bytes @ %lu\n", bytes, fpos);
+  printf("FREED %llu bytes @ %llu\n", bytes, fpos);
 
   // FIXPAUL DEBUG ONLY ;)
   char* fnord = malloc(bytes);
@@ -98,7 +99,7 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
   }
 
   if (!rmap->fpos) {
-    printf("FALLLLLOC %li\n", size * 16 + 16);
+    printf("FALLOC %llu\n", size * 16 + 16);
     rmap->fpos = smatrix_falloc(self, size * 16 + 16);
   }
 
@@ -166,7 +167,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
 
 // you need to hold a read or write lock on rmap to call this function safely
 smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
-  long int n, pos;
+  uint64_t n, pos;
 
   pos = key % rmap->size;
 
@@ -187,15 +188,13 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   smatrix_rmap_slot_t* slot;
   smatrix_rmap_t new;
   void* old_data;
-  long int pos;
 
-  uint64_t old_fpos, old_size, new_size = rmap->size * 2;
+  uint64_t pos, old_fpos, new_size = rmap->size * 2;
 
   size_t old_bytes_disk = 16 * rmap->size + 16;
-  size_t old_bytes_mem = sizeof(smatrix_rmap_slot_t) * rmap->size;
   size_t new_bytes_disk = 16 * new_size + 16;
   size_t new_bytes_mem = sizeof(smatrix_rmap_slot_t) * new_size;
-  printf("old rmap size: %lu, bytes: %lu", rmap->size, old_bytes_disk);
+  printf("old rmap size: %llu, bytes: %lu", rmap->size, old_bytes_disk);
   printf("RESIZE!!!\n");
   // FIXPAUL: big problem, this doesnt re-falloc
 
@@ -241,7 +240,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 // FIXPAUL: this is doing waaaay to many pwrite syscalls for a large, dirty rmap...
 // FIXPAUL: also, the meta info needs to be written only on the first write
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
-  long int pos = 0, fpos;
+  uint64_t pos = 0, fpos;
   char slot_buf[16] = {0};
 
   fpos = rmap->fpos;
@@ -265,7 +264,7 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
     memcpy(&slot_buf[4], &rmap->data[pos].key,   4);
     memcpy(&slot_buf[8], &rmap->data[pos].value, 8);
 
-    printf("PERSIST %i->%lu @ %li\n", rmap->data[pos].key, rmap->data[pos].value, fpos);
+    printf("PERSIST %i->%llu @ %llu\n", rmap->data[pos].key, rmap->data[pos].value, fpos);
     pwrite(self->fd, &slot_buf, 16, fpos); // FIXPAUL write needs to be checked
 
     // FIXPAUL flag unset needs to be a compare and swap loop as we only hold a read lock
@@ -279,7 +278,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   uint64_t pos;
 
-  printf("READ AT %li\n", rmap->fpos);
+  printf("READ AT %llu\n", rmap->fpos);
   read = pread(self->fd, &meta_buf, 16, rmap->fpos);
 
   if (read != 16) {
@@ -295,7 +294,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   // FIXPAUL what is big endian?
   memcpy(&rmap->size, &meta_buf[8], 8);
 
-  printf("RMAP SIZE is %i\n", rmap->size);
+  printf("RMAP SIZE is %llu\n", rmap->size);
 
   smatrix_rmap_init(self, rmap, rmap->size);
 
@@ -319,11 +318,11 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
     memcpy(&rmap->data[pos].value, buf + pos * 16 + 8, 8);
 
     if (rmap->data[pos].value) {
-      int xxx; for (xxx=0; xxx < 8; xxx++) printf("%x-", buf + pos * 16 + 8 + xxx); printf("\n");
+      //int xxx; for (xxx=0; xxx < 8; xxx++) printf("%x-", buf + pos * 16 + 8 + xxx); printf("\n");
       memcpy(&rmap->data[pos].key, buf + pos * 16 + 4, 4);
       self->rmap.used++;
       self->rmap.data[pos].flags = SMATRIX_ROW_FLAG_USED;
-      printf("LOAD %i (%lu)\n", rmap->data[pos].key, rmap->data[pos].value);
+      //printf("LOAD %i (%lu)\n", rmap->data[pos].key, rmap->data[pos].value);
     }
   }
 
@@ -337,7 +336,6 @@ void smatrix_meta_sync(smatrix_t* self) {
   memset(&buf, 0x17, 8);
 
   // FIXPAUL what is byte ordering?
-  printf("WRITE FPOS %li\n", self->rmap.fpos);
   memcpy(&buf[8],  &self->rmap.fpos, 8);
 
   pwrite(self->fd, &buf, SMATRIX_META_SIZE, 0);
@@ -481,7 +479,7 @@ void smatrix_resize(smatrix_t* self, uint32_t min_size) {
   self->size = new_size;
 }
 
-void smatrix_increment(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value) {
+void smatrix_incr(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value) {
   smatrix_vec_t* vec = smatrix_lookup(self, x, y, 1);
 
   if (vec == NULL)
