@@ -20,6 +20,7 @@
 //  + implement smatrix_get
 //  + aquire lock on file to prevent concurrent access
 //  + falloc lock
+//  + count swapable alloced memory and un-swappable seperatly (hard limit only on swappable!)
 //  + constant-ify all the magic numbers
 //  + convert endianess when loading/saving to disk
 //  + proper error handling / return codes for smatrix_open
