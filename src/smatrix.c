@@ -50,6 +50,7 @@ smatrix_t* smatrix_open(const char* fname) {
 
     smatrix_falloc(self, SMATRIX_META_SIZE);
     smatrix_rmap_init(self, &self->rmap, SMATRIX_RMAP_INITIAL_SIZE);
+    smatrix_rmap_sync(self, &self->rmap);
     smatrix_meta_sync(self);
   } else {
     printf("LOAD FILE!\n");
