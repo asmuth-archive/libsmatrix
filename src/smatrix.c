@@ -104,6 +104,7 @@ void smatrix_close(smatrix_t* self) {
   for (pos = 0; pos < rmap->size; pos++) {
     if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
       smatrix_mfree(self, sizeof(smatrix_rmap_t));
+      pthread_mutex_destroy(&((smatrix_rmap_t *) rmap->data[pos].next)->lock);
       free(rmap->data[pos].next);
     }
   }
@@ -113,6 +114,7 @@ void smatrix_close(smatrix_t* self) {
 
   printf("in used at exit: %llu\n", self->mem);
 
+  pthread_mutex_destroy(&rmap->lock);
   close(self->fd);
   free(self);
 }
