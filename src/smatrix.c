@@ -452,7 +452,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   char meta_buf[16] = {0};
 
   if (pread(self->fd, &meta_buf, 16, rmap->fpos) != 16) {
-    printf("CANNOT LOAD RMATRIX -- pread\n"); // FIXPAUL
+    printf("CANNOT LOAD RMATRIX -- pread @ %llu\n", rmap->fpos); // FIXPAUL
     abort();
   }
 
