@@ -49,8 +49,13 @@ smatrix_t* smatrix_open(const char* fname) {
     printf("NEW FILE!\n");
     smatrix_falloc(self, SMATRIX_META_SIZE);
     smatrix_rmap_init(self, &self->rmap, SMATRIX_RMAP_INITIAL_SIZE);
-    self->rmap.data = malloc(sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
-    assert(self->rmap.data != NULL);
+    self->rmap.data = smatrix_malloc(self, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
+
+    if (!self->rmap.data) {
+      printf("can't load first level index. mem limit too small?\n");
+      exit(1); // fixpaul proper error handling
+    }
+
     memset(self->rmap.data, 0, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
     smatrix_rmap_sync(self, &self->rmap);
     smatrix_meta_sync(self);
@@ -66,7 +71,13 @@ smatrix_t* smatrix_open(const char* fname) {
 
     for (pos = 0; pos < rmap->size; pos++) {
       if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
-        rmap->data[pos].next = malloc(sizeof(smatrix_rmap_t));
+        rmap->data[pos].next = smatrix_malloc(self, sizeof(smatrix_rmap_t));
+
+        if (!rmap->data[pos].next) {
+          printf("can't load first level index. mem limit too small?\n");
+          exit(1); // fixpaul proper error handling
+        }
+
         ((smatrix_rmap_t *) rmap->data[pos].next)->fpos = rmap->data[pos].value;
         smatrix_rmap_load(self, rmap->data[pos].next);
         //smatrix_unswap(self, rmap->data[pos].next);
@@ -97,7 +108,7 @@ void* smatrix_malloc(smatrix_t* self, size_t bytes) {
   // FIXPAUL must be compare and swap
   self->mem += bytes;
 
-  if (self->mem > 3000) {
+  if (self->mem > 2050000) {
     return NULL;
   }
 
@@ -118,19 +129,6 @@ void smatrix_mfree(smatrix_t* self, size_t bytes) {
 // FIXPAUL: this needs to be atomic (compare and swap!) or locked
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
   //printf("FREED %llu bytes @ %llu\n", bytes, fpos);
-
-  // FIXPAUL DEBUG ONLY ;)
-  /*
-  char* fnord = malloc(bytes);
-
-  if (fnord == NULL) {
-    printf("ABORT YOYO\n");
-    abort();
-  }
-
-  memset(fnord, 0x42, bytes);
-  pwrite(self->fd, fnord, bytes, fpos);
-  free(fnord);*/
 }
 
 // FIXPAUL: this should lock
@@ -312,20 +310,6 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
 
   return slot;
 }
-
-/*
-  if (row == NULL) {
-    row = malloc(sizeof(smatrix_row_t)); // FIXPAUL never freed :(
-    row->flags = SMATRIX_ROW_FLAG_DIRTY;
-    row->index = key;
-    row->fpos = smatrix_falloc(self, 666);
-
-    if (smatrix_rmap_lookup(&self->rmap, key, row) != row) {
-      free(row);
-      return smatrix_rmap_lookup(&self->rmap, key, row);
-    }
-  }
-*/
 
 // you need to hold a read or write lock on rmap to call this function safely
 smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
@@ -539,190 +523,6 @@ void smatrix_meta_load(smatrix_t* self) {
 
   // FIXPAUL because f**k other endianess, thats why...
   memcpy(&self->rmap.fpos, &buf[8],  8);
-}
-
-smatrix_vec_t* smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int create) {
-  smatrix_vec_t *col = NULL, **row = NULL;
-
-  pthread_rwlock_rdlock(&self->lock);
-
-  if (x > self->size) {
-    if (x > SMATRIX_MAX_ID)
-      goto unlock;
-
-    if (create) {
-      smatrix_wrlock(self);
-
-      if (x > self->size)
-        smatrix_resize(self, x + 1);
-
-      if (x > self->size)
-        goto unlock;
-
-      smatrix_unlock(self);
-    } else {
-      goto unlock;
-    }
-  }
-
-  row = self->data + x;
-
-  if (*row == NULL) {
-    if (!create)
-      goto unlock;
-
-    smatrix_wrlock(self);
-
-    if (*row == NULL)
-      col = smatrix_insert(row, y);
-
-    smatrix_unlock(self);
-  }
-
-  smatrix_vec_lock(*row);
-
-  if (col == NULL) {
-    col = *row;
-
-    while (col->index != y) {
-      if (col->next == NULL || col->index > y) {
-        col = NULL;
-        break;
-      }
-
-      col = col->next;
-    }
-  }
-
-  if (col == NULL && create) {
-    smatrix_wrlock(self);
-    col = smatrix_insert(row, y);
-    smatrix_unlock(self);
-  }
-
-  smatrix_vec_incref(col);
-  smatrix_vec_unlock(*row);
-
-unlock:
-
-  pthread_rwlock_unlock(&self->lock);
-  return col;
-}
-
-smatrix_vec_t* smatrix_insert(smatrix_vec_t** row, uint32_t y) {
-  uint32_t row_len = 1;
-  smatrix_vec_t **cur = row, *next, *new;
-
-  for (; *cur && (*cur)->index <= y; row_len++) {
-    if ((*cur)->index == y) {
-      return *cur;
-    } else {
-      cur = &((*cur)->next);
-    }
-  }
-
-  next = *cur;
-
-  *cur = new = malloc(sizeof(smatrix_vec_t));
-  new->value = 666; // FIXPAUL
-  new->index = y;
-  new->flags = 0;
-  new->next  = next;
-
-  for (; next; row_len++)
-    next = next->next;
-
-  if (row_len > SMATRIX_MAX_ROW_SIZE)
-    smatrix_truncate(row);
-
-  return new;
-}
-
-void smatrix_resize(smatrix_t* self, uint32_t min_size) {
-  long int new_size = self->size;
-
-  while (new_size < min_size) {
-    new_size = new_size * SMATRIX_GROWTH_FACTOR;
-  }
-
-  smatrix_vec_t** new_data = malloc(sizeof(void *) * new_size);
-
-  if (new_data == NULL)
-    return;
-
-  memcpy(new_data, self->data, sizeof(void *) * self->size);
-  memset(new_data, 0, sizeof(void *) * (new_size - self->size));
-
-  free(self->data);
-
-  self->data = new_data;
-  self->size = new_size;
-}
-
-void smatrix_incr(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value) {
-  smatrix_vec_t* vec = smatrix_lookup(self, x, y, 1);
-
-  if (vec == NULL)
-    return;
-
-  // FIXPAUL check for overflow, also this is not an atomic increment
-  vec->value++;
-}
-
-void smatrix_truncate(smatrix_vec_t** row) {
-  smatrix_vec_t **cur = row, **found = NULL, *delete;
-
-  while (*cur) {
-    if ((*cur)->index != 0 && (*cur)->value != 0) {
-      if (found == NULL || (*found)->value > (*cur)->value) {
-        found = cur;
-      }
-    }
-
-    cur = &((*cur)->next);
-  }
-
-  delete = *found;
-  *found = delete->next;
-
-  smatrix_vec_decref(delete);
-}
-
-void smatrix_close(smatrix_t* self) {
-  smatrix_vec_t *cur, *tmp;
-  uint32_t n;
-/*
-  for (n = 0; n < self->size; n++) {
-    cur = self->data[n];
-
-    while (cur) {
-      tmp = cur;
-      cur = cur->next;
-      free(tmp);
-    }
-  }
-
-  */
-
-  free(self);
-}
-
-void smatrix_dump(smatrix_t* self) {
-  smatrix_vec_t *cur;
-  uint32_t n;
-
-  for (n = 0; n < self->size; n++) {
-    cur = self->data[n];
-
-    if (!cur) continue;
-
-    printf("%i ===> ", n);
-    while (cur) {
-      printf(" %i:%i, ", cur->index, cur->value);
-      cur = cur->next;
-    }
-    printf("\n----\n");
-  }
 }
 
 void smatrix_wrlock(smatrix_t* self) {

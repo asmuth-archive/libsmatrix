@@ -15,8 +15,8 @@ RELEASEFLAGS = -O3 -march=native -mtune=native -D NDEBUG -fwhole-program
 
 TARGET       = recommendify
 TARGET_DBG   = recommendify_dbg
-SOURCES      = recommendify.c smatrix.c cf.c conn.c http.c marshal.c
-HEADERS      = recommendify.h smatrix.h cf.h conn.h http.h marshal.h
+SOURCES      = recommendify.c smatrix.c
+HEADERS      = recommendify.h smatrix.h
 OBJECTS      = $(SOURCES:.c=.o)
 
 PREFIX       = $(DESTDIR)/usr/local
