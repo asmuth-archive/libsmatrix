@@ -65,6 +65,11 @@ smatrix_t* smatrix_open(const char* fname) {
     smatrix_rmap_load(self, &self->rmap);
     smatrix_unswap(self, &self->rmap);
 
+    if ((self->rmap.flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
+      printf("can't load first level index. mem limit too small?\n");
+      exit(1); // fixpaul proper error handling
+    }
+
     // FIXPAUL: put this into some method ---
     uint64_t pos;
     smatrix_rmap_t* rmap = &self->rmap;
@@ -108,7 +113,7 @@ void* smatrix_malloc(smatrix_t* self, size_t bytes) {
   // FIXPAUL must be compare and swap
   self->mem += bytes;
 
-  if (self->mem > 2050000) {
+  if (self->mem > 505840) {
     return NULL;
   }
 
@@ -245,6 +250,12 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
 
   if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
     smatrix_unswap(self, rmap);
+
+    if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
+      pthread_rwlock_unlock(&rmap->lock);
+      smatrix_gc(self);
+      return smatrix_update(self, x,  y);
+    }
   }
 
   yslot = smatrix_rmap_insert(self, rmap, y);
@@ -452,11 +463,10 @@ void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
 void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
   printf("unswap...\n");
   size_t data_size = sizeof(smatrix_rmap_slot_t) * rmap->size;
-  rmap->data = malloc(data_size);
+  rmap->data = smatrix_malloc(self, data_size);
 
   if (rmap->data == NULL) {
-    printf("MALLOC DATA FAILED IN RMAP_INIT\n"); //FIXPAUL
-    abort();
+    return;
   }
 
   memset(rmap->data, 0, data_size);
@@ -467,8 +477,9 @@ void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
   char* buf = malloc(rmap_bytes);
 
   if (buf == NULL) {
-    printf("MALLOC FAILED!\n");
-    abort();
+    smatrix_mfree(self, data_size);
+    free(rmap->data);
+    return;
   }
 
   read_bytes = pread(self->fd, buf, rmap_bytes, rmap->fpos + 16);
