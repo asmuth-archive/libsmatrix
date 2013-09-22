@@ -19,7 +19,6 @@
 // TODO
 //  + implement smatrix_get
 //  + aquire lock on file to prevent concurrent access
-//  + falloc lock
 //  + count swapable alloced memory and un-swappable seperatly (hard limit only on swappable!)
 //  + constant-ify all the magic numbers
 //  + convert endianess when loading/saving to disk
@@ -92,6 +91,7 @@ smatrix_t* smatrix_open(const char* fname) {
     // ---
   }
 
+  pthread_mutex_init(&self->lock, NULL);
   return self;
 }
 
@@ -115,23 +115,26 @@ void smatrix_close(smatrix_t* self) {
 
   printf("in used at exit: %lu\n", self->mem);
 
+  pthread_mutex_destroy(&self->lock);
   pthread_rwlock_destroy(&rmap->lock);
   close(self->fd);
   free(self);
 }
 
-// FIXPAUL: this needs to be atomic (compare and swap!) or locked
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
+  pthread_mutex_lock(&self->lock);
+
   uint64_t old = self->fpos;
   uint64_t new = old + bytes;
 
-  //printf("TRUNCATE TO %li\n", new);
   if (ftruncate(self->fd, new) == -1) {
     perror("FATAL ERROR: CANNOT TRUNCATE FILE"); // FIXPAUL
     abort();
   }
 
   self->fpos = new;
+
+  pthread_mutex_unlock(&self->lock);
   return old;
 }
 

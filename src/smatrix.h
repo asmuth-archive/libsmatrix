@@ -49,7 +49,7 @@ typedef struct {
   uint64_t         fpos;
   size_t           mem;
   smatrix_rmap_t   rmap;
-  pthread_rwlock_t lock;
+  pthread_mutex_t  lock;
 } smatrix_t;
 
 smatrix_t* smatrix_open(const char* fname);
