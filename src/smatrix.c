@@ -62,6 +62,8 @@ smatrix_t* smatrix_open(const char* fname) {
     smatrix_rmap_t* rmap = &self->rmap;
 
     for (pos = 0; pos < rmap->size; pos++) {
+      printf("MAYBE MALLOC @ %llu (%lu=>%llu)\n", pos, rmap->data[pos].key, rmap->data[pos].value);
+
       if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
         rmap->data[pos].next = malloc(sizeof(smatrix_rmap_t));
         ((smatrix_rmap_t *) rmap->data[pos].next)->fpos = rmap->data[pos].value;
@@ -160,7 +162,8 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
     pthread_rwlock_rdlock(&self->rmap.lock);
     slot = smatrix_rmap_lookup(self, &self->rmap, x);
 
-    if (slot && slot->key == x) {
+    if (slot && slot->key == x && (slot->flags & SMATRIX_ROW_FLAG_USED) != 0) {
+      printf("XSLOT found by lookup %lu\n", slot->key);
       xslot = slot;
     } else {
       // of course, un- and then re-locking introduces a race, this is handeled
@@ -244,7 +247,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
     abort();
   }
 
-  if (slot->key != key) {
+  if ((slot->flags & SMATRIX_ROW_FLAG_USED) == 0 || slot->key != key) {
     rmap->used++;
     slot->key   = key;
     slot->value = 0;
