@@ -16,6 +16,7 @@
 #include "smatrix.h"
 
 // TODO
+//  + falloc lock
 //  + constant-ify all the magic numbers
 //  + convert endianess when loading/saving to disk
 //  + proper error handling / return codes for smatrix_open
@@ -148,6 +149,7 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
 }
 
 void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
+  smatrix_rmap_t *rmap;
   smatrix_rmap_slot_t *slot, *xslot = NULL, *yslot = NULL;
   uint64_t old_fpos, new_fpos;
 
@@ -175,20 +177,28 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
     if (xslot) {
       // FIXPAUL flag set needs to be a compare and swap loop as we might only hold a read lock
       xslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
-      pthread_rwlock_rdlock(&((smatrix_rmap_t *) xslot->next)->lock);
+
       old_fpos = xslot->value;
+      rmap     = (smatrix_rmap_t *) xslot->next;
+      pthread_rwlock_wrlock(&rmap->lock);
     }
 
     pthread_rwlock_unlock(&self->rmap.lock);
   }
 
-  new_fpos = ((smatrix_rmap_t *) xslot->next)->fpos;
-  pthread_rwlock_unlock(&((smatrix_rmap_t *) xslot->next)->lock);
+  yslot = smatrix_rmap_insert(self, &self->rmap, x);
+  // FIXPAUL assert slot != NULL && slot-key == y
+
+  yslot->value++; // FIXPAUL
+  yslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
+
+  new_fpos = rmap->fpos;
+  pthread_rwlock_unlock(&rmap->lock);
 
   if (old_fpos != new_fpos) {
     pthread_rwlock_wrlock(&self->rmap.lock);
     xslot = smatrix_rmap_lookup(self, &self->rmap, x);
-    // assert (xslot != NULL)
+    // FIXPAUL assert (xslot != NULL)
     xslot->value = new_fpos;
     xslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
     pthread_rwlock_unlock(&self->rmap.lock);
