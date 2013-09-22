@@ -159,6 +159,7 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
 
     if (slot && slot->key == x) {
       xslot = slot;
+      printf("x-slot found %lu (@%p)\n", slot->key, xslot);
     } else {
       // of course, un- and then re-locking introduces a race, this is handeled
       // in smatrix_rmap_insert (it returns the existing row if one found)
@@ -170,9 +171,9 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
         xslot->next = malloc(sizeof(smatrix_rmap_t));
         smatrix_rmap_init(self, xslot->next, SMATRIX_RMAP_INITIAL_SIZE);
       }
-    }
 
-    printf("x-slot found %p (@%p)\n", xslot, slot->next);
+      printf("x-slot insert %lu (@%p)\n", slot->key, xslot);
+    }
 
     if (xslot) {
       // FIXPAUL flag set needs to be a compare and swap loop as we might only hold a read lock
@@ -186,10 +187,10 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
     pthread_rwlock_unlock(&self->rmap.lock);
   }
 
-  yslot = smatrix_rmap_insert(self, &self->rmap, x);
+  yslot = smatrix_rmap_insert(self, rmap, x);
   // FIXPAUL assert slot != NULL && slot-key == y
 
-  yslot->value++; // FIXPAUL
+  printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, yslot->value++); // FIXPAUL
   yslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
 
   new_fpos = rmap->fpos;
