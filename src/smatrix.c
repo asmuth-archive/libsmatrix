@@ -497,7 +497,7 @@ void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
   read_bytes = pread(self->fd, buf, rmap_bytes, rmap->fpos + 16);
 
   if (read_bytes != rmap_bytes) {
-    printf("CANNOT LOAD RMATRIX -- read wrong number of bytes: %lu vs. %li\n", read_bytes, rmap_bytes); // FIXPAUL
+    printf("CANNOT LOAD RMATRIX -- read wrong number of bytes: %lu vs. %lu @ %llu\n", read_bytes, rmap_bytes, rmap->fpos); // FIXPAUL
     abort();
   }
 
