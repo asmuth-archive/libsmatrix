@@ -115,6 +115,7 @@ void smatrix_sync(smatrix_t* self) {
   for (pos = 0; pos < self->rmap.size; pos++) {
     if ((self->rmap.data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
       pthread_rwlock_rdlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
+      // FIXPAUL skip if rmap not loaded
       smatrix_rmap_sync(self, (smatrix_rmap_t *) self->rmap.data[pos].next);
       pthread_rwlock_unlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
     }
@@ -159,7 +160,6 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
 
     if (slot && slot->key == x) {
       xslot = slot;
-      printf("x-slot found %lu (@%p)\n", slot->key, xslot);
     } else {
       // of course, un- and then re-locking introduces a race, this is handeled
       // in smatrix_rmap_insert (it returns the existing row if one found)
@@ -171,8 +171,6 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
         xslot->next = malloc(sizeof(smatrix_rmap_t));
         smatrix_rmap_init(self, xslot->next, SMATRIX_RMAP_INITIAL_SIZE);
       }
-
-      printf("x-slot insert %lu (@%p)\n", slot->key, xslot);
     }
 
     if (xslot) {
@@ -187,7 +185,10 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
     pthread_rwlock_unlock(&self->rmap.lock);
   }
 
-  yslot = smatrix_rmap_insert(self, rmap, x);
+
+  // FIXPAUL LOAD RMAP IF NOT LOADED
+
+  yslot = smatrix_rmap_insert(self, rmap, y);
   // FIXPAUL assert slot != NULL && slot-key == y
 
   printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, yslot->value++); // FIXPAUL
@@ -238,8 +239,6 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
   if (slot == NULL) {
     abort();
   }
-
-  printf("INSERTING::: %i\n", key);
 
   if (slot->key != key) {
     rmap->used++;
@@ -351,8 +350,6 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
   memcpy(&slot_buf[8], &rmap->size,   8);
   pwrite(self->fd, &slot_buf, 16, fpos); // FIXPAUL write needs to be checked
 
-  printf("WRITE RMAP HEADER @ %llu\n", fpos);
-
   for (pos = 0; pos < rmap->size; pos++) {
     fpos += 16;
 
@@ -368,7 +365,6 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
     memcpy(&slot_buf[4], &rmap->data[pos].key,   4);
     memcpy(&slot_buf[8], &rmap->data[pos].value, 8);
 
-    printf("PERSIST %i->%llu @ %llu\n", rmap->data[pos].key, rmap->data[pos].value, fpos);
     pwrite(self->fd, &slot_buf, 16, fpos); // FIXPAUL write needs to be checked
 
     // FIXPAUL flag unset needs to be a compare and swap loop as we only hold a read lock
@@ -382,7 +378,6 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   uint64_t pos;
 
-  printf("READ AT %llu\n", rmap->fpos);
   read = pread(self->fd, &meta_buf, 16, rmap->fpos);
 
   if (read != 16) {
@@ -397,9 +392,6 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   // FIXPAUL what is big endian?
   memcpy(&rmap->size, &meta_buf[8], 8);
-
-  printf("RMAP SIZE is %llu\n", rmap->size);
-
   smatrix_rmap_init(self, rmap, rmap->size);
 
   rmap_bytes = rmap->size * 16;
@@ -423,9 +415,8 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 
     if (rmap->data[pos].value) {
       memcpy(&rmap->data[pos].key, buf + pos * 16 + 4, 4);
-      self->rmap.used++;
-      self->rmap.data[pos].flags = SMATRIX_ROW_FLAG_USED;
-      //printf("LOAD %i (%lu)\n", rmap->data[pos].key, rmap->data[pos].value);
+      rmap->used++;
+      rmap->data[pos].flags = SMATRIX_ROW_FLAG_USED;
     }
   }
 

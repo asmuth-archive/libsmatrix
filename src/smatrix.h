@@ -42,7 +42,7 @@ typedef struct {
   smatrix_vec_t*   head;
 } smatrix_row_t;
 
-// FIXPAUL ptr is only used in the first level and value is only used in the second level.
+// FIXPAUL ptr is always NULL in second first level (mem waste)
 typedef struct {
   uint32_t         flags;
   uint32_t         key;
