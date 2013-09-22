@@ -246,7 +246,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   memset(new.data, 0, new_bytes_mem);
 
   for (pos = 0; pos < rmap->size; pos++) {
-    if (!rmap->data[pos].value)
+    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
       continue;
 
     slot = smatrix_rmap_insert(self, &new, rmap->data[pos].key);
@@ -289,7 +289,8 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
   for (pos = 0; pos < rmap->size; pos++) {
     fpos += 16;
 
-    if (!rmap->data[pos].value)
+    // FIXPAUL this should be one if statement ;)
+    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
       continue;
 
     if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_DIRTY) == 0)
