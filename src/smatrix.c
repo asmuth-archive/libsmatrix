@@ -93,9 +93,10 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 
 // FIXPAUL: this needs to be atomic (compare and swap!) or locked
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
-  printf("FREED %llu bytes @ %llu\n", bytes, fpos);
+  //printf("FREED %llu bytes @ %llu\n", bytes, fpos);
 
   // FIXPAUL DEBUG ONLY ;)
+  /*
   char* fnord = malloc(bytes);
 
   if (fnord == NULL) {
@@ -105,7 +106,7 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
 
   memset(fnord, 0x42, bytes);
   pwrite(self->fd, fnord, bytes, fpos);
-  free(fnord);
+  free(fnord);*/
 }
 
 // FIXPAUL: this should lock
@@ -113,7 +114,6 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
 void smatrix_sync(smatrix_t* self) {
   uint64_t pos;
 
-  // FIXPAUL aquire sync lock
   pthread_rwlock_rdlock(&self->rmap.lock);
 
   for (pos = 0; pos < self->rmap.size; pos++) {
@@ -128,7 +128,6 @@ void smatrix_sync(smatrix_t* self) {
   smatrix_rmap_sync(self, &self->rmap);
   smatrix_meta_sync(self);
 
-  // FIXPAUL release sync lock
   pthread_rwlock_unlock(&self->rmap.lock);
 }
 
@@ -163,7 +162,6 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
     slot = smatrix_rmap_lookup(self, &self->rmap, x);
 
     if (slot && slot->key == x && (slot->flags & SMATRIX_ROW_FLAG_USED) != 0) {
-      printf("XSLOT found by lookup %lu\n", slot->key);
       xslot = slot;
     } else {
       // of course, un- and then re-locking introduces a race, this is handeled

@@ -26,13 +26,14 @@ int main(int argc, char **argv) {
 
   uint64_t i, n;
 
-  for (n = 0; n < 9999; n++) {
-    for (i = 0; i = 9999; i++) {
+  for (n = 23; n < 9999; n++) {
+    for (i = 0; i < 1000; i++) {
       smatrix_update(db, n, i);
     }
+
+    smatrix_sync(db);
   }
 
-  smatrix_sync(db);
   exit(0);
 
   smatrix_close(db);
