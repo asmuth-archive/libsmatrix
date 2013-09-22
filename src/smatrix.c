@@ -136,9 +136,9 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 
 void* smatrix_malloc(smatrix_t* self, size_t bytes) {
   // FIXPAUL must be compare and swap
-  if (self->mem > 1005840) {
-    return NULL;
-  }
+  //if (self->mem > 10005840) {
+  //  return NULL;
+  //}
 
   self->mem += bytes;
 
