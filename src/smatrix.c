@@ -93,6 +93,28 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   return old;
 }
 
+void* smatrix_malloc(smatrix_t* self, size_t bytes) {
+  // FIXPAUL must be compare and swap
+  self->mem += bytes;
+
+  if (self->mem > 3000) {
+    return NULL;
+  }
+
+  printf("malloc %lu bytes (%lu total)\n", bytes, self->mem);
+
+  void* ptr = malloc(bytes);
+
+  return ptr;
+}
+
+void smatrix_mfree(smatrix_t* self, size_t bytes) {
+  // FIXPAUL must be compare and swap
+  self->mem -= bytes;
+
+  printf("free %lu bytes (%lu total)\n", bytes, self->mem);
+}
+
 // FIXPAUL: this needs to be atomic (compare and swap!) or locked
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
   //printf("FREED %llu bytes @ %llu\n", bytes, fpos);
@@ -151,7 +173,7 @@ void smatrix_gc(smatrix_t* self) {
   }
 
   pthread_rwlock_unlock(&self->rmap.lock);
-  printf("GC...\n");
+  printf("!!!!!!!!!!!! GC...\n");
 }
 
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
@@ -185,9 +207,27 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
       xslot = smatrix_rmap_insert(self, &self->rmap, x);
 
       if (!xslot->next && !xslot->value) {
-        xslot->next = malloc(sizeof(smatrix_rmap_t));
+        xslot->next = smatrix_malloc(self, sizeof(smatrix_rmap_t));
+
+        if (xslot->next == NULL) {
+          printf("MALLOC FAILED...\n");
+          xslot->flags = 0;
+          pthread_rwlock_unlock(&self->rmap.lock);
+          smatrix_gc(self);
+          return smatrix_update(self, x,  y);
+        }
+
+        ((smatrix_rmap_t *) xslot->next)->data = smatrix_malloc(self, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
+
+        if (((smatrix_rmap_t *) xslot->next)->data == NULL) {
+          printf("MALLOC FAILED...\n");
+          xslot->flags = 0;
+          pthread_rwlock_unlock(&self->rmap.lock);
+          smatrix_gc(self);
+          return smatrix_update(self, x,  y);
+        }
+
         smatrix_rmap_init(self, xslot->next, SMATRIX_RMAP_INITIAL_SIZE);
-        ((smatrix_rmap_t *) xslot->next)->data = malloc(sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
         memset(((smatrix_rmap_t *) xslot->next)->data, 0, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
       }
     }
@@ -205,7 +245,6 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
     pthread_rwlock_unlock(&self->rmap.lock);
   }
 
-  printf("check unswap? %i\n", rmap->flags);
   if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
     smatrix_unswap(self, rmap);
   }
@@ -317,6 +356,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   uint64_t pos, old_fpos, new_size = rmap->size * 2;
 
   size_t old_bytes_disk = 16 * rmap->size + 16;
+  size_t old_bytes_mem = sizeof(smatrix_rmap_slot_t) * rmap->size;
   size_t new_bytes_disk = 16 * new_size + 16;
   size_t new_bytes_mem = sizeof(smatrix_rmap_slot_t) * new_size;
   printf("RESIZE!!!\n");
@@ -356,6 +396,8 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   rmap->used = new.used;
 
   smatrix_ffree(self, old_fpos, old_bytes_disk);
+  smatrix_mfree(self, old_bytes_mem);
+
   free(old_data);
 }
 
@@ -418,6 +460,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
   smatrix_rmap_sync(self, rmap);
   rmap->flags |= SMATRIX_RMAP_FLAG_SWAPPED;
+  smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
   free(rmap->data);
 }
 
