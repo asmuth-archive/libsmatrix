@@ -27,12 +27,17 @@ int main(int argc, char **argv) {
   uint64_t i, n;
 
   for (n = 23; n < 1000; n++) {
-    for (i = 0; i < 10; i++) {
+    for (i = 0; i < 50; i++) {
       smatrix_update(db, n, i);
     }
 
     smatrix_sync(db);
   }
+
+  smatrix_sync(db);
+  smatrix_gc(db);
+
+  printf("in used at exit: %llu\n", db->mem);
 
   exit(0);
 

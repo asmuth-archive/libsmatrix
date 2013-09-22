@@ -111,13 +111,13 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 
 void* smatrix_malloc(smatrix_t* self, size_t bytes) {
   // FIXPAUL must be compare and swap
-  self->mem += bytes;
-
-  if (self->mem > 505840) {
+  if (self->mem > 1005840) {
     return NULL;
   }
 
-  printf("malloc %lu bytes (%lu total)\n", bytes, self->mem);
+  self->mem += bytes;
+
+  printf("malloc %llu bytes (%llu total)\n", bytes, self->mem);
 
   void* ptr = malloc(bytes);
 
@@ -128,7 +128,7 @@ void smatrix_mfree(smatrix_t* self, size_t bytes) {
   // FIXPAUL must be compare and swap
   self->mem -= bytes;
 
-  printf("free %lu bytes (%lu total)\n", bytes, self->mem);
+  printf("free %llu bytes (%llu total)\n", bytes, self->mem);
 }
 
 // FIXPAUL: this needs to be atomic (compare and swap!) or locked
@@ -373,11 +373,10 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   new.used = 0;
   new.size = new_size;
-  new.data = malloc(new_bytes_mem);
+  new.data = smatrix_malloc(self, new_bytes_mem);
 
   if (new.data == NULL) {
-    printf("RMAP RESIZE FAILED (MALLOC)!!!\n"); // FIXPAUL
-    abort();
+    return;
   }
 
   memset(new.data, 0, new_bytes_mem);
@@ -390,7 +389,9 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 
     if (slot == NULL) {
       printf("RMAP RESIZE FAILED (INSERT)!!!\n"); // FIXPAUL
-      abort();
+      smatrix_mfree(self, new_bytes_mem);
+      free(new.data);
+      return;
     }
 
     slot->value = rmap->data[pos].value;
