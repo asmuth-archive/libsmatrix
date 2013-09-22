@@ -53,6 +53,19 @@ smatrix_t* smatrix_open(const char* fname) {
     printf("LOAD FILE!\n");
     smatrix_meta_load(self);
     smatrix_rmap_load(self, &self->rmap);
+
+    // FIXPAUL: put this into some method ---
+    uint64_t pos;
+    smatrix_rmap_t* rmap = &self->rmap;
+
+    for (pos = 0; pos < rmap->size; pos++) {
+      if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
+        rmap->data[pos].next = malloc(sizeof(smatrix_rmap_t));
+        ((smatrix_rmap_t *) rmap->data[pos].next)->fpos = rmap->data[pos].value;
+        smatrix_rmap_load(self, rmap->data[pos].next);
+      }
+    }
+    // ---
   }
 
   return self;
@@ -133,11 +146,13 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
       pthread_rwlock_wrlock(&self->rmap.lock);
       xslot = smatrix_rmap_insert(self, &self->rmap, x);
 
-      if (!xslot->next) { // FIXPAUL only if not loaded!
+      if (!xslot->next && !xslot->value) {
         xslot->next = malloc(sizeof(smatrix_rmap_t));
         smatrix_rmap_init(self, xslot->next, SMATRIX_RMAP_INITIAL_SIZE);
       }
     }
+
+    printf("x-slot found %p (@%p)\n", xslot, slot->next);
 
     if (xslot) {
       pthread_rwlock_rdlock(&((smatrix_rmap_t *) xslot->next)->lock);
@@ -146,8 +161,6 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
 
     pthread_rwlock_unlock(&self->rmap.lock);
   }
-
-  printf("x-slot found %p\n", xslot);
 
   new_fpos = ((smatrix_rmap_t *) xslot->next)->fpos;
   pthread_rwlock_unlock(&((smatrix_rmap_t *) xslot->next)->lock);
