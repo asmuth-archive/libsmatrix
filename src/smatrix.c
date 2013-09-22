@@ -17,6 +17,7 @@
 #include "smatrix.h"
 
 // TODO
+//  + aquire lock on file to prevent concurrent access
 //  + falloc lock
 //  + constant-ify all the magic numbers
 //  + convert endianess when loading/saving to disk
@@ -32,9 +33,8 @@ smatrix_t* smatrix_open(const char* fname) {
   if (self == NULL)
     return NULL;
 
-// FILE INIT
-
-  self->fd = open(fname, O_RDWR | O_CREAT, 00600);
+  self->mem = 0;
+  self->fd  = open(fname, O_RDWR | O_CREAT, 00600);
 
   if (self->fd == -1) {
     perror("cannot open file");
@@ -107,6 +107,9 @@ void smatrix_close(smatrix_t* self) {
       free(rmap->data[pos].next);
     }
   }
+
+  smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
+  free(rmap->data);
 
   printf("in used at exit: %llu\n", self->mem);
 
