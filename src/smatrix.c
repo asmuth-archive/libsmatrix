@@ -47,9 +47,11 @@ smatrix_t* smatrix_open(const char* fname) {
 
   if (self->fpos == 0) {
     printf("NEW FILE!\n");
-
     smatrix_falloc(self, SMATRIX_META_SIZE);
     smatrix_rmap_init(self, &self->rmap, SMATRIX_RMAP_INITIAL_SIZE);
+    self->rmap.data = malloc(sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
+    assert(self->rmap.data != NULL);
+    memset(self->rmap.data, 0, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
     smatrix_rmap_sync(self, &self->rmap);
     smatrix_meta_sync(self);
   } else {
@@ -185,6 +187,8 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
       if (!xslot->next && !xslot->value) {
         xslot->next = malloc(sizeof(smatrix_rmap_t));
         smatrix_rmap_init(self, xslot->next, SMATRIX_RMAP_INITIAL_SIZE);
+        ((smatrix_rmap_t *) xslot->next)->data = malloc(sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
+        memset(((smatrix_rmap_t *) xslot->next)->data, 0, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
       }
     }
 
@@ -201,6 +205,7 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
     pthread_rwlock_unlock(&self->rmap.lock);
   }
 
+  printf("check unswap? %i\n", rmap->flags);
   if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
     smatrix_unswap(self, rmap);
   }
@@ -412,7 +417,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 // caller must hold a write lock on rmap
 void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
   smatrix_rmap_sync(self, rmap);
-  rmap->flags &= SMATRIX_RMAP_FLAG_SWAPPED;
+  rmap->flags |= SMATRIX_RMAP_FLAG_SWAPPED;
   free(rmap->data);
 }
 
