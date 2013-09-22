@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "smatrix.h"
 
@@ -179,6 +180,7 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
 
       old_fpos = xslot->value;
       rmap     = (smatrix_rmap_t *) xslot->next;
+      assert(rmap != NULL);
       pthread_rwlock_wrlock(&rmap->lock);
     }
 
@@ -189,7 +191,8 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
   // FIXPAUL LOAD RMAP IF NOT LOADED
 
   yslot = smatrix_rmap_insert(self, rmap, y);
-  // FIXPAUL assert slot != NULL && slot-key == y
+  assert(yslot != NULL);
+  assert(yslot->key == y);
 
   printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, yslot->value++); // FIXPAUL
   yslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
@@ -200,7 +203,7 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
   if (old_fpos != new_fpos) {
     pthread_rwlock_wrlock(&self->rmap.lock);
     xslot = smatrix_rmap_lookup(self, &self->rmap, x);
-    // FIXPAUL assert (xslot != NULL)
+    assert(xslot != NULL);
     xslot->value = new_fpos;
     xslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
     pthread_rwlock_unlock(&self->rmap.lock);
