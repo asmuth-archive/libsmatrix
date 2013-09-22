@@ -104,7 +104,7 @@ void smatrix_close(smatrix_t* self) {
   for (pos = 0; pos < rmap->size; pos++) {
     if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
       smatrix_mfree(self, sizeof(smatrix_rmap_t));
-      pthread_mutex_destroy(&((smatrix_rmap_t *) rmap->data[pos].next)->lock);
+      pthread_rwlock_destroy(&((smatrix_rmap_t *) rmap->data[pos].next)->lock);
       free(rmap->data[pos].next);
     }
   }
@@ -112,9 +112,9 @@ void smatrix_close(smatrix_t* self) {
   smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
   free(rmap->data);
 
-  printf("in used at exit: %llu\n", self->mem);
+  printf("in used at exit: %lu\n", self->mem);
 
-  pthread_mutex_destroy(&rmap->lock);
+  pthread_rwlock_destroy(&rmap->lock);
   close(self->fd);
   free(self);
 }
@@ -291,7 +291,7 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
   assert(yslot != NULL);
   assert(yslot->key == y);
 
-  printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, yslot->value++); // FIXPAUL
+  //printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, yslot->value++); // FIXPAUL
   yslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
 
   new_fpos = rmap->fpos;

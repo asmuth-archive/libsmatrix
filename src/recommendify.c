@@ -18,21 +18,36 @@
 
 smatrix_t* db;
 
+void* test(void* fnord) {
+  uint64_t i, n, m;
+
+  for (m = 0; m < 10; m++) {
+    for (n = 23; n < 1000; n++) {
+      for (i = 0; i < 50; i++) {
+        smatrix_update(db, n, i);
+      }
+
+      smatrix_sync(db);
+    }
+  }
+
+  return NULL;
+}
+
 int main(int argc, char **argv) {
+  int n, num_threads = 1;
+  pthread_t threads[num_threads];
+
   db = smatrix_open("/var/tmp/reco.db");
 
   if (db == NULL)
     abort();
 
-  uint64_t i, n;
+  for (n = 0; n < num_threads; n++)
+    pthread_create(&threads[n], NULL, test, NULL);
 
-  for (n = 23; n < 1000; n++) {
-    for (i = 0; i < 50; i++) {
-      smatrix_update(db, n, i);
-    }
-
-    smatrix_sync(db);
-  }
+  for (n = 0; n < num_threads; n++)
+    pthread_join(threads[n], NULL);
 
   smatrix_close(db);
   return 0;
