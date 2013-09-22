@@ -70,6 +70,7 @@ smatrix_t* smatrix_open(const char* fname);
 void smatrix_sync(smatrix_t* self);
 void smatrix_close(smatrix_t* self);
 
+void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y);
 
 uint64_t smatrix_rmap_get(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key); // will be removed later
 

@@ -116,6 +116,33 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
   pthread_rwlock_init(&rmap->lock, NULL);
 }
 
+void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
+  smatrix_rmap_slot_t *slot, *xslot = NULL, *yslot = NULL;
+
+  while (!xslot) {
+    pthread_rwlock_rdlock(&self->rmap.lock);
+    slot = smatrix_rmap_lookup(self, &self->rmap, x);
+
+    if (slot && slot->key == x) {
+      xslot = slot;
+    } else {
+      pthread_rwlock_unlock(&self->rmap.lock);
+      pthread_rwlock_wrlock(&self->rmap.lock);
+      // FIXPAUL: keep track of old rmap fpos and update meta if neccessary
+      xslot = smatrix_rmap_insert(self, &self->rmap, x);
+    }
+
+    if (xslot) {
+      // FIXPAUL: get readlock on inner rmap
+    }
+
+    pthread_rwlock_unlock(&self->rmap.lock);
+  }
+
+  printf("x-slot found %p\n", xslot);
+}
+
+
 // this method will be removed later
 uint64_t smatrix_rmap_get(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
   uint64_t ret = 0;
