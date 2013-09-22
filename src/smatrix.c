@@ -159,6 +159,7 @@ void smatrix_sync(smatrix_t* self) {
   pthread_rwlock_unlock(&self->rmap.lock);
 }
 
+// no locks must be held by the caller of this method
 void smatrix_gc(smatrix_t* self) {
   uint64_t pos;
 
@@ -208,6 +209,12 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
       pthread_rwlock_unlock(&self->rmap.lock);
       pthread_rwlock_wrlock(&self->rmap.lock);
       xslot = smatrix_rmap_insert(self, &self->rmap, x);
+
+      if (xslot == NULL) {
+        pthread_rwlock_unlock(&self->rmap.lock);
+        smatrix_gc(self);
+        return smatrix_update(self, x,  y);
+      }
 
       if (!xslot->next && !xslot->value) {
         xslot->next = smatrix_malloc(self, sizeof(smatrix_rmap_t));
@@ -259,6 +266,13 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
   }
 
   yslot = smatrix_rmap_insert(self, rmap, y);
+
+  if (yslot == NULL) {
+    pthread_rwlock_unlock(&rmap->lock);
+    smatrix_gc(self);
+    return smatrix_update(self, x,  y);
+  }
+
   assert(yslot != NULL);
   assert(yslot->key == y);
 
@@ -302,14 +316,15 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
   smatrix_rmap_slot_t* slot;
 
   if (rmap->used > rmap->size / 2) {
-    smatrix_rmap_resize(self, rmap); // FIXPAUL keep track of old rmap fpos and persist to parent rmap if changed!
+    smatrix_rmap_resize(self, rmap);
+
+    if (rmap->used > rmap->size / 2) {
+      return NULL;
+    }
   }
 
   slot = smatrix_rmap_lookup(self, rmap, key);
-
-  if (slot == NULL) {
-    abort();
-  }
+  assert(slot != NULL);
 
   if ((slot->flags & SMATRIX_ROW_FLAG_USED) == 0 || slot->key != key) {
     rmap->used++;
