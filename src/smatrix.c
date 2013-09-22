@@ -103,9 +103,27 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
   free(fnord);
 }
 
+// FIXPAUL: this should lock
+// FIXPAUL implement this with free lists...
 void smatrix_sync(smatrix_t* self) {
+  uint64_t pos;
+
+  // FIXPAUL aquire sync lock
+  pthread_rwlock_rdlock(&self->rmap.lock);
+
+  for (pos = 0; pos < self->rmap.size; pos++) {
+    if ((self->rmap.data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
+      pthread_rwlock_rdlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
+      smatrix_rmap_sync(self, (smatrix_rmap_t *) self->rmap.data[pos].next);
+      pthread_rwlock_unlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
+    }
+  }
+
   smatrix_rmap_sync(self, &self->rmap);
   smatrix_meta_sync(self);
+
+  // FIXPAUL release sync lock
+  pthread_rwlock_unlock(&self->rmap.lock);
 }
 
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
@@ -155,6 +173,8 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
     printf("x-slot found %p (@%p)\n", xslot, slot->next);
 
     if (xslot) {
+      // FIXPAUL flag set needs to be a compare and swap loop as we might only hold a read lock
+      xslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
       pthread_rwlock_rdlock(&((smatrix_rmap_t *) xslot->next)->lock);
       old_fpos = xslot->value;
     }
@@ -319,6 +339,8 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
   memset(&slot_buf[0], 0x23,          8);
   memcpy(&slot_buf[8], &rmap->size,   8);
   pwrite(self->fd, &slot_buf, 16, fpos); // FIXPAUL write needs to be checked
+
+  printf("WRITE RMAP HEADER @ %llu\n", fpos);
 
   for (pos = 0; pos < rmap->size; pos++) {
     fpos += 16;
