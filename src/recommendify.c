@@ -22,8 +22,8 @@ void* test(void* fnord) {
   uint64_t i, n, m;
 
   for (m = 0; m < 10; m++) {
-    for (n = 23; n < 1000; n++) {
-      for (i = 0; i < 50; i++) {
+    for (n = 23; n < 100; n++) {
+      for (i = 0; i < 21; i++) {
         smatrix_update(db, n, i);
       }
 
@@ -35,7 +35,7 @@ void* test(void* fnord) {
 }
 
 int main(int argc, char **argv) {
-  int n, num_threads = 1;
+  int n, num_threads = 8;
   pthread_t threads[num_threads];
 
   db = smatrix_open("/var/tmp/reco.db");

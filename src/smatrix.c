@@ -189,7 +189,9 @@ void smatrix_gc(smatrix_t* self) {
     if ((self->rmap.data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
       if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0) {
         pthread_rwlock_wrlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
-        smatrix_swap(self, (smatrix_rmap_t *) self->rmap.data[pos].next);
+        if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0) {
+          smatrix_swap(self, (smatrix_rmap_t *) self->rmap.data[pos].next);
+        }
         pthread_rwlock_unlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
       }
     }
