@@ -132,6 +132,26 @@ void smatrix_sync(smatrix_t* self) {
   pthread_rwlock_unlock(&self->rmap.lock);
 }
 
+void smatrix_gc(smatrix_t* self) {
+  uint64_t pos;
+
+  pthread_rwlock_rdlock(&self->rmap.lock);
+
+  for (pos = 0; pos < self->rmap.size; pos++) {
+    if ((self->rmap.data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
+      if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0) {
+        pthread_rwlock_wrlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
+        printf("SWAP\n");
+        smatrix_swap(self, (smatrix_rmap_t *) self->rmap.data[pos].next);
+        pthread_rwlock_unlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
+      }
+    }
+  }
+
+  pthread_rwlock_unlock(&self->rmap.lock);
+  printf("GC...\n");
+}
+
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
   rmap->size = size;
   rmap->used = 0;
@@ -390,7 +410,15 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 }
 
 // caller must hold a write lock on rmap
+void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
+  smatrix_rmap_sync(self, rmap);
+  rmap->flags &= SMATRIX_RMAP_FLAG_SWAPPED;
+  free(rmap->data);
+}
+
+// caller must hold a write lock on rmap
 void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
+  printf("unswap...\n");
   size_t data_size = sizeof(smatrix_rmap_slot_t) * rmap->size;
   rmap->data = malloc(data_size);
 

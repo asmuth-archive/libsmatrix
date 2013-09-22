@@ -26,6 +26,8 @@ int main(int argc, char **argv) {
 
   smatrix_update(db, 42, 17);
   smatrix_update(db, 42, 17);
+  smatrix_gc(db);
+  smatrix_update(db, 42, 17);
   smatrix_sync(db);
   exit(0);
 

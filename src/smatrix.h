@@ -72,6 +72,7 @@ typedef struct {
 
 smatrix_t* smatrix_open(const char* fname);
 void smatrix_sync(smatrix_t* self);
+void smatrix_gc(smatrix_t* self);
 void smatrix_close(smatrix_t* self);
 
 void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y);
@@ -84,6 +85,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap);
+void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap);
 
 void smatrix_meta_sync(smatrix_t* self);
