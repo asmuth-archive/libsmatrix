@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 
   uint64_t i, n;
 
-  for (n = 23; n < 9999; n++) {
+  for (n = 23; n < 1000; n++) {
     for (i = 0; i < 1000; i++) {
       smatrix_update(db, n, i);
     }

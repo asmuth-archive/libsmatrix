@@ -22,6 +22,8 @@
 #define SMATRIX_ROW_FLAG_USED 1
 #define SMATRIX_ROW_FLAG_DIRTY 2
 
+#define SMATRIX_RMAP_FLAG_SWAPPED 4
+
 #define SMATRIX_RMAP_MAGIC "\x23\x23\x23\x23\x23\x23\x23\x23"
 #define SMATRIX_RMAP_MAGIC_SIZE 8
 
@@ -51,6 +53,7 @@ typedef struct {
 } smatrix_rmap_slot_t;
 
 typedef struct {
+  uint32_t             flags;
   uint64_t             fpos;
   uint64_t             size;
   uint64_t             used;
@@ -81,6 +84,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap);
+void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap);
 
 void smatrix_meta_sync(smatrix_t* self);
 void smatrix_meta_load(smatrix_t* self);

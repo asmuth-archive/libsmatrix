@@ -56,18 +56,18 @@ smatrix_t* smatrix_open(const char* fname) {
     printf("LOAD FILE!\n");
     smatrix_meta_load(self);
     smatrix_rmap_load(self, &self->rmap);
+    smatrix_unswap(self, &self->rmap);
 
     // FIXPAUL: put this into some method ---
     uint64_t pos;
     smatrix_rmap_t* rmap = &self->rmap;
 
     for (pos = 0; pos < rmap->size; pos++) {
-      printf("MAYBE MALLOC @ %llu (%lu=>%llu)\n", pos, rmap->data[pos].key, rmap->data[pos].value);
-
       if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
         rmap->data[pos].next = malloc(sizeof(smatrix_rmap_t));
         ((smatrix_rmap_t *) rmap->data[pos].next)->fpos = rmap->data[pos].value;
         smatrix_rmap_load(self, rmap->data[pos].next);
+        smatrix_unswap(self, rmap->data[pos].next);
       }
     }
     // ---
@@ -379,13 +379,8 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
 
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   char meta_buf[16] = {0};
-  size_t read, rmap_bytes;
 
-  uint64_t pos;
-
-  read = pread(self->fd, &meta_buf, 16, rmap->fpos);
-
-  if (read != 16) {
+  if (pread(self->fd, &meta_buf, 16, rmap->fpos) != 16) {
     printf("CANNOT LOAD RMATRIX\n"); // FIXPAUL
     abort();
   }
@@ -398,7 +393,12 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   // FIXPAUL what is big endian?
   memcpy(&rmap->size, &meta_buf[8], 8);
   smatrix_rmap_init(self, rmap, rmap->size);
+  rmap->flags = SMATRIX_RMAP_FLAG_SWAPPED;
+}
 
+void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
+  size_t read_bytes, rmap_bytes;
+  uint64_t pos;
   rmap_bytes = rmap->size * 16;
   char* buf = malloc(rmap_bytes);
 
@@ -407,9 +407,9 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
     abort();
   }
 
-  read = pread(self->fd, buf, rmap_bytes, rmap->fpos + 16);
+  read_bytes = pread(self->fd, buf, rmap_bytes, rmap->fpos + 16);
 
-  if (read != rmap_bytes) {
+  if (read_bytes != rmap_bytes) {
     printf("CANNOT LOAD RMATRIX\n"); // FIXPAUL
     abort();
   }
