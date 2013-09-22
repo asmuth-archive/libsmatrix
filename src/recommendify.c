@@ -34,13 +34,6 @@ int main(int argc, char **argv) {
     smatrix_sync(db);
   }
 
-  smatrix_sync(db);
-  smatrix_gc(db);
-
-  printf("in used at exit: %llu\n", db->mem);
-
-  exit(0);
-
   smatrix_close(db);
   return 0;
 }

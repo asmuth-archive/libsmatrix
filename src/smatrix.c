@@ -94,6 +94,26 @@ smatrix_t* smatrix_open(const char* fname) {
   return self;
 }
 
+void smatrix_close(smatrix_t* self) {
+  smatrix_sync(self);
+  smatrix_gc(self);
+
+  uint64_t pos;
+  smatrix_rmap_t* rmap = &self->rmap;
+
+  for (pos = 0; pos < rmap->size; pos++) {
+    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
+      smatrix_mfree(self, sizeof(smatrix_rmap_t));
+      free(rmap->data[pos].next);
+    }
+  }
+
+  printf("in used at exit: %llu\n", self->mem);
+
+  close(self->fd);
+  free(self);
+}
+
 // FIXPAUL: this needs to be atomic (compare and swap!) or locked
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   uint64_t old = self->fpos;
