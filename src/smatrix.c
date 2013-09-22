@@ -126,20 +126,28 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
     if (slot && slot->key == x) {
       xslot = slot;
     } else {
+      // of course, un- and then re-locking introduces a race, this is handeled
+      // in smatrix_rmap_insert (it returns the existing row if one found)
       pthread_rwlock_unlock(&self->rmap.lock);
       pthread_rwlock_wrlock(&self->rmap.lock);
-      // FIXPAUL: keep track of old rmap fpos and update meta if neccessary
       xslot = smatrix_rmap_insert(self, &self->rmap, x);
+
+      if (!xslot->next) {
+        xslot->next = malloc(sizeof(smatrix_rmap_t));
+        smatrix_rmap_init(self, xslot->next, SMATRIX_RMAP_INITIAL_SIZE);
+      }
     }
 
     if (xslot) {
-      // FIXPAUL: get readlock on inner rmap
+      pthread_rwlock_rdlock(&((smatrix_rmap_t *) xslot->next)->lock);
     }
 
     pthread_rwlock_unlock(&self->rmap.lock);
   }
 
   printf("x-slot found %p\n", xslot);
+  // FIXPAUL: keep track of old rmap fpos and update meta if neccessary
+  pthread_rwlock_unlock(&((smatrix_rmap_t *) xslot->next)->lock);
 }
 
 
@@ -182,6 +190,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
     slot->key   = key;
     slot->value = 0;
     slot->flags = SMATRIX_ROW_FLAG_USED | SMATRIX_ROW_FLAG_DIRTY;
+    slot->next  = NULL;
   }
 
   return slot;
@@ -257,7 +266,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
     }
 
     slot->value = rmap->data[pos].value;
-    slot->ptr   = rmap->data[pos].ptr;
+    slot->next  = rmap->data[pos].next;
   }
 
   old_data = rmap->data;

@@ -47,7 +47,7 @@ typedef struct {
   uint32_t         flags;
   uint32_t         key;
   uint64_t         value;
-  void*            ptr;
+  void*            next;
 } smatrix_rmap_slot_t;
 
 typedef struct {
