@@ -21,14 +21,14 @@ smatrix_t* db;
 void* test(void* fnord) {
   uint64_t i, n, m;
 
-  for (m = 0; m < 10; m++) {
-    for (n = 23; n < 100; n++) {
-      for (i = 0; i < 21; i++) {
-        smatrix_update(db, n, i);
+  for (m = 0; m < 100; m++) {
+    for (n = 23; n < 1000; n++) {
+      for (i = 0; i < 30; i++) {
+        smatrix_update(db, n * m, i * m);
       }
-
-      smatrix_sync(db);
     }
+
+    smatrix_gc(db);
   }
 
   return NULL;
