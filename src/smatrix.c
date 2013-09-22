@@ -67,7 +67,7 @@ smatrix_t* smatrix_open(const char* fname) {
         rmap->data[pos].next = malloc(sizeof(smatrix_rmap_t));
         ((smatrix_rmap_t *) rmap->data[pos].next)->fpos = rmap->data[pos].value;
         smatrix_rmap_load(self, rmap->data[pos].next);
-        smatrix_unswap(self, rmap->data[pos].next);
+        //smatrix_unswap(self, rmap->data[pos].next);
       }
     }
     // ---
@@ -119,8 +119,9 @@ void smatrix_sync(smatrix_t* self) {
   for (pos = 0; pos < self->rmap.size; pos++) {
     if ((self->rmap.data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
       pthread_rwlock_rdlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
-      // FIXPAUL skip if rmap not loaded
-      smatrix_rmap_sync(self, (smatrix_rmap_t *) self->rmap.data[pos].next);
+      if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0) {
+        smatrix_rmap_sync(self, (smatrix_rmap_t *) self->rmap.data[pos].next);
+      }
       pthread_rwlock_unlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
     }
   }
@@ -132,23 +133,14 @@ void smatrix_sync(smatrix_t* self) {
 }
 
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
-  size_t data_size = sizeof(smatrix_rmap_slot_t) * size;
-
   rmap->size = size;
   rmap->used = 0;
-  rmap->data = malloc(data_size);
-
-  if (rmap->data == NULL) {
-    printf("MALLOC DATA FAILED IN RMAP_INIT\n"); //FIXPAUL
-    abort();
-  }
 
   if (!rmap->fpos) {
     printf("FALLOC %llu\n", size * 16 + 16);
     rmap->fpos = smatrix_falloc(self, size * 16 + 16);
   }
 
-  memset(rmap->data, 0, data_size);
   pthread_rwlock_init(&rmap->lock, NULL);
 }
 
@@ -189,8 +181,9 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
     pthread_rwlock_unlock(&self->rmap.lock);
   }
 
-
-  // FIXPAUL LOAD RMAP IF NOT LOADED
+  if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
+    smatrix_unswap(self, rmap);
+  }
 
   yslot = smatrix_rmap_insert(self, rmap, y);
   assert(yslot != NULL);
@@ -396,7 +389,18 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   rmap->flags = SMATRIX_RMAP_FLAG_SWAPPED;
 }
 
+// caller must hold a write lock on rmap
 void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
+  size_t data_size = sizeof(smatrix_rmap_slot_t) * rmap->size;
+  rmap->data = malloc(data_size);
+
+  if (rmap->data == NULL) {
+    printf("MALLOC DATA FAILED IN RMAP_INIT\n"); //FIXPAUL
+    abort();
+  }
+
+  memset(rmap->data, 0, data_size);
+
   size_t read_bytes, rmap_bytes;
   uint64_t pos;
   rmap_bytes = rmap->size * 16;
@@ -425,6 +429,7 @@ void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
     }
   }
 
+  rmap->flags &= ~SMATRIX_RMAP_FLAG_SWAPPED;
   free(buf);
 }
 

@@ -24,6 +24,11 @@ int main(int argc, char **argv) {
   if (db == NULL)
     abort();
 
+  smatrix_update(db, 42, 17);
+  smatrix_update(db, 42, 17);
+  smatrix_sync(db);
+  exit(0);
+
   uint64_t i, n;
 
   for (n = 23; n < 1000; n++) {
