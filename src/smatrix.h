@@ -27,6 +27,10 @@
 #define SMATRIX_RMAP_MAGIC "\x23\x23\x23\x23\x23\x23\x23\x23"
 #define SMATRIX_RMAP_MAGIC_SIZE 8
 
+#define SMATRIX_OP_SET 1
+#define SMATRIX_OP_INCR 2
+#define SMATRIX_OP_DECR 4
+
 // FIXPAUL ptr is always NULL in second first level (mem waste)
 typedef struct {
   uint32_t         flags;
@@ -60,7 +64,7 @@ void smatrix_mfree(smatrix_t* self, size_t size);
 void smatrix_close(smatrix_t* self);
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes);
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes);
-void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y);
+uint64_t smatrix_update(smatrix_t* self, uint32_t x, uint32_t y, uint32_t op, uint64_t opval);
 void smatrix_retrieve(smatrix_t* self, uint32_t x, uint32_t y);
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size);
 smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
@@ -75,9 +79,9 @@ void smatrix_meta_load(smatrix_t* self);
 
 // ----
 
-uint32_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y);
-void smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value);
-void smatrix_incr(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value);
-int smatrix_foreach(smatrix_t* self, uint32_t x);
+uint64_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y);
+uint64_t smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value);
+uint64_t smatrix_incr(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value);
+uint64_t smatrix_decr(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value);
 
 #endif

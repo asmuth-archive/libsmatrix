@@ -210,6 +210,18 @@ void smatrix_gc(smatrix_t* self) {
   pthread_rwlock_unlock(&self->rmap.lock);
 }
 
+uint64_t smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value) {
+  return smatrix_update(self, x, y, SMATRIX_OP_SET, value);
+}
+
+uint64_t smatrix_incr(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value) {
+  return smatrix_update(self, x, y, SMATRIX_OP_INCR, value);
+}
+
+uint64_t smatrix_decr(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value) {
+  return smatrix_update(self, x, y, SMATRIX_OP_DECR, value);
+}
+
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
   rmap->size = size;
   rmap->used = 0;
@@ -221,7 +233,6 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
 void smatrix_retrieve(smatrix_t* self, uint32_t x, uint32_t y) {
   smatrix_rmap_t *rmap;
   smatrix_rmap_slot_t *xslot = NULL, *yslot = NULL;
-  uint64_t old_fpos, new_fpos;
 
   pthread_rwlock_rdlock(&self->rmap.lock);
   xslot = smatrix_rmap_lookup(self, &self->rmap, x);
@@ -260,10 +271,10 @@ void smatrix_retrieve(smatrix_t* self, uint32_t x, uint32_t y) {
   pthread_rwlock_unlock(&rmap->lock);
 }
 
-void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
+uint64_t smatrix_update(smatrix_t* self, uint32_t x, uint32_t y, uint32_t op, uint64_t opval) {
   smatrix_rmap_t *rmap;
   smatrix_rmap_slot_t *slot, *xslot = NULL, *yslot = NULL;
-  uint64_t old_fpos, new_fpos;
+  uint64_t old_fpos, new_fpos, retval;
 
   while (!xslot) {
     pthread_rwlock_rdlock(&self->rmap.lock);
@@ -281,7 +292,7 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
       if (xslot == NULL) {
         pthread_rwlock_unlock(&self->rmap.lock);
         smatrix_gc(self);
-        return smatrix_update(self, x,  y);
+        return smatrix_update(self, x,  y, op, opval);
       }
 
       if (!xslot->next && !xslot->value) {
@@ -291,7 +302,7 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
           xslot->flags = 0;
           pthread_rwlock_unlock(&self->rmap.lock);
           smatrix_gc(self);
-          return smatrix_update(self, x,  y);
+          return smatrix_update(self, x,  y, op, opval);
         }
 
         ((smatrix_rmap_t *) xslot->next)->data = smatrix_malloc(self, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
@@ -300,7 +311,7 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
           xslot->flags = 0;
           pthread_rwlock_unlock(&self->rmap.lock);
           smatrix_gc(self);
-          return smatrix_update(self, x,  y);
+          return smatrix_update(self, x,  y, op, opval);
         }
 
         smatrix_rmap_init(self, xslot->next, SMATRIX_RMAP_INITIAL_SIZE);
@@ -327,7 +338,7 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
     if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
       pthread_rwlock_unlock(&rmap->lock);
       smatrix_gc(self);
-      return smatrix_update(self, x,  y);
+      return smatrix_update(self, x,  y, op, opval);
     }
   }
 
@@ -336,7 +347,7 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
   if (yslot == NULL) {
     pthread_rwlock_unlock(&rmap->lock);
     smatrix_gc(self);
-    return smatrix_update(self, x,  y);
+    return smatrix_update(self, x,  y, op, opval);
   }
 
   assert(yslot != NULL);
@@ -345,6 +356,8 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
   yslot->value++; // FIXPAUL
   //printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, yslot->value++); // FIXPAUL
   yslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
+
+  retval = yslot->value;
 
   new_fpos = rmap->fpos;
   pthread_rwlock_unlock(&rmap->lock);
@@ -357,6 +370,8 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
     xslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
     pthread_rwlock_unlock(&self->rmap.lock);
   }
+
+  return retval;
 }
 
 // you need to hold a write lock on rmap to call this function safely
