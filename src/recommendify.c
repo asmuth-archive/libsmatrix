@@ -22,7 +22,7 @@ void* test(void* fnord) {
   uint64_t i, n, m;
 
   for (m = 1; m < 2; m++) {
-    for (n = 23; n < 10000; n++) {
+    for (n = 23; n < 100; n++) {
       for (i = 0; i < 3000; i++) {
         smatrix_incr(db, n * m, i * m * n, 1);
         smatrix_get(db, n * m, i * m * n);
@@ -38,7 +38,7 @@ void* test(void* fnord) {
 }
 
 int main(int argc, char **argv) {
-  int n, num_threads = 8;
+  int n, num_threads = 1;
   pthread_t threads[num_threads];
 
   db = smatrix_open("/var/tmp/reco.db");
@@ -51,6 +51,12 @@ int main(int argc, char **argv) {
 
   for (n = 0; n < num_threads; n++)
     pthread_join(threads[n], NULL);
+
+  uint64_t idx, ret[4096 * 8];
+  for(idx = smatrix_getrow(db, 42, ret, sizeof(ret)); idx > 2; idx -= 2) {
+    if (ret[idx -1])
+      printf("(%llu,%llu)=>%llu\n", 42, ret[idx - 2], ret[idx - 1]);
+  }
 
   smatrix_close(db);
   return 0;

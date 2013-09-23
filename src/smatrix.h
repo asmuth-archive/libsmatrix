@@ -83,5 +83,6 @@ uint64_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y);
 uint64_t smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value);
 uint64_t smatrix_incr(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value);
 uint64_t smatrix_decr(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value);
+uint64_t smatrix_getrow(smatrix_t* self, uint32_t x, uint64_t* ret, size_t ret_len);
 
 #endif

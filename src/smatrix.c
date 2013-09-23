@@ -229,6 +229,31 @@ uint64_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y) {
   return retval;
 }
 
+// returns a whole row as an array of uint64_t's, odd slots contain indexes, even slots contain
+// values. example: [index, value, index, value...]
+uint64_t smatrix_getrow(smatrix_t* self, uint32_t x, uint64_t* ret, size_t ret_len) {
+  uint64_t pos, num = 0;
+
+  smatrix_rmap_t* rmap = smatrix_retrieve(self, x);
+
+  if (rmap == NULL)
+    return 0;
+
+  for (pos = 0; pos < rmap->size && (num * 2 * sizeof(uint64_t)) < ret_len; pos++) {
+    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
+      continue;
+
+    ret[num * 2] = (uint64_t) rmap->data[pos].key;
+    ret[num * 2 + 1] = rmap->data[pos].value;
+    num++;
+  }
+
+  pthread_rwlock_unlock(&rmap->lock);
+
+  return num;
+}
+
+
 uint64_t smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value) {
   return smatrix_update(self, x, y, SMATRIX_OP_SET, value);
 }
