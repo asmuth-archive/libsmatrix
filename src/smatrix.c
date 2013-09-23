@@ -139,20 +139,26 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 }
 
 void* smatrix_malloc(smatrix_t* self, size_t bytes) {
-  // FIXPAUL must be compare and swap
-  //if (self->mem > 10005840) {
-  //  return NULL;
-  //}
+  for (;;) {
+    __sync_synchronize();
+    volatile size_t mem = self->mem;
 
-  self->mem += bytes;
+    if (__sync_bool_compare_and_swap(&self->mem, mem, mem + bytes))
+      break;
+  }
 
   void* ptr = malloc(bytes);
   return ptr;
 }
 
 void smatrix_mfree(smatrix_t* self, size_t bytes) {
-  // FIXPAUL must be compare and swap
-  self->mem -= bytes;
+  for (;;) {
+    __sync_synchronize();
+    volatile size_t mem = self->mem;
+
+    if (__sync_bool_compare_and_swap(&self->mem, mem, mem - bytes))
+      break;
+  }
 }
 
 // FIXPAUL: this needs to be atomic (compare and swap!) or locked
@@ -160,7 +166,6 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
   //printf("FREED %llu bytes @ %llu\n", bytes, fpos);
 }
 
-// FIXPAUL: this should lock
 // FIXPAUL implement this with free lists...
 void smatrix_sync(smatrix_t* self) {
   uint64_t pos;
