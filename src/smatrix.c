@@ -207,10 +207,7 @@ void smatrix_gc(smatrix_t* self) {
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
   rmap->size = size;
   rmap->used = 0;
-
-  if (!rmap->fpos) {
-    rmap->fpos = smatrix_falloc(self, size * 16 + 16);
-  }
+  rmap->fpos = smatrix_falloc(self, size * 16 + 16);
 
   pthread_rwlock_init(&rmap->lock, NULL);
 }
@@ -463,8 +460,10 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   // FIXPAUL what is big endian?
   memcpy(&rmap->size, &meta_buf[8], 8);
-  smatrix_rmap_init(self, rmap, rmap->size);
+  rmap->used = 0;
   rmap->flags = SMATRIX_RMAP_FLAG_SWAPPED;
+
+  pthread_rwlock_init(&rmap->lock, NULL);
 }
 
 // caller must hold a write lock on rmap
