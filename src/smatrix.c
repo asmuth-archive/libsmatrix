@@ -210,6 +210,25 @@ void smatrix_gc(smatrix_t* self) {
   pthread_rwlock_unlock(&self->rmap.lock);
 }
 
+uint64_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y) {
+  uint64_t retval = 0;
+
+  smatrix_rmap_t* rmap = smatrix_retrieve(self, x);
+
+  if (rmap == NULL)
+    return retval;
+
+  smatrix_rmap_slot_t* slot = smatrix_rmap_lookup(self, rmap, y);
+
+  if (slot && slot->key == y && (slot->flags & SMATRIX_ROW_FLAG_USED) != 0) {
+    retval = slot->value;
+  }
+
+  pthread_rwlock_unlock(&rmap->lock);
+
+  return retval;
+}
+
 uint64_t smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value) {
   return smatrix_update(self, x, y, SMATRIX_OP_SET, value);
 }
@@ -230,9 +249,10 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
   pthread_rwlock_init(&rmap->lock, NULL);
 }
 
-void smatrix_retrieve(smatrix_t* self, uint32_t x, uint32_t y) {
-  smatrix_rmap_t *rmap;
-  smatrix_rmap_slot_t *xslot = NULL, *yslot = NULL;
+// returns the target rmap unswapped and locked for reading. the lock must be release by the caller!
+smatrix_rmap_t* smatrix_retrieve(smatrix_t* self, uint32_t x) {
+  smatrix_rmap_t *rmap = NULL;
+  smatrix_rmap_slot_t *xslot = NULL;
 
   pthread_rwlock_rdlock(&self->rmap.lock);
   xslot = smatrix_rmap_lookup(self, &self->rmap, x);
@@ -242,6 +262,9 @@ void smatrix_retrieve(smatrix_t* self, uint32_t x, uint32_t y) {
   }
 
   pthread_rwlock_unlock(&self->rmap.lock);
+
+  if (!rmap)
+    return NULL;
 
   if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
     pthread_rwlock_wrlock(&rmap->lock);
@@ -258,17 +281,10 @@ void smatrix_retrieve(smatrix_t* self, uint32_t x, uint32_t y) {
   if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
     pthread_rwlock_unlock(&rmap->lock);
     smatrix_gc(self);
-    return smatrix_retrieve(self, x,  y);
+    return smatrix_retrieve(self, x);
   }
 
-  yslot = smatrix_rmap_lookup(self, rmap, y);
-
-  if (yslot && yslot->key == y && (yslot->flags & SMATRIX_ROW_FLAG_USED) != 0) {
-    //printf("(%i,%i) => %lu\n", x, y, yslot->value);
-    // .. found ! ;)
-  }
-
-  pthread_rwlock_unlock(&rmap->lock);
+  return rmap;
 }
 
 uint64_t smatrix_update(smatrix_t* self, uint32_t x, uint32_t y, uint32_t op, uint64_t opval) {

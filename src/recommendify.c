@@ -25,7 +25,7 @@ void* test(void* fnord) {
     for (n = 23; n < 10000; n++) {
       for (i = 0; i < 3000; i++) {
         smatrix_incr(db, n * m, i * m * n, 1);
-        smatrix_retrieve(db, n * m, i * m * n);
+        smatrix_get(db, n * m, i * m * n);
       }
 
       smatrix_sync(db);
