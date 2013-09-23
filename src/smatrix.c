@@ -17,7 +17,6 @@
 #include "smatrix.h"
 
 // TODO
-//  + implement smatrix_get
 //  + aquire lock on file to prevent concurrent access
 //  + count swapable alloced memory and un-swappable seperatly (hard limit only on swappable!)
 //  + constant-ify all the magic numbers
@@ -139,6 +138,8 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 }
 
 void* smatrix_malloc(smatrix_t* self, size_t bytes) {
+  if (self->mem > 104857600) return NULL;
+
   for (;;) {
     __sync_synchronize();
     volatile size_t mem = self->mem;
@@ -215,6 +216,48 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
   rmap->fpos = smatrix_falloc(self, size * 16 + 16);
 
   pthread_rwlock_init(&rmap->lock, NULL);
+}
+
+void smatrix_retrieve(smatrix_t* self, uint32_t x, uint32_t y) {
+  smatrix_rmap_t *rmap;
+  smatrix_rmap_slot_t *xslot = NULL, *yslot = NULL;
+  uint64_t old_fpos, new_fpos;
+
+  pthread_rwlock_rdlock(&self->rmap.lock);
+  xslot = smatrix_rmap_lookup(self, &self->rmap, x);
+
+  if (xslot && xslot->key == x && (xslot->flags & SMATRIX_ROW_FLAG_USED) != 0) {
+    rmap = (smatrix_rmap_t *) xslot->next;
+  }
+
+  pthread_rwlock_unlock(&self->rmap.lock);
+
+  if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
+    pthread_rwlock_wrlock(&rmap->lock);
+
+    if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
+      smatrix_unswap(self, rmap);
+    }
+
+    pthread_rwlock_unlock(&rmap->lock);
+  }
+
+  pthread_rwlock_rdlock(&rmap->lock);
+
+  if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
+    pthread_rwlock_unlock(&rmap->lock);
+    smatrix_gc(self);
+    return smatrix_retrieve(self, x,  y);
+  }
+
+  yslot = smatrix_rmap_lookup(self, rmap, y);
+
+  if (yslot && yslot->key == y && (yslot->flags & SMATRIX_ROW_FLAG_USED) != 0) {
+    //printf("(%i,%i) => %lu\n", x, y, yslot->value);
+    // .. found ! ;)
+  }
+
+  pthread_rwlock_unlock(&rmap->lock);
 }
 
 void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
@@ -299,6 +342,7 @@ void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y) {
   assert(yslot != NULL);
   assert(yslot->key == y);
 
+  yslot->value++; // FIXPAUL
   //printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, yslot->value++); // FIXPAUL
   yslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
 

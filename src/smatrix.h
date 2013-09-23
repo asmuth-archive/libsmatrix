@@ -61,6 +61,7 @@ void smatrix_close(smatrix_t* self);
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes);
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes);
 void smatrix_update(smatrix_t* self, uint32_t x, uint32_t y);
+void smatrix_retrieve(smatrix_t* self, uint32_t x, uint32_t y);
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size);
 smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
 smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
