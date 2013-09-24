@@ -253,6 +253,20 @@ uint64_t smatrix_getrow(smatrix_t* self, uint32_t x, uint64_t* ret, size_t ret_l
   return num;
 }
 
+uint64_t smatrix_rowlen(smatrix_t* self, uint32_t x) {
+  uint64_t len;
+
+  smatrix_rmap_t* rmap = smatrix_retrieve(self, x);
+
+  if (rmap == NULL)
+    return 0;
+
+  len = rmap->used;
+
+  pthread_rwlock_unlock(&rmap->lock);
+  return len;
+}
+
 
 uint64_t smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value) {
   return smatrix_update(self, x, y, SMATRIX_OP_SET, value);

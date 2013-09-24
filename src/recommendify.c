@@ -46,17 +46,27 @@ int main(int argc, char **argv) {
   if (db == NULL)
     abort();
 
+  printf("...\n");
+/*
   for (n = 0; n < num_threads; n++)
     pthread_create(&threads[n], NULL, test, NULL);
 
   for (n = 0; n < num_threads; n++)
     pthread_join(threads[n], NULL);
+*/
+
+  smatrix_incr(db, 42, 123, 1);
+  smatrix_incr(db, 42, 23, 1);
+  smatrix_incr(db, 42, 23, 1);
+  smatrix_incr(db, 42, 17, 1);
 
   uint64_t idx, ret[4096 * 8];
-  for(idx = smatrix_getrow(db, 42, ret, sizeof(ret)); idx > 2; idx -= 2) {
-    if (ret[idx -1])
-      printf("(%llu,%llu)=>%llu\n", 42, ret[idx - 2], ret[idx - 1]);
-  }
+  printf("smatrix_rowlen %lu, %lu\n", smatrix_rowlen(db, 42), smatrix_getrow(db, 42, ret, sizeof(ret)));
+
+  //for(idx = smatrix_getrow(db, 42, ret, sizeof(ret)); idx > 2; idx -= 2) {
+  //  if (ret[idx -1])
+  //    printf("(%llu,%llu)=>%llu\n", 42, ret[idx - 1], ret[idx - 2]);
+  //}
 
   smatrix_close(db);
   return 0;
