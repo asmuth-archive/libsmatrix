@@ -52,7 +52,7 @@ typedef struct {
 typedef struct {
   int              fd;
   uint64_t         fpos;
-  size_t           mem;
+  uint64_t         mem;
   smatrix_rmap_t   rmap;
   pthread_mutex_t  lock;
 } smatrix_t;
@@ -60,8 +60,8 @@ typedef struct {
 smatrix_t* smatrix_open(const char* fname);
 void smatrix_sync(smatrix_t* self);
 void smatrix_gc(smatrix_t* self);
-void* smatrix_malloc(smatrix_t* self, size_t size);
-void smatrix_mfree(smatrix_t* self, size_t size);
+void* smatrix_malloc(smatrix_t* self, uint64_t bytes);
+void smatrix_mfree(smatrix_t* self, uint64_t bytes);
 void smatrix_close(smatrix_t* self);
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes);
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes);

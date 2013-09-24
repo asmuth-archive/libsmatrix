@@ -137,12 +137,12 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   return old;
 }
 
-void* smatrix_malloc(smatrix_t* self, size_t bytes) {
-  if (self->mem > 104857600) return NULL;
+void* smatrix_malloc(smatrix_t* self, uint64_t bytes) {
+  if (self->mem > 4294967296) return NULL;
 
   for (;;) {
     __sync_synchronize();
-    volatile size_t mem = self->mem;
+    volatile uint64_t mem = self->mem;
 
     if (__sync_bool_compare_and_swap(&self->mem, mem, mem + bytes))
       break;
@@ -152,10 +152,10 @@ void* smatrix_malloc(smatrix_t* self, size_t bytes) {
   return ptr;
 }
 
-void smatrix_mfree(smatrix_t* self, size_t bytes) {
+void smatrix_mfree(smatrix_t* self, uint64_t bytes) {
   for (;;) {
     __sync_synchronize();
-    volatile size_t mem = self->mem;
+    volatile uint64_t mem = self->mem;
 
     if (__sync_bool_compare_and_swap(&self->mem, mem, mem - bytes))
       break;
@@ -489,10 +489,10 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   uint64_t pos, old_fpos, new_size = rmap->size * 2;
 
-  size_t old_bytes_disk = 16 * rmap->size + 16;
-  size_t old_bytes_mem = sizeof(smatrix_rmap_slot_t) * rmap->size;
-  size_t new_bytes_disk = 16 * new_size + 16;
-  size_t new_bytes_mem = sizeof(smatrix_rmap_slot_t) * new_size;
+  uint64_t old_bytes_disk = 16 * rmap->size + 16;
+  uint64_t old_bytes_mem = sizeof(smatrix_rmap_slot_t) * rmap->size;
+  uint64_t new_bytes_disk = 16 * new_size + 16;
+  uint64_t new_bytes_mem = sizeof(smatrix_rmap_slot_t) * new_size;
 
   new.used = 0;
   new.size = new_size;
@@ -601,7 +601,7 @@ void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
 
 // caller must hold a write lock on rmap
 void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
-  size_t data_size = sizeof(smatrix_rmap_slot_t) * rmap->size;
+  uint64_t data_size = sizeof(smatrix_rmap_slot_t) * rmap->size;
   rmap->data = smatrix_malloc(self, data_size);
 
   if (rmap->data == NULL) {
@@ -610,8 +610,7 @@ void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   memset(rmap->data, 0, data_size);
 
-  size_t read_bytes, rmap_bytes;
-  uint64_t pos;
+  uint64_t pos, read_bytes, rmap_bytes;
   rmap_bytes = rmap->size * 16;
   char* buf = malloc(rmap_bytes);
 
@@ -657,7 +656,7 @@ void smatrix_meta_sync(smatrix_t* self) {
 
 void smatrix_meta_load(smatrix_t* self) {
   char buf[SMATRIX_META_SIZE];
-  size_t read;
+  uint64_t read;
 
   read = pread(self->fd, &buf, SMATRIX_META_SIZE, 0);
 
