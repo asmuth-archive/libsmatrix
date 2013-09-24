@@ -175,11 +175,15 @@ void smatrix_sync(smatrix_t* self) {
 
   for (pos = 0; pos < self->rmap.size; pos++) {
     if ((self->rmap.data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
+    if ((self->rmap.data[pos].flags & SMATRIX_ROW_FLAG_DIRTY) != 0) {
       pthread_rwlock_rdlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
+      if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_DIRTY) != 0) {
       if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0) {
         smatrix_rmap_sync(self, (smatrix_rmap_t *) self->rmap.data[pos].next);
       }
+      }
       pthread_rwlock_unlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
+    }
     }
   }
 
@@ -283,6 +287,7 @@ uint64_t smatrix_decr(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value) {
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
   rmap->size = size;
   rmap->used = 0;
+  rmap->flags = 0;
   rmap->fpos = smatrix_falloc(self, size * 16 + 16);
 
   pthread_rwlock_init(&rmap->lock, NULL);
@@ -398,6 +403,7 @@ uint64_t smatrix_update(smatrix_t* self, uint32_t x, uint32_t y, uint32_t op, ui
   }
 
   yslot = smatrix_rmap_insert(self, rmap, y);
+  rmap->flags |= SMATRIX_RMAP_FLAG_DIRTY;
 
   if (yslot == NULL) {
     pthread_rwlock_unlock(&rmap->lock);
