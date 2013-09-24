@@ -169,7 +169,7 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
 
 // FIXPAUL implement this with free lists...
 void smatrix_sync(smatrix_t* self) {
-  uint64_t pos;
+  uint64_t pos, synced = 0;
 
   pthread_rwlock_rdlock(&self->rmap.lock);
 
@@ -180,6 +180,7 @@ void smatrix_sync(smatrix_t* self) {
       if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_DIRTY) != 0) {
       if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0) {
         smatrix_rmap_sync(self, (smatrix_rmap_t *) self->rmap.data[pos].next);
+        synced++;
       }
       }
       pthread_rwlock_unlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
@@ -190,12 +191,13 @@ void smatrix_sync(smatrix_t* self) {
   smatrix_rmap_sync(self, &self->rmap);
   smatrix_meta_sync(self);
 
+  printf("synced %lu/%lu rmaps\n", synced, self->rmap.used);
   pthread_rwlock_unlock(&self->rmap.lock);
 }
 
 // no locks must be held by the caller of this method
 void smatrix_gc(smatrix_t* self) {
-  uint64_t pos;
+  uint64_t pos, swapped = 0;
 
   pthread_rwlock_rdlock(&self->rmap.lock);
 
@@ -205,12 +207,14 @@ void smatrix_gc(smatrix_t* self) {
         pthread_rwlock_wrlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
         if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0) {
           smatrix_swap(self, (smatrix_rmap_t *) self->rmap.data[pos].next);
+          swapped++;
         }
         pthread_rwlock_unlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
       }
     }
   }
 
+  printf("swapped %lu/%lu rmaps\n", swapped, self->rmap.used);
   pthread_rwlock_unlock(&self->rmap.lock);
 }
 
@@ -568,6 +572,8 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
     // FIXPAUL flag unset needs to be a compare and swap loop as we only hold a read lock
     rmap->data[pos].flags &= ~SMATRIX_ROW_FLAG_DIRTY;
   }
+
+  rmap->flags &= ~SMATRIX_RMAP_FLAG_DIRTY;
 }
 
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
@@ -593,7 +599,10 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 
 // caller must hold a write lock on rmap
 void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
-  smatrix_rmap_sync(self, rmap);
+  if ((rmap->flags & SMATRIX_RMAP_FLAG_DIRTY) != 0) {
+    smatrix_rmap_sync(self, rmap);
+  }
+
   rmap->flags |= SMATRIX_RMAP_FLAG_SWAPPED;
   smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
   free(rmap->data);
