@@ -89,6 +89,7 @@ uint64_t smatrix_getrow(smatrix_t* self, uint32_t x, uint64_t* ret, size_t ret_l
 
 __uint128_t* smatrix_slot(void* data, uint32_t pos);
 uint64_t smatrix_slot_ptr(__uint128_t slot);
+uint32_t smatrix_slot_val(__uint128_t slot);
 uint32_t smatrix_slot_key(__uint128_t slot);
 
 #endif

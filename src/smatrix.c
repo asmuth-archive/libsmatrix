@@ -130,11 +130,12 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   - release readlock
 */
 void smatrix_access(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key, uint32_t value, uint64_t ptr) {
-  __uint128_t data, *slot;
+  __uint128_t data, *slot, new_data, mask;
 
   unsigned char *x, n, i; x=rmap->data; for (n=0; n<(rmap->size * SMATRIX_SLOT_SIZE) + SMATRIX_HEAD_SIZE; n++) { printf("%.2x ", x[n]); if ((n+1)%16==0) printf("\n"); }; printf("\n----\n");
 
 smatrix_access_restart:
+
   // wait for the readlock
   pthread_rwlock_rdlock(&rmap->lock);
 
@@ -166,13 +167,21 @@ smatrix_access_restart:
       pthread_rwlock_unlock(&rmap->lock);
       goto smatrix_access_restart;
     }
-
-    rmap->used++; // FIXPAUL atomic increment
   }
 
-  // FIXPAUL do smth!
-  //slot->value++;
-  //printf("val: %lu\n", slot->value);
+  // debug increment by one
+  for (;;) {
+    __sync_synchronize();
+    data = *slot; // FIXPAUL: needs to be atomic
+    new_data = 0xffffffffL;
+    new_data = new_data << 32;
+    new_data = ~new_data & data;
+    new_data |= ((uint64_t) smatrix_slot_val(data)) + 1 << 32;
+    if (__sync_bool_compare_and_swap(slot, data, new_data))
+      break;
+  }
+
+  printf("val: %u\n", smatrix_slot_val(*slot));
 
   pthread_rwlock_unlock(&rmap->lock);
   //return slot;
@@ -549,6 +558,10 @@ __uint128_t* smatrix_slot(void* data, uint32_t pos) {
 
 uint64_t smatrix_slot_ptr(__uint128_t slot) {
   return (uint64_t) (slot >> 64);
+}
+
+uint32_t smatrix_slot_val(__uint128_t slot) {
+  return (uint32_t) (slot >> 32);
 }
 
 uint32_t smatrix_slot_key(__uint128_t slot) {
