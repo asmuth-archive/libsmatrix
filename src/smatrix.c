@@ -570,11 +570,11 @@ __uint128_t* smatrix_slot(void* data, uint32_t pos) {
 }
 
 uint64_t smatrix_slot_ptr(__uint128_t slot) {
-  return (uint64_t) slot >> 64;
+  return (uint64_t) (slot >> 64);
 }
 
 uint32_t smatrix_slot_key(__uint128_t slot) {
-  return (uint32_t) slot & 0xffffffff;
+  return (uint32_t) (slot & 0xffffffff);
 }
 
 
@@ -588,7 +588,7 @@ void* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
   // linear probing
   for (n = 0; n < rmap->size; n++) {
     data = *smatrix_slot(rmap->data, pos); // FIXPAUL __atomic_load_n(SMATRIX_SLOT(rmap, pos), __ATOMIC_SEQ_CST);
-    printf("TRY POS %lu (%p..%p) => %x -- key %u, ptr %p\n", pos, rmap->data, smatrix_slot(rmap->data, pos),((uint32_t) ((data) & 0xffffffff)), smatrix_slot_key(data), smatrix_slot_ptr(data));
+    printf("TRY POS %lu (%p..%p) => %x -- key %u, ptr %p\n", pos, rmap->data, smatrix_slot(rmap->data, pos), ((uint32_t) ((data) & 0xffffffff)), smatrix_slot_key(data), smatrix_slot_ptr(data));
 
     if (smatrix_slot_ptr(data) == 0)
       break;
