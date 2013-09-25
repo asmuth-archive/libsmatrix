@@ -132,7 +132,7 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 void smatrix_access(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key, uint32_t value, uint64_t ptr) {
   __uint128_t data, *slot;
 
-  unsigned char *x, n, i; x=rmap->data; for (n=0; n<176; n++) { printf("%.2x ", x[n]); if ((n+1)%16==0) printf("\n"); }; printf("\n----\n");
+  unsigned char *x, n, i; x=rmap->data; for (n=0; n<(rmap->size * SMATRIX_SLOT_SIZE) + SMATRIX_HEAD_SIZE; n++) { printf("%.2x ", x[n]); if ((n+1)%16==0) printf("\n"); }; printf("\n----\n");
 
 smatrix_access_restart:
   // wait for the readlock
@@ -536,29 +536,8 @@ int smatrix_rmap_insert(__uint128_t* slot, uint32_t key, uint32_t value, uint64_
   if (__sync_bool_compare_and_swap(slot, empty, new, 0)) { // FIXPAUL
     return 0;
   } else {
-    printf("CAS FAILED\n");
     return 1;
   }
-
-
-  /*
-  smatrix_rmap_slot_t* slot;
-
-  slot = smatrix_rmap_lookup(self, rmap, key);
-  assert(slot != NULL);
-
-  if ((slot->flags & SMATRIX_ROW_FLAG_USED) == 0 || slot->key != key) {
-    rmap->used++;
-    slot->key   = key;
-    slot->value = 0;
-    slot->flags = SMATRIX_ROW_FLAG_USED | SMATRIX_ROW_FLAG_DIRTY;
-    slot->next  = NULL;
-  }
-
-  return slot;
-  */
-
-  return NULL;
 }
 
 // key 32
