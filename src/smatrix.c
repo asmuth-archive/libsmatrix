@@ -132,6 +132,8 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 void smatrix_access(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key, uint32_t value, uint64_t ptr) {
   __uint128_t data, *slot;
 
+  unsigned char *x, n, i; x=rmap->data; for (n=0; n<176; n++) { printf("%.2x ", x[n]); if ((n+1)%16==0) printf("\n"); }; printf("\n----\n");
+
 smatrix_access_restart:
   // wait for the readlock
   pthread_rwlock_rdlock(&rmap->lock);
@@ -531,8 +533,6 @@ int smatrix_rmap_insert(__uint128_t* slot, uint32_t key, uint32_t value, uint64_
   new  = new << 32;
   new |= key;
 
-  unsigned char *x, n; x=&new; for (n=0; n<16; n++) printf("%x ", x[n]);
-
   if (__sync_bool_compare_and_swap(slot, empty, new, 0)) { // FIXPAUL
     return 0;
   } else {
@@ -565,6 +565,10 @@ int smatrix_rmap_insert(__uint128_t* slot, uint32_t key, uint32_t value, uint64_
 // val 32
 // ptr 64
 
+__uint128_t* smatrix_slot(void* data, uint32_t pos) {
+  return (__uint128_t *) (data + SMATRIX_HEAD_SIZE + pos * SMATRIX_SLOT_SIZE);
+}
+
 uint64_t smatrix_slot_ptr(__uint128_t slot) {
   return (uint64_t) slot >> 64;
 }
@@ -583,8 +587,8 @@ void* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
 
   // linear probing
   for (n = 0; n < rmap->size; n++) {
-    data = *SMATRIX_SLOT(rmap, pos); // FIXPAUL __atomic_load_n(SMATRIX_SLOT(rmap, pos), __ATOMIC_SEQ_CST);
-    printf("TRY POS %lu (%p..%p) => %x -- key %u, ptr %p\n", pos, rmap->data, SMATRIX_SLOT(rmap, pos),((uint32_t) ((data) & 0xffffffff)), smatrix_slot_key(data), smatrix_slot_ptr(data));
+    data = *smatrix_slot(rmap->data, pos); // FIXPAUL __atomic_load_n(SMATRIX_SLOT(rmap, pos), __ATOMIC_SEQ_CST);
+    printf("TRY POS %lu (%p..%p) => %x -- key %u, ptr %p\n", pos, rmap->data, smatrix_slot(rmap->data, pos),((uint32_t) ((data) & 0xffffffff)), smatrix_slot_key(data), smatrix_slot_ptr(data));
 
     if (smatrix_slot_ptr(data) == 0)
       break;
@@ -595,7 +599,7 @@ void* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
     pos = (pos + 1) % rmap_size;
   }
 
-  return SMATRIX_SLOT(rmap, pos);
+  return smatrix_slot(rmap->data, pos);
 }
 
 
