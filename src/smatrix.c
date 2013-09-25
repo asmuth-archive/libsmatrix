@@ -188,6 +188,8 @@ void smatrix_sync(smatrix_t* self) {
     }
   }
 
+  self->rmap.flags |= SMATRIX_RMAP_FLAG_DIRTY;
+
   smatrix_rmap_sync(self, &self->rmap);
   smatrix_meta_sync(self);
 
@@ -542,6 +544,9 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 // FIXPAUL: this is doing waaaay to many pwrite syscalls for a large, dirty rmap...
 // FIXPAUL: also, the meta info needs to be written only on the first write
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
+  if ((rmap->flags & SMATRIX_RMAP_FLAG_DIRTY) == 0)
+    return;
+
   uint64_t pos = 0, fpos;
   char slot_buf[16] = {0};
 
@@ -599,10 +604,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 
 // caller must hold a write lock on rmap
 void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
-  if ((rmap->flags & SMATRIX_RMAP_FLAG_DIRTY) != 0) {
-    smatrix_rmap_sync(self, rmap);
-  }
-
+  smatrix_rmap_sync(self, rmap);
   rmap->flags |= SMATRIX_RMAP_FLAG_SWAPPED;
   smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
   free(rmap->data);
