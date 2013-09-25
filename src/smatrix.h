@@ -32,20 +32,14 @@
 #define SMATRIX_OP_INCR 2
 #define SMATRIX_OP_DECR 4
 
-// FIXPAUL ptr is always NULL in second first level (mem waste)
-typedef struct {
-  uint32_t         flags;
-  uint32_t         key;
-  uint64_t         value;
-  void*            next;
-} smatrix_rmap_slot_t;
+#define SMATRIX_SLOT_SIZE 16
 
 typedef struct {
   uint32_t             flags;
   uint64_t             fpos;
   uint64_t             size;
   uint64_t             used;
-  smatrix_rmap_slot_t* data;
+  void*                data;
   pthread_rwlock_t     lock;
 } smatrix_rmap_t;
 
@@ -72,7 +66,7 @@ void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_meta_load(smatrix_t* self);
 */
-smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
+void* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
 void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size);
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap);

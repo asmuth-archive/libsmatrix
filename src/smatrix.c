@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -51,16 +52,16 @@ smatrix_t* smatrix_open(const char* fname) {
     printf("NEW FILE!\n");
     smatrix_falloc(self, SMATRIX_META_SIZE);
     smatrix_rmap_init(self, &self->rmap, SMATRIX_RMAP_INITIAL_SIZE);
-    self->rmap.data = smatrix_malloc(self, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
+    self->rmap.data = smatrix_malloc(self, SMATRIX_SLOT_SIZE * SMATRIX_RMAP_INITIAL_SIZE + 1);
 
     if (!self->rmap.data) {
       printf("can't load first level index. mem limit too small?\n");
       exit(1); // fixpaul proper error handling
     }
 
-    memset(self->rmap.data, 0, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
-    smatrix_rmap_sync(self, &self->rmap);
-    smatrix_meta_sync(self);
+    memset(self->rmap.data, 0, SMATRIX_SLOT_SIZE * SMATRIX_RMAP_INITIAL_SIZE + 1);
+    //smatrix_rmap_sync(self, &self->rmap);
+    //smatrix_meta_sync(self);
   } else {
     /*
     printf("LOAD FILE!\n");
@@ -129,7 +130,7 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   - release readlock
 */
 void smatrix_access(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key, uint32_t value, uint64_t ptr) {
-  smatrix_rmap_slot_t* slot = NULL;
+  void* slot = NULL;
 
 smatrix_access_restart:
   // wait for the readlock
@@ -138,6 +139,7 @@ smatrix_access_restart:
   // lookup entry
   slot = smatrix_rmap_lookup(self, rmap, key);
 
+  /*
   if (!slot || slot->key != key || (slot->flags & SMATRIX_ROW_FLAG_USED) == 0) {
     printf("NEED TO INSERT!\n");
 
@@ -168,7 +170,7 @@ smatrix_access_restart:
   // FIXPAUL do smth!
   slot->value++;
   printf("val: %lu\n", slot->value);
-
+  */
   pthread_rwlock_unlock(&rmap->lock);
   //return slot;
 }
@@ -214,6 +216,7 @@ void* smatrix_malloc(smatrix_t* self, uint64_t bytes) {
   }
 
   void* ptr = malloc(bytes);
+  printf("alloced %lu bytes @ %p", bytes, ptr);
   return ptr;
 }
 
@@ -517,7 +520,8 @@ uint64_t smatrix_update(smatrix_t* self, uint32_t x, uint32_t y, uint32_t op, ui
 */
 
 // you need to hold a write lock on rmap to call this function safely
-smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
+void* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
+  /*
   smatrix_rmap_slot_t* slot;
 
   slot = smatrix_rmap_lookup(self, rmap, key);
@@ -532,31 +536,50 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
   }
 
   return slot;
+  */
+
+  return NULL;
 }
 
+// key 32
+// val 32
+// ptr 64
+
+#define SMATRIX_SLOT(_rmap_ptr, _pos) ((uint64_t *) ((_rmap_ptr)->data + ((_pos) + 1) * SMATRIX_SLOT_SIZE))
+#define SMATRIX_SLOT_KEY(_ptr) ((uint32_t *) ((_ptr)))
+#define SMATRIX_SLOT_VAL(_ptr) ((uint32_t *) ((_ptr) + 4))
+//#define SMATRIX_SLOT_PTR(_ptr) ((uint64_t *) ((_ptr) + 8))
+
 // you need to hold a read or write lock on rmap to call this function safely
-smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
-  uint64_t n, pos;
+void* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
+  uint64_t n, pos, data;
 
   pos = key % rmap->size;
 
   // linear probing
   for (n = 0; n < rmap->size; n++) {
+    data = __atomic_load_n(SMATRIX_SLOT(rmap, pos), __ATOMIC_SEQ_CST);
+    printf("TRY POS %lu (%p..%p) -- key %u\n", pos, SMATRIX_SLOT_KEY(&data), *SMATRIX_SLOT_KEY(&data));
+
+    /*
     if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
       break;
 
     if (rmap->data[pos].key == key)
       break;
 
+    */
     pos = (pos + 1) % rmap->size;
   }
 
-  return &rmap->data[pos];
+  return NULL;
+  //return &rmap->data[pos];
 }
 
 
 // you need to hold a write lock on rmap in order to call this function safely
 void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
+  /*
   smatrix_rmap_slot_t* slot;
   smatrix_rmap_t new;
   void* old_data;
@@ -606,6 +629,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   //smatrix_mfree(self, old_bytes_mem);
 
   free(old_data);
+  */
 }
 
 /*
@@ -615,6 +639,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 // FIXPAUL: this is doing waaaay to many pwrite syscalls for a large, dirty rmap...
 // FIXPAUL: also, the meta info needs to be written only on the first write
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
+/*
   uint64_t pos = 0, fpos, rmap_bytes, batched, buf_pos = 0;
   char *buf, fixed_buf[16] = {0};
 
@@ -679,6 +704,7 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
   }
 
   rmap->flags &= ~SMATRIX_RMAP_FLAG_DIRTY;
+*/
 }
 
 /*
