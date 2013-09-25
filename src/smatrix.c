@@ -17,6 +17,8 @@
 #include "smatrix.h"
 
 // TODO
+//  + ftruncate in larger blocks
+//  + the smatrix_sync should not be hold the main read lock for that long
 //  + aquire lock on file to prevent concurrent access
 //  + count swapable alloced memory and un-swappable seperatly (hard limit only on swappable!)
 //  + constant-ify all the magic numbers
