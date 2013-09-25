@@ -50,16 +50,13 @@ int main(int argc, char **argv) {
 
   printf("...\n");
 
-  smatrix_access(db, &db->rmap, 42, 1, 1);
-  smatrix_access(db, &db->rmap, 42, 1, 1);
-  smatrix_access(db, &db->rmap, 42, 1, 1);
-  smatrix_access(db, &db->rmap, 42, 1, 1);
-  exit(0);
-
   for (i = 0; i < 100; i++)
-    for (n = 0; n < 7; n++)
+    for (n = 0; n < 7; n++) {
       smatrix_access(db, &db->rmap, n, 1, 1);
+      pthread_rwlock_unlock(&db->rmap.lock);
+    }
 
+  exit(0);
 
 /*
   for (n = 0; n < num_threads; n++)

@@ -118,17 +118,21 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 }
 
 /*
-  - wait for readlock
-  - get entry
-    - if not found
-      - if resize
-        - release main read / get write lock -- if locking fails on first attempt restart whole routine
-        - resize
-        - release main write / get read lock
-      - insert with CAS
-      - set dirty bit with CAS
-  - release readlock
+  procedure to use this:
+    + call smatrix access on first rmap to find rmap struct
+    + increment reference count on rmap struct
+    + release read lock on first rmap
+    + call smarix access on rmap struct
+    + do whatever you want with the slot as long as it is atomic
+    + release read lock in rmap struct
+
+  this way we can completely remove an rmap by first aquiring a write lock
+  on the first rmap and then free the rmap struct as soon as the refcount
+  reaches zero
 */
+
+
+// you need to release the read lock manually after calling this function (after you increment your reference count)
 void smatrix_access(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key, uint32_t value, uint64_t ptr) {
   __uint128_t data, *slot, new_data, mask;
 
@@ -169,6 +173,8 @@ smatrix_access_restart:
     }
   }
 
+  // FIXPAUL return the value here and let the caller do whatever she likes
+
   // debug increment by one
   for (;;) {
     __sync_synchronize();
@@ -182,8 +188,6 @@ smatrix_access_restart:
   }
 
   printf("val: %u\n", smatrix_slot_val(*slot));
-
-  pthread_rwlock_unlock(&rmap->lock);
   //return slot;
 }
 
@@ -221,7 +225,7 @@ void* smatrix_malloc(smatrix_t* self, uint64_t bytes) {
 
   for (;;) {
     __sync_synchronize();
-    volatile uint64_t mem = self->mem;
+    volatile uint64_t mem = self->mem; // FIXPAUL needs to be atomic!
 
     if (__sync_bool_compare_and_swap(&self->mem, mem, mem + bytes))
       break;
@@ -235,7 +239,7 @@ void* smatrix_malloc(smatrix_t* self, uint64_t bytes) {
 void smatrix_mfree(smatrix_t* self, uint64_t bytes) {
   for (;;) {
     __sync_synchronize();
-    volatile uint64_t mem = self->mem;
+    volatile uint64_t mem = self->mem; // FIXPAUL: needs to be atomic!
 
     if (__sync_bool_compare_and_swap(&self->mem, mem, mem - bytes))
       break;
