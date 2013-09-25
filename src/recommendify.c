@@ -40,7 +40,7 @@ void* test(void* fnord) {
 */
 
 int main(int argc, char **argv) {
-  int n, num_threads = 1;
+  int i, n, num_threads = 1;
   pthread_t threads[num_threads];
 
   db = smatrix_open("/var/tmp/reco.db");
@@ -52,8 +52,11 @@ int main(int argc, char **argv) {
 
   smatrix_access(db, &db->rmap, 42, 1, 1);
   smatrix_access(db, &db->rmap, 42, 1, 1);
-  smatrix_access(db, &db->rmap, 42, 1, 1);
-  smatrix_access(db, &db->rmap, 42, 1, 1);
+  exit(0);
+
+  for (i = 0; i < 100; i++)
+    for (n = 0; n < 7; n++)
+      smatrix_access(db, &db->rmap, n, 1, 1);
 
 
 /*

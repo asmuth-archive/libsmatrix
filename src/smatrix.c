@@ -132,13 +132,11 @@ void smatrix_access(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key, uint32_
   smatrix_rmap_slot_t* slot = NULL;
 
 smatrix_access_restart:
-printf("FU\n");
-  
   // wait for the readlock
   pthread_rwlock_rdlock(&rmap->lock);
 
   // lookup entry
-  slot = smatrix_rmap_lookup(self, &self->rmap, key);
+  slot = smatrix_rmap_lookup(self, rmap, key);
 
   if (!slot || slot->key != key || (slot->flags & SMATRIX_ROW_FLAG_USED) == 0) {
     printf("NEED TO INSERT!\n");
@@ -521,14 +519,6 @@ uint64_t smatrix_update(smatrix_t* self, uint32_t x, uint32_t y, uint32_t op, ui
 // you need to hold a write lock on rmap to call this function safely
 smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
   smatrix_rmap_slot_t* slot;
-
-  if (rmap->used > rmap->size / 2) {
-    smatrix_rmap_resize(self, rmap);
-
-    if (rmap->used > rmap->size / 2) {
-      return NULL;
-    }
-  }
 
   slot = smatrix_rmap_lookup(self, rmap, key);
   assert(slot != NULL);
