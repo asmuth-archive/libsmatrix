@@ -143,23 +143,22 @@ smatrix_access_restart:
   data = *slot; // FIXPAUL: needs to be atomic
 
   if (smatrix_slot_ptr(data) == 0 || smatrix_slot_key(data) != key) {
+    uint32_t cur_used = rmap->used; // FIXPAUL must be atomic
     printf("NEED TO INSERT!\n");
 
-    /*
-    if (rmap->used > rmap->size / 2) {
+    if (1 || cur_used > rmap->size / 2) {
       printf("NEED TO RESIZE!\n");
 
       pthread_rwlock_unlock(&rmap->lock); pthread_rwlock_wrlock(&rmap->lock); // FIXPAUL
-      smatrix_rmap_resize(self, rmap);
-      pthread_rwlock_unlock(&rmap->lock); pthread_rwlock_rdlock(&rmap->lock); // FIXPAUL
 
-      if (rmap->used > rmap->size / 2) {
+      if (smatrix_rmap_resize(self, rmap)) {
         printf("RESIZE FAILED!\n");
         pthread_rwlock_unlock(&rmap->lock);
         goto smatrix_access_restart;
+      } else {
+        pthread_rwlock_unlock(&rmap->lock); pthread_rwlock_rdlock(&rmap->lock); // FIXPAUL
       }
     }
-    */
 
     printf("INSERTING!\n");
 
@@ -583,7 +582,7 @@ void* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
 
 
 // you need to hold a write lock on rmap in order to call this function safely
-void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
+int smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   /*
   smatrix_rmap_slot_t* slot;
   smatrix_rmap_t new;
@@ -635,6 +634,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   free(old_data);
   */
+  return 0;
 }
 
 /*

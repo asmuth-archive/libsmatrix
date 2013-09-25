@@ -68,7 +68,7 @@ void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_meta_load(smatrix_t* self);
 */
 void* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
-void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap);
+int smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size);
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_meta_sync(smatrix_t* self);
