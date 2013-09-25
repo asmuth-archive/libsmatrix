@@ -22,6 +22,7 @@
 //  + constant-ify all the magic numbers
 //  + convert endianess when loading/saving to disk
 //  + proper error handling / return codes for smatrix_open
+//  + spin locks
 //  + resize headers a sane sizes
 //  + smarter smatrix_gc
 //  + file free list
@@ -544,21 +545,44 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 // FIXPAUL: this is doing waaaay to many pwrite syscalls for a large, dirty rmap...
 // FIXPAUL: also, the meta info needs to be written only on the first write
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
+  uint64_t pos = 0, fpos, rmap_bytes, batched, buf_pos = 0;
+  char *buf, fixed_buf[16] = {0};
+
   if ((rmap->flags & SMATRIX_RMAP_FLAG_DIRTY) == 0)
     return;
 
-  uint64_t pos = 0, fpos;
-  char slot_buf[16] = {0};
-
   fpos = rmap->fpos;
 
+  batched = 1; // FIXPAUL: implement some heuristic do decide if to batch or not to batch ;)
+
+  if (batched) {
+    rmap_bytes = rmap->size * 16 + 16;
+    buf = malloc(rmap_bytes);
+
+    if (buf == NULL) {
+      batched = 0;
+      buf = fixed_buf;
+    } else {
+      memset(buf, 0, rmap_bytes);
+    }
+  } else {
+    buf = fixed_buf;
+  }
+
   // FIXPAUL: what is byte ordering?
-  memset(&slot_buf[0], 0x23,          8);
-  memcpy(&slot_buf[8], &rmap->size,   8);
-  pwrite(self->fd, &slot_buf, 16, fpos); // FIXPAUL write needs to be checked
+  memset(buf,     0x23,          8);
+  memcpy(buf + 8, &rmap->size,   8);
+
+  if (!batched) {
+    pwrite(self->fd, buf, 16, fpos); // FIXPAUL write needs to be checked
+  }
 
   for (pos = 0; pos < rmap->size; pos++) {
     fpos += 16;
+
+    if (batched) {
+      buf_pos += 16;
+    }
 
     // FIXPAUL this should be one if statement ;)
     if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
@@ -568,14 +592,20 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
       continue;
 
     // FIXPAUL what is byte ordering?
-    memset(&slot_buf[0], 0,                      4);
-    memcpy(&slot_buf[4], &rmap->data[pos].key,   4);
-    memcpy(&slot_buf[8], &rmap->data[pos].value, 8);
+    memset(buf + buf_pos,  0,                         4);
+    memcpy(buf + buf_pos + 4, &rmap->data[pos].key,   4);
+    memcpy(buf + buf_pos + 8, &rmap->data[pos].value, 8);
 
-    pwrite(self->fd, &slot_buf, 16, fpos); // FIXPAUL write needs to be checked
+    if (!batched) {
+      pwrite(self->fd, buf, 16, fpos); // FIXPAUL: check write
+    }
 
     // FIXPAUL flag unset needs to be a compare and swap loop as we only hold a read lock
     rmap->data[pos].flags &= ~SMATRIX_ROW_FLAG_DIRTY;
+  }
+
+  if (batched) {
+    pwrite(self->fd, buf, rmap_bytes, rmap->fpos); // FIXPAUL: check write
   }
 
   rmap->flags &= ~SMATRIX_RMAP_FLAG_DIRTY;

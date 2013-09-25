@@ -55,10 +55,9 @@ int main(int argc, char **argv) {
     pthread_join(threads[n], NULL);
 */
 
-  smatrix_incr(db, 42, 123, 1);
-  //smatrix_incr(db, 42, 23, 1);
-  //smatrix_incr(db, 42, 23, 1);
-  //smatrix_incr(db, 42, 17, 1);
+  smatrix_incr(db, 42, 23, 1);
+  smatrix_incr(db, 42, 23, 1);
+
 
   uint64_t len,idx, ret[4096 * 8];
 
