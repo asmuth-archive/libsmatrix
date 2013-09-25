@@ -52,6 +52,8 @@ int main(int argc, char **argv) {
 
   smatrix_access(db, &db->rmap, 42, 1, 1);
   smatrix_access(db, &db->rmap, 42, 1, 1);
+  smatrix_access(db, &db->rmap, 42, 1, 1);
+  smatrix_access(db, &db->rmap, 42, 1, 1);
   exit(0);
 
   for (i = 0; i < 100; i++)

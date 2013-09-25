@@ -52,14 +52,14 @@ smatrix_t* smatrix_open(const char* fname) {
     printf("NEW FILE!\n");
     smatrix_falloc(self, SMATRIX_META_SIZE);
     smatrix_rmap_init(self, &self->rmap, SMATRIX_RMAP_INITIAL_SIZE);
-    self->rmap.data = smatrix_malloc(self, SMATRIX_SLOT_SIZE * SMATRIX_RMAP_INITIAL_SIZE + 1);
+    self->rmap.data = smatrix_malloc(self, SMATRIX_HEAD_SIZE + SMATRIX_SLOT_SIZE * SMATRIX_RMAP_INITIAL_SIZE);
 
     if (!self->rmap.data) {
       printf("can't load first level index. mem limit too small?\n");
       exit(1); // fixpaul proper error handling
     }
 
-    memset(self->rmap.data, 0, SMATRIX_SLOT_SIZE * SMATRIX_RMAP_INITIAL_SIZE + 1);
+    memset(self->rmap.data, 0, SMATRIX_HEAD_SIZE + SMATRIX_SLOT_SIZE * SMATRIX_RMAP_INITIAL_SIZE);
     //smatrix_rmap_sync(self, &self->rmap);
     //smatrix_meta_sync(self);
   } else {
@@ -130,7 +130,7 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   - release readlock
 */
 void smatrix_access(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key, uint32_t value, uint64_t ptr) {
-  void* slot = NULL;
+  __uint128_t data, *slot;
 
 smatrix_access_restart:
   // wait for the readlock
@@ -138,11 +138,12 @@ smatrix_access_restart:
 
   // lookup entry
   slot = smatrix_rmap_lookup(self, rmap, key);
+  data = *slot; // FIXPAUL: needs to be atomic
 
-  /*
-  if (!slot || slot->key != key || (slot->flags & SMATRIX_ROW_FLAG_USED) == 0) {
+  if (smatrix_slot_ptr(data) == 0 || smatrix_slot_key(data) != key) {
     printf("NEED TO INSERT!\n");
 
+    /*
     if (rmap->used > rmap->size / 2) {
       printf("NEED TO RESIZE!\n");
 
@@ -156,21 +157,22 @@ smatrix_access_restart:
         goto smatrix_access_restart;
       }
     }
+    */
 
     printf("INSERTING!\n");
-    // FIXPAUL insert with CAS, unlock and goto restart if failed
-    assert(slot != NULL);
-    rmap->used++;
-    slot->key   = key;
-    slot->value = 0;
-    slot->flags = SMATRIX_ROW_FLAG_USED | SMATRIX_ROW_FLAG_DIRTY;
-    slot->next  = NULL;
+
+    if (smatrix_rmap_insert(slot, key, 0, 1)) {
+      pthread_rwlock_unlock(&rmap->lock);
+      goto smatrix_access_restart;
+    }
+
+    rmap->used++; // FIXPAUL atomic increment
   }
 
   // FIXPAUL do smth!
-  slot->value++;
-  printf("val: %lu\n", slot->value);
-  */
+  //slot->value++;
+  //printf("val: %lu\n", slot->value);
+
   pthread_rwlock_unlock(&rmap->lock);
   //return slot;
 }
@@ -519,8 +521,26 @@ uint64_t smatrix_update(smatrix_t* self, uint32_t x, uint32_t y, uint32_t op, ui
 
 */
 
-// you need to hold a write lock on rmap to call this function safely
-void* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
+int smatrix_rmap_insert(__uint128_t* slot, uint32_t key, uint32_t value, uint64_t ptr) {
+  __uint128_t empty = 0, new;
+
+  // FIXPAUL what is byte ordering?
+  new  = ptr;
+  new  = new << 32;
+  new |= value;
+  new  = new << 32;
+  new |= key;
+
+  unsigned char *x, n; x=&new; for (n=0; n<16; n++) printf("%x ", x[n]);
+
+  if (__sync_bool_compare_and_swap(slot, empty, new, 0)) { // FIXPAUL
+    return 0;
+  } else {
+    printf("CAS FAILED\n");
+    return 1;
+  }
+
+
   /*
   smatrix_rmap_slot_t* slot;
 
@@ -545,35 +565,37 @@ void* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
 // val 32
 // ptr 64
 
-#define SMATRIX_SLOT(_rmap_ptr, _pos) ((uint64_t *) ((_rmap_ptr)->data + ((_pos) + 1) * SMATRIX_SLOT_SIZE))
-#define SMATRIX_SLOT_KEY(_ptr) ((uint32_t *) ((_ptr)))
-#define SMATRIX_SLOT_VAL(_ptr) ((uint32_t *) ((_ptr) + 4))
-//#define SMATRIX_SLOT_PTR(_ptr) ((uint64_t *) ((_ptr) + 8))
+uint64_t smatrix_slot_ptr(__uint128_t slot) {
+  return (uint64_t) slot >> 64;
+}
+
+uint32_t smatrix_slot_key(__uint128_t slot) {
+  return (uint32_t) slot & 0xffffffff;
+}
+
 
 // you need to hold a read or write lock on rmap to call this function safely
 void* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
-  uint64_t n, pos, data;
+  __uint128_t data;
+  uint64_t n, pos, rmap_size = rmap->size;
 
-  pos = key % rmap->size;
+  pos = key % rmap_size;
 
   // linear probing
   for (n = 0; n < rmap->size; n++) {
-    data = __atomic_load_n(SMATRIX_SLOT(rmap, pos), __ATOMIC_SEQ_CST);
-    printf("TRY POS %lu (%p..%p) -- key %u\n", pos, SMATRIX_SLOT_KEY(&data), *SMATRIX_SLOT_KEY(&data));
+    data = *SMATRIX_SLOT(rmap, pos); // FIXPAUL __atomic_load_n(SMATRIX_SLOT(rmap, pos), __ATOMIC_SEQ_CST);
+    printf("TRY POS %lu (%p..%p) => %x -- key %u, ptr %p\n", pos, rmap->data, SMATRIX_SLOT(rmap, pos),((uint32_t) ((data) & 0xffffffff)), smatrix_slot_key(data), smatrix_slot_ptr(data));
 
-    /*
-    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
+    if (smatrix_slot_ptr(data) == 0)
       break;
 
-    if (rmap->data[pos].key == key)
+    if (smatrix_slot_key(data) == key)
       break;
 
-    */
-    pos = (pos + 1) % rmap->size;
+    pos = (pos + 1) % rmap_size;
   }
 
-  return NULL;
-  //return &rmap->data[pos];
+  return SMATRIX_SLOT(rmap, pos);
 }
 
 
