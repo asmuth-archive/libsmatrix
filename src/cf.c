@@ -39,7 +39,7 @@ cf_reco_t* cf_recommend(smatrix_t* smatrix, uint32_t id) {
   result = malloc(sizeof(cf_reco_t));
   cur = root->next;
 
-  printf("RECOS FOR %i (%i total @ %i)\n", id, root->value, root->index);
+  printf("RECOS FOR %i (%i total @ %i)\n", id, root->value, root->index);
   for (pos = 0; cur; pos++) {
     result->ids[pos] = cur->index;
     result->similarities[pos] = cf_cosine(smatrix, root, cur);

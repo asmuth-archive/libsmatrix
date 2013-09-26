@@ -134,9 +134,10 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 
 // you need to release the read lock manually after calling this function (after you increment your reference count)
 void smatrix_access(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key, uint32_t value, uint64_t ptr) {
+/*
   __uint128_t data, *slot, new_data, mask;
 
-  unsigned char *x, n, i; x=rmap->data; for (n=0; n<(rmap->size * SMATRIX_SLOT_SIZE) + SMATRIX_HEAD_SIZE; n++) { printf("%.2x ", x[n]); if ((n+1)%16==0) printf("\n"); }; printf("\n----\n");
+  unsigned char *x, n, i; x=rmap->data; for (n=0; n<(rmap->size * SMATRIX_SLOT_SIZE) + SMATRIX_HEAD_SIZE; n++) { printf("%.2x ", x[n]); if ((n+1)%16==0) printf("\n"); }; printf("\n----\n");
 
 smatrix_access_restart:
 
@@ -172,7 +173,6 @@ smatrix_access_restart:
       goto smatrix_access_restart;
     }
   }
-
   // FIXPAUL return the value here and let the caller do whatever she likes
 
   // debug increment by one
@@ -181,7 +181,7 @@ smatrix_access_restart:
     data = *slot; // FIXPAUL: needs to be atomic
     new_data = 0xffffffffL;
     new_data = new_data << 32;
-    new_data = ~new_data & data;
+    new_data = ~new_data & data;
     new_data |= ((uint64_t) smatrix_slot_val(data)) + 1 << 32;
     if (__sync_bool_compare_and_swap(slot, data, new_data))
       break;
@@ -189,6 +189,7 @@ smatrix_access_restart:
 
   printf("val: %u\n", smatrix_slot_val(*slot));
   //return slot;
+*/
 }
 
 /*
@@ -545,7 +546,7 @@ int smatrix_rmap_insert(__uint128_t* slot, uint32_t key, uint32_t value, uint64_
   new  = new << 32;
   new |= key;
 
-  if (__sync_bool_compare_and_swap(slot, empty, new, 0)) { // FIXPAUL
+  if (__atomic_compare_exchange_n(slot, &empty, new, 0, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST)) { // FIXPAUL
     return 0;
   } else {
     return 1;
@@ -583,7 +584,7 @@ void* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
   // linear probing
   for (n = 0; n < rmap->size; n++) {
     data = *smatrix_slot(rmap->data, pos); // FIXPAUL __atomic_load_n(SMATRIX_SLOT(rmap, pos), __ATOMIC_SEQ_CST);
-    printf("TRY POS %lu (%p..%p) => %x -- key %u, ptr %p\n", pos, rmap->data, smatrix_slot(rmap->data, pos), ((uint32_t) ((data) & 0xffffffff)), smatrix_slot_key(data), smatrix_slot_ptr(data));
+    printf("TRY POS %lu (%p..%p) => %x -- key %u, ptr %p\n", pos, rmap->data, smatrix_slot(rmap->data, pos), ((uint32_t) ((data) & 0xffffffff)), smatrix_slot_key(data), (void *) smatrix_slot_ptr(data));
 
     if (smatrix_slot_ptr(data) == 0)
       break;
