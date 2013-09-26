@@ -134,7 +134,6 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 
 // you need to release the read lock manually after calling this function (after you increment your reference count)
 void smatrix_access(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key, uint32_t value, uint64_t ptr) {
-/*
   __uint128_t data, *slot, new_data, mask;
 
   unsigned char *x, n, i; x=rmap->data; for (n=0; n<(rmap->size * SMATRIX_SLOT_SIZE) + SMATRIX_HEAD_SIZE; n++) { printf("%.2x ", x[n]); if ((n+1)%16==0) printf("\n"); }; printf("\n----\n");
@@ -183,13 +182,12 @@ smatrix_access_restart:
     new_data = new_data << 32;
     new_data = ~new_data & data;
     new_data |= ((uint64_t) smatrix_slot_val(data)) + 1 << 32;
-    if (__sync_bool_compare_and_swap(slot, data, new_data))
+    if (__atomic_compare_exchange_n(slot, &data, new_data, 1, __ATOMIC_SEQ_CST, __ATOMIC_SEQ_CST))
       break;
   }
 
   printf("val: %u\n", smatrix_slot_val(*slot));
   //return slot;
-*/
 }
 
 /*
