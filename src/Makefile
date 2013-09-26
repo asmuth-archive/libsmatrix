@@ -11,7 +11,7 @@ FLAGS        =
 CFLAGS       = -Wall -Wextra
 LDFLAGS      = -lpthread -lm
 DEBUGFLAGS   = -g3 -O0 -D _DEBUG
-RELEASEFLAGS = -O3 -march=native -mtune=native -D NDEBUG -fwhole-program
+RELEASEFLAGS = -O3 -march=native -mtune=native -D NDEBUG
 
 TARGET       = recommendify
 TARGET_DBG   = recommendify_dbg

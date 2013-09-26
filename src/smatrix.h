@@ -33,7 +33,7 @@
 #define SMATRIX_OP_DECR 4
 
 #define SMATRIX_HEAD_SIZE 16
-#define SMATRIX_SLOT_SIZE 16
+#define SMATRIX_SLOT_SIZE 8
 
 typedef struct {
   uint32_t             flags;
@@ -75,7 +75,7 @@ void smatrix_meta_sync(smatrix_t* self);
 void* smatrix_malloc(smatrix_t* self, uint64_t bytes);
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes);
 void smatrix_access(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key, uint32_t value, uint64_t ptr);
-int smatrix_rmap_insert(__uint128_t* slot, uint32_t key, uint32_t value, uint64_t ptr);
+int smatrix_rmap_insert(uint64_t* slot, uint32_t key, uint32_t value, uint64_t ptr);
 /*
 // ----
 
@@ -87,9 +87,8 @@ uint64_t smatrix_rowlen(smatrix_t* self, uint32_t x);
 uint64_t smatrix_getrow(smatrix_t* self, uint32_t x, uint64_t* ret, size_t ret_len);
 */
 
-__uint128_t* smatrix_slot(void* data, uint32_t pos);
-uint64_t smatrix_slot_ptr(__uint128_t slot);
-uint32_t smatrix_slot_val(__uint128_t slot);
-uint32_t smatrix_slot_key(__uint128_t slot);
+uint64_t* smatrix_slot(void* data, uint32_t pos);
+uint32_t smatrix_slot_val(uint64_t slot);
+uint32_t smatrix_slot_key(uint64_t slot);
 
 #endif
