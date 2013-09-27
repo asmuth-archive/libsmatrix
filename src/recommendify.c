@@ -18,7 +18,6 @@
 
 smatrix_t* db;
 
-/*
 void* test(void* fnord) {
   uint64_t i, n, m;
 
@@ -37,10 +36,9 @@ void* test(void* fnord) {
 
   return NULL;
 }
-*/
 
 int main(int argc, char **argv) {
-  int i, n, num_threads = 1;
+  int n, num_threads = 1;
   pthread_t threads[num_threads];
 
   db = smatrix_open("/var/tmp/reco.db");
@@ -49,15 +47,6 @@ int main(int argc, char **argv) {
     abort();
 
   printf("...\n");
-
-  for (i = 0; i < 100; i++)
-    for (n = 0; n < 7; n++) {
-      smatrix_access(db, &db->rmap, n, 1, 1);
-      pthread_rwlock_unlock(&db->rmap.lock);
-    }
-
-  exit(0);
-
 /*
   for (n = 0; n < num_threads; n++)
     pthread_create(&threads[n], NULL, test, NULL);
@@ -66,10 +55,10 @@ int main(int argc, char **argv) {
     pthread_join(threads[n], NULL);
 */
 
-  /*smatrix_incr(db, 42, 23, 1);
-  smatrix_incr(db, 42, 23, 1);*/
+  smatrix_incr(db, 42, 23, 1);
+  smatrix_incr(db, 42, 23, 1);
 
-/*
+
   uint64_t len,idx, ret[4096 * 8];
 
   len = smatrix_getrow(db, 42, ret, sizeof(ret));
@@ -79,6 +68,5 @@ int main(int argc, char **argv) {
   }
 
   smatrix_close(db);
-*/
   return 0;
 }

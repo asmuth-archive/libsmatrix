@@ -32,15 +32,20 @@
 #define SMATRIX_OP_INCR 2
 #define SMATRIX_OP_DECR 4
 
-#define SMATRIX_HEAD_SIZE 16
-#define SMATRIX_SLOT_SIZE 8
+// FIXPAUL ptr is always NULL in second first level (mem waste)
+typedef struct {
+  uint32_t         flags;
+  uint32_t         key;
+  uint64_t         value;
+  void*            next;
+} smatrix_rmap_slot_t;
 
 typedef struct {
   uint32_t             flags;
   uint64_t             fpos;
   uint64_t             size;
   uint64_t             used;
-  void*                data;
+  smatrix_rmap_slot_t* data;
   pthread_rwlock_t     lock;
 } smatrix_rmap_t;
 
@@ -53,30 +58,26 @@ typedef struct {
 } smatrix_t;
 
 smatrix_t* smatrix_open(const char* fname);
-/*
 void smatrix_sync(smatrix_t* self);
 void smatrix_gc(smatrix_t* self);
+void* smatrix_malloc(smatrix_t* self, uint64_t bytes);
 void smatrix_mfree(smatrix_t* self, uint64_t bytes);
 void smatrix_close(smatrix_t* self);
+uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes);
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes);
 uint64_t smatrix_update(smatrix_t* self, uint32_t x, uint32_t y, uint32_t op, uint64_t opval);
 smatrix_rmap_t* smatrix_retrieve(smatrix_t* self, uint32_t x);
+void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size);
+smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
 smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
+void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap);
+void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap);
-void smatrix_meta_load(smatrix_t* self);
-*/
-void* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
-int smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap);
-void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size);
-void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_meta_sync(smatrix_t* self);
-void* smatrix_malloc(smatrix_t* self, uint64_t bytes);
-uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes);
-void smatrix_access(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key, uint32_t value, uint64_t ptr);
-int smatrix_rmap_insert(uint64_t* slot, uint32_t key, uint32_t value, uint64_t ptr);
-/*
+void smatrix_meta_load(smatrix_t* self);
+
 // ----
 
 uint64_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y);
@@ -85,10 +86,5 @@ uint64_t smatrix_incr(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value);
 uint64_t smatrix_decr(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value);
 uint64_t smatrix_rowlen(smatrix_t* self, uint32_t x);
 uint64_t smatrix_getrow(smatrix_t* self, uint32_t x, uint64_t* ret, size_t ret_len);
-*/
-
-uint64_t* smatrix_slot(void* data, uint32_t pos);
-uint32_t smatrix_slot_val(uint64_t slot);
-uint32_t smatrix_slot_key(uint64_t slot);
 
 #endif
