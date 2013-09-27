@@ -17,6 +17,10 @@
 #include "smatrix.h"
 
 // TODO
+//  + first-level hashmap should be in memory only and synced only on sync()
+//  + second level hashmap should match on disk format 1:1 and not contain any flags
+//  + second level hashmap slot size should be 8 byte
+//  + block wise load / store??
 //  + ftruncate in larger blocks
 //  + the smatrix_sync should not be hold the main read lock for that long
 //  + aquire lock on file to prevent concurrent access
