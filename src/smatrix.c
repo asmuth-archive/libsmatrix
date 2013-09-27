@@ -18,6 +18,7 @@
 
 // TODO
 //  + first-level hashmap should be in memory only and synced only on sync()
+//  + second level hashmap: remove dirty bit (always write batch for now)
 //  + second level hashmap should match on disk format 1:1 and not contain any flags
 //  + second level hashmap slot size should be 8 byte
 //  + block wise load / store??
