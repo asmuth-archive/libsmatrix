@@ -32,6 +32,8 @@
 #define SMATRIX_OP_INCR 2
 #define SMATRIX_OP_DECR 4
 
+#define SMATRIX_CMAP_SLOT_USED 1
+
 typedef struct {
   uint16_t             count;
   uint16_t             mutex;

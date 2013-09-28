@@ -735,6 +735,64 @@ void smatrix_cmap_free(smatrix_t* self, smatrix_cmap_t* cmap) {
   free(cmap->data);
 }
 
+// caller must hold no locks on cmap!
+smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key, int create) {
+  smatrix_cmap_slot_t* slot;
+  smatrix_rmap_t* rmap;
+
+  for (;;) {
+    smatrix_lock_incref(&cmap->lock);
+    slot = smatrix_cmap_probe(self, cmap, key);
+
+    if (slot && slot->key == key && (slot->flags & SMATRIX_CMAP_SLOT_USED) != 0) {
+      // FIXPAUL: incref on rmap
+      smatrix_lock_decref(&cmap->lock);
+      return rmap;
+    } else {
+      if (!create) {
+        smatrix_lock_decref(&cmap->lock);
+        return NULL;
+      }
+
+      if (smatrix_lock_trymutex(&cmap->lock)) {
+        smatrix_lock_decref(&cmap->lock);
+        // FIXPAUL pause?
+        continue;
+      }
+
+      slot = smatrix_cmap_insert(self, cmap, key);
+      rmap = NULL;
+      // FIXPAUL: incref on rmap
+      smatrix_lock_release(&cmap->lock);
+      return rmap;
+    }
+  }
+}
+
+// caller must hold a read lock on cmap!
+smatrix_cmap_slot_t* smatrix_cmap_probe(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key) {
+  uint64_t n, pos;
+
+  pos = key % cmap->size;
+
+  // linear probing
+  for (n = 0; n < cmap->size; n++) {
+    if ((cmap->data[pos].flags & SMATRIX_CMAP_SLOT_USED) == 0)
+      break;
+
+    if (cmap->data[pos].key == key)
+      break;
+
+    pos = (pos + 1) % cmap->size;
+  }
+
+  return &cmap->data[pos];
+}
+
+smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key) {
+  return NULL;
+}
+
 // the caller of this function must have called smatrix_lock_incref before
 // returns 0 for success, 1 for failure
 int smatrix_lock_trymutex(smatrix_lock_t* lock) {
