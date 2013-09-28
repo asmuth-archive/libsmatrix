@@ -418,7 +418,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 
 // the caller of this must hold a read lock on rmap
 void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
-  uint64_t pos = 0, fpos, bytes, batched, buf_pos = 0;
+  uint64_t pos = 0, bytes, buf_pos = 0;
   unsigned char *buf, fixed_buf[SMATRIX_RMAP_HEAD_SIZE] = {0};
 
   if (full) {
@@ -484,7 +484,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   if (!rmap->size) {
     if (pread(self->fd, &meta_buf, 16, rmap->fpos) != 16) {
-      printf("CANNOT LOAD RMATRIX -- pread @ %lu\n", rmap->fpos); // FIXPAUL
+      printf("CANNOT LOAD RMATRIX -- pread @ %llu\n", rmap->fpos); // FIXPAUL
       abort();
     }
 
@@ -513,7 +513,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   read_bytes = pread(self->fd, buf, disk_bytes, rmap->fpos + 16);
 
   if (read_bytes != disk_bytes) {
-    printf("CANNOT LOAD RMATRIX -- read wrong number of bytes: %lu vs. %lu @ %lu\n", read_bytes, disk_bytes, rmap->fpos); // FIXPAUL
+    printf("CANNOT LOAD RMATRIX -- read wrong number of bytes: %llu vs. %llu @ %llu\n", read_bytes, disk_bytes, rmap->fpos); // FIXPAUL
     abort();
   }
 
@@ -715,7 +715,7 @@ void smatrix_cmap_resize(smatrix_t* self, smatrix_cmap_t* cmap) {
 
 // caller must hold a write lock on cmap
 uint64_t smatrix_cmap_falloc(smatrix_t* self, smatrix_cmap_t* cmap) {
-  uint64_t fpos, meta_fpos;
+  uint64_t fpos;
 
   if (cmap->block_used >= cmap->block_size) {
     smatrix_cmap_mkblock(self, cmap);
@@ -746,7 +746,6 @@ void smatrix_cmap_mkblock(smatrix_t* self, smatrix_cmap_t* cmap) {
   memcpy(&buf,    &cmap->block_size, 8);
   memset(&buf[8], 0,                 8);
 
-  printf("new cmap block @ %lu\n", cmap->block_fpos);
   pwrite(self->fd, &buf, SMATRIX_CMAP_HEAD_SIZE, cmap->block_fpos);
 
   // FIXPAUL what is byte ordering?
@@ -766,13 +765,14 @@ void smatrix_cmap_write(smatrix_t* self, smatrix_rmap_t* rmap) {
 void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
   smatrix_rmap_t* rmap;
   unsigned char meta_buf[SMATRIX_CMAP_HEAD_SIZE], *buf;
-  uint64_t fpos, bytes, pos, value;
+  ssize_t bytes, pos;
+  uint64_t fpos, value;
 
   for (fpos = head_fpos; fpos;) {
     self->cmap.block_fpos = fpos;
 
     if (pread(self->fd, &meta_buf, SMATRIX_CMAP_HEAD_SIZE, fpos) != 16) {
-      printf("CANNOT LOAD CMAP -- pread @ %lu\n", fpos); // FIXPAUL
+      printf("CANNOT LOAD CMAP -- pread @ %llu\n", fpos); // FIXPAUL
       abort();
     }
 
@@ -781,7 +781,7 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
     buf   = malloc(bytes);
 
     if (pread(self->fd, buf, bytes, fpos) != bytes) {
-      printf("CANNOT LOAD CMAP -- pread @ %lu\n", fpos); // FIXPAUL
+      printf("CANNOT LOAD CMAP -- pread @ %llu\n", fpos); // FIXPAUL
       abort();
     }
 
