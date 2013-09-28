@@ -348,7 +348,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
   slot = smatrix_rmap_probe(self, rmap, key);
   assert(slot != NULL);
 
-  if (!slot->key || slot->key != key) {
+  if (!slot->key || slot->key != key) {
     rmap->used++;
     slot->key   = key;
     slot->value = 0;
