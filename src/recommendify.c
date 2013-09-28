@@ -42,12 +42,6 @@ int main(int argc, char **argv) {
   if (db == NULL)
     abort();
 
-  smatrix_lookup(db, 23, 1, 1);
-  printf("---\n");
-  smatrix_lookup(db, 23, 1, 1);
-
-  exit(0);
-
   for (n = 0; n < num_threads; n++)
     pthread_create(&threads[n], NULL, test, NULL);
 
@@ -60,73 +54,6 @@ int main(int argc, char **argv) {
       if (db->cmap.data[n].rmap->data[m].key == 0) continue;
       printf("(%u,%u) => %lu\n", db->cmap.data[n].key, db->cmap.data[n].rmap->data[m].key, db->cmap.data[n].rmap->data[m].value);
     }
-  }
-
-  printf("used: %lu\n", db->cmap.used);
-
-
-  smatrix_cmap_t mycmap;
-  smatrix_cmap_init(db, &mycmap, 5);
-
-  printf("cmap_lookup(23, true) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 23, 1));
-
-  printf("cmap_lookup(23, false) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 23, 0));
-
-  printf("cmap_lookup(23, true) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 23, 1));
-
-  printf("cmap_lookup(24, true) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 24, 1));
-  printf("cmap_lookup(25, true) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 25, 1));
-  printf("cmap_lookup(26, true) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 26, 1));
-  printf("cmap_lookup(27, true) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 27, 1));
-  printf("cmap_lookup(28, true) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 28, 1));
-  printf("cmap_lookup(42, true) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 32, 1));
-  printf("cmap_lookup(55, true) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 55, 1));
-  printf("cmap_lookup(66, true) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 66, 1));
-  printf("cmap_lookup(23, false) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 23, 0));
-
-  smatrix_cmap_free(db, &mycmap);
-  exit(0);
-
-  smatrix_lock_t mylock;
-  smatrix_lock_incref(&mylock);
-  printf("count: %u\n", mylock.count);
-  smatrix_lock_decref(&mylock);
-  printf("count: %u\n", mylock.count);
-  printf("try mutex\n");
-  smatrix_lock_incref(&mylock);
-  smatrix_lock_trymutex(&mylock);
-  printf("got mutex\n");
-  smatrix_lock_release(&mylock);
-  printf("released mutex\n");
-  smatrix_lock_incref(&mylock);
-  printf("count: %u\n", mylock.count);
-  smatrix_lock_decref(&mylock);
-  printf("count: %u\n", mylock.count);
-
-
-
-  smatrix_incr(db, 42, 23, 1);
-  smatrix_incr(db, 42, 23, 1);
-
-
-  uint64_t len,idx, ret[4096 * 8];
-
-  len = smatrix_getrow(db, 42, ret, sizeof(ret));
-
-  for(idx = 0; idx < len; idx++) {
-    printf("(%llu,%llu)=>%llu\n", 42, ret[idx * 2], ret[idx * 2 + 1]);
   }
 
   smatrix_close(db);

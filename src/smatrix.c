@@ -104,7 +104,7 @@ void smatrix_close(smatrix_t* self) {
   smatrix_rmap_t* rmap = &self->rmap;
 
   for (pos = 0; pos < rmap->size; pos++) {
-    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
+    if ((rmap->data[pos].flags & SMATRIX_RMAP_SLOT_USED) != 0) {
       smatrix_mfree(self, sizeof(smatrix_rmap_t));
       pthread_rwlock_destroy(&((smatrix_rmap_t *) rmap->data[pos].next)->lock);
       free(rmap->data[pos].next);
@@ -182,7 +182,7 @@ uint64_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y) {
 
   smatrix_rmap_slot_t* slot = smatrix_rmap_lp(self, rmap, y);
 
-  if (slot && slot->key == y && (slot->flags & SMATRIX_ROW_FLAG_USED) != 0) {
+  if (slot && slot->key == y && (slot->flags & SMATRIX_RMAP_SLOT_USED) != 0) {
     retval = slot->value;
   }
 
@@ -203,7 +203,7 @@ uint64_t smatrix_getrow(smatrix_t* self, uint32_t x, uint64_t* ret, size_t ret_l
     return 0;
 
   for (pos = 0; pos < rmap->size && (num * 2 * sizeof(uint64_t)) < ret_len; pos++) {
-    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
+    if ((rmap->data[pos].flags & SMATRIX_RMAP_SLOT_USED) == 0)
       continue;
 
     ret[num * 2] = (uint64_t) rmap->data[pos].key;
@@ -284,7 +284,7 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
 
   slot = smatrix_rmap_probe(self, rmap, y);
 
-  if (slot == NULL || (slot->flags & SMATRIX_ROW_FLAG_USED) == 0 || slot->key != y) {
+  if (slot == NULL || (slot->flags & SMATRIX_RMAP_SLOT_USED) == 0 || slot->key != y) {
     if (write) {
       slot = smatrix_rmap_insert(self, rmap, y);
     } else {
@@ -298,7 +298,7 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
 
   if (write) {
     slot->value++;
-    printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, slot->value); // FIXPAUL
+    //printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, slot->value); // FIXPAUL
     smatrix_rmap_write_slot(self, rmap, slot);
     smatrix_lock_release(&rmap->_lock);
   } else {
@@ -336,11 +336,11 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
   slot = smatrix_rmap_probe(self, rmap, key);
   assert(slot != NULL);
 
-  if ((slot->flags & SMATRIX_ROW_FLAG_USED) == 0 || slot->key != key) {
+  if ((slot->flags & SMATRIX_RMAP_SLOT_USED) == 0 || slot->key != key) {
     rmap->used++;
     slot->key   = key;
     slot->value = 0;
-    slot->flags = SMATRIX_ROW_FLAG_USED | SMATRIX_ROW_FLAG_DIRTY;
+    slot->flags = SMATRIX_RMAP_SLOT_USED;
     slot->next  = NULL;
   }
 
@@ -355,7 +355,7 @@ smatrix_rmap_slot_t* smatrix_rmap_probe(smatrix_t* self, smatrix_rmap_t* rmap, u
 
   // linear probing
   for (n = 0; n < rmap->size; n++) {
-    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
+    if ((rmap->data[pos].flags & SMATRIX_RMAP_SLOT_USED) == 0)
       break;
 
     if (rmap->data[pos].key == key)
@@ -391,7 +391,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   memset(new.data, 0, new_bytes_mem);
 
   for (pos = 0; pos < rmap->size; pos++) {
-    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
+    if ((rmap->data[pos].flags & SMATRIX_RMAP_SLOT_USED) == 0)
       continue;
 
     slot = smatrix_rmap_insert(self, &new, rmap->data[pos].key);
@@ -445,11 +445,7 @@ void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
     for (pos = 0; pos < rmap->size; pos++) {
       buf_pos += 16;
 
-      // FIXPAUL this should be one if statement ;)
-      if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
-        continue;
-
-      if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_DIRTY) == 0)
+      if ((rmap->data[pos].flags & SMATRIX_RMAP_SLOT_USED) == 0)
         continue;
 
       // FIXPAUL what is byte ordering?
@@ -528,7 +524,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
     if (rmap->data[pos].value) {
       memcpy(&rmap->data[pos].key, buf + pos * SMATRIX_RMAP_SLOT_SIZE + 4, 4);
       rmap->used++;
-      rmap->data[pos].flags = SMATRIX_ROW_FLAG_USED;
+      rmap->data[pos].flags = SMATRIX_RMAP_SLOT_USED;
     }
   }
 
