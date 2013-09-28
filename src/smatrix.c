@@ -17,21 +17,13 @@
 #include "smatrix.h"
 
 // TODO
-//  + first-level hashmap should be in memory only and synced only on sync()
 //  + second level hashmap: remove dirty bit (always write batch for now)
-//  + second level hashmap should match on disk format 1:1 and not contain any flags
 //  + second level hashmap slot size should be 8 byte
-//  + block wise load / store??
 //  + ftruncate in larger blocks
-//  + the smatrix_sync should not be hold the main read lock for that long
 //  + aquire lock on file to prevent concurrent access
-//  + count swapable alloced memory and un-swappable seperatly (hard limit only on swappable!)
 //  + constant-ify all the magic numbers
 //  + convert endianess when loading/saving to disk
 //  + proper error handling / return codes for smatrix_open
-//  + spin locks
-//  + resize headers a sane sizes
-//  + smarter smatrix_gc
 //  + file free list
 
 smatrix_t* smatrix_open(const char* fname) {
@@ -179,59 +171,6 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
   //printf("FREED %llu bytes @ %llu\n", bytes, fpos);
 }
 
-// FIXPAUL implement this with free lists...
-void smatrix_sync(smatrix_t* self) {
-  uint64_t pos, synced = 0;
-
-  pthread_rwlock_rdlock(&self->rmap.lock);
-
-  for (pos = 0; pos < self->rmap.size; pos++) {
-    if ((self->rmap.data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
-    if ((self->rmap.data[pos].flags & SMATRIX_ROW_FLAG_DIRTY) != 0) {
-      pthread_rwlock_rdlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
-      if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_DIRTY) != 0) {
-      if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0) {
-        smatrix_rmap_sync(self, (smatrix_rmap_t *) self->rmap.data[pos].next);
-        synced++;
-      }
-      }
-      pthread_rwlock_unlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
-    }
-    }
-  }
-
-  self->rmap.flags |= SMATRIX_RMAP_FLAG_DIRTY;
-
-  smatrix_rmap_sync(self, &self->rmap);
-  smatrix_meta_sync(self);
-
-  printf("synced %lu/%lu rmaps\n", synced, self->rmap.used);
-  pthread_rwlock_unlock(&self->rmap.lock);
-}
-
-// no locks must be held by the caller of this method
-void smatrix_gc(smatrix_t* self) {
-  uint64_t pos, swapped = 0;
-
-  pthread_rwlock_rdlock(&self->rmap.lock);
-
-  for (pos = 0; pos < self->rmap.size; pos++) {
-    if ((self->rmap.data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
-      if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0) {
-        pthread_rwlock_wrlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
-        if ((((smatrix_rmap_t *) self->rmap.data[pos].next)->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0) {
-          smatrix_swap(self, (smatrix_rmap_t *) self->rmap.data[pos].next);
-          swapped++;
-        }
-        pthread_rwlock_unlock(&((smatrix_rmap_t *) self->rmap.data[pos].next)->lock);
-      }
-    }
-  }
-
-  printf("swapped %lu/%lu rmaps\n", swapped, self->rmap.used);
-  pthread_rwlock_unlock(&self->rmap.lock);
-}
-
 uint64_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y) {
   uint64_t retval = 0;
 /*
@@ -308,20 +247,6 @@ uint64_t smatrix_decr(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value) {
   return 0;
 }
 
-void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
-  size_t bytes = sizeof(smatrix_rmap_slot_t) * size;
-
-  rmap->data = malloc(bytes);
-  memset(rmap->data, 0, bytes);
-
-  rmap->size = size;
-  rmap->used = 0;
-  rmap->flags = 0;
-  rmap->fpos = smatrix_falloc(self, size * 16 + 16);
-  rmap->_lock.count = 0;
-  rmap->_lock.mutex = 0;
-}
-
 void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
   int mutex = 0;
   smatrix_rmap_t* rmap;
@@ -382,6 +307,21 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
 
   return;
 }
+
+void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
+  size_t bytes = sizeof(smatrix_rmap_slot_t) * size;
+
+  rmap->data = malloc(bytes);
+  memset(rmap->data, 0, bytes);
+
+  rmap->size = size;
+  rmap->used = 0;
+  rmap->flags = 0;
+  rmap->fpos = smatrix_falloc(self, size * 16 + 16);
+  rmap->_lock.count = 0;
+  rmap->_lock.mutex = 0;
+}
+
 
 // you need to hold a write lock on rmap to call this function safely
 smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
