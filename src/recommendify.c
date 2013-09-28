@@ -47,7 +47,6 @@ int main(int argc, char **argv) {
   for (n = 0; n < num_threads; n++)
     pthread_join(threads[n], NULL);
 
-
   for (n = 0; n < db->cmap.size; n++) {
     if (db->cmap.data[n].flags == 0) continue;
     for (m = 0; m < db->cmap.data[n].rmap->size; m++) {
