@@ -17,7 +17,7 @@
 #include "smatrix.h"
 
 // TODO
-//  + second level hashmap: remove dirty bit (always write batch for now)
+//  + second level hashmap: remove used flag
 //  + second level hashmap slot size should be 8 byte
 //  + ftruncate in larger blocks
 //  + aquire lock on file to prevent concurrent access
@@ -662,7 +662,6 @@ smatrix_cmap_slot_t* smatrix_cmap_probe(smatrix_t* self, smatrix_cmap_t* cmap, u
 }
 
 smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key) {
-  printf("cmap insert %u\n", key);
   smatrix_cmap_slot_t* slot;
 
   if (cmap->used > cmap->size / 2) {
@@ -770,7 +769,7 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
   uint64_t fpos, bytes, pos, value;
 
   for (fpos = head_fpos; fpos;) {
-    printf("CMAP LOAD @ %lu\n", fpos);
+    self->cmap.block_fpos = fpos;
 
     if (pread(self->fd, &meta_buf, SMATRIX_CMAP_HEAD_SIZE, fpos) != 16) {
       printf("CANNOT LOAD CMAP -- pread @ %lu\n", fpos); // FIXPAUL
@@ -798,9 +797,6 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
       rmap->meta_fpos = fpos + pos;
       rmap->fpos = value;
 
-      printf("load with meta fpos %lu, fpos %lu\n", rmap->meta_fpos, rmap->fpos);
-
-      printf("cmap laod %u\n", rmap->key);
       smatrix_cmap_insert(self, &self->cmap, rmap->key)->rmap = rmap;
     }
 

@@ -21,9 +21,9 @@ smatrix_t* db;
 void* test(void* fnord) {
   uint64_t i, n, m;
 
-  for (m = 0; m < 50; m++) {
-    for (n = 23; n < 100; n++) {
-      for (i = 0; i < 30; i++) {
+  for (m = 0; m < 10; m++) {
+    for (n = 1; n < 30; n++) {
+      for (i = 1; i < 50; i++) {
         smatrix_lookup(db, n, i, 1);
       }
     }
@@ -42,17 +42,22 @@ int main(int argc, char **argv) {
   if (db == NULL)
     abort();
 
+  printf("\nstarting\n");
+
   for (n = 0; n < num_threads; n++)
     pthread_create(&threads[n], NULL, test, NULL);
 
   for (n = 0; n < num_threads; n++)
     pthread_join(threads[n], NULL);
 
+  printf("\ndone\n");
+
   for (n = 0; n < db->cmap.size; n++) {
     if (db->cmap.data[n].flags == 0) continue;
     for (m = 0; m < db->cmap.data[n].rmap->size; m++) {
       if (db->cmap.data[n].rmap->data[m].key == 0) continue;
-      printf("(%u,%u) => %lu\n", db->cmap.data[n].key, db->cmap.data[n].rmap->data[m].key, db->cmap.data[n].rmap->data[m].value);
+      printf("(%u,%u) => %lu, ", db->cmap.data[n].key, db->cmap.data[n].rmap->data[m].key, db->cmap.data[n].rmap->data[m].value);
+      if (n*m % 5 == 0) printf("\n");
     }
   }
 
