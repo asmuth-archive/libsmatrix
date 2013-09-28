@@ -41,11 +41,6 @@ int main(int argc, char **argv) {
   if (db == NULL)
     abort();
 
-  for (n=0; n<1000; n++)
-    smatrix_cmap_falloc(db, &db->cmap);
-
-  exit(0);
-
   for (n = 0; n < num_threads; n++)
     pthread_create(&threads[n], NULL, test, NULL);
 
