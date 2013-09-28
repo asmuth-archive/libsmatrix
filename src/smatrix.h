@@ -73,7 +73,6 @@ typedef struct {
   int                  fd;
   uint64_t             fpos;
   uint64_t             mem;
-  smatrix_rmap_t       rmap;
   smatrix_cmap_t       cmap;
   pthread_mutex_t      lock;
 } smatrix_t;
@@ -90,13 +89,14 @@ uint64_t smatrix_getrow(smatrix_t* self, uint32_t x, uint64_t* ret, size_t ret_l
 void smatrix_close(smatrix_t* self);
 // ---
 
+void smatrix_meta_sync(smatrix_t* self);
+void smatrix_meta_load(smatrix_t* self);
+void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write);
+
 void* smatrix_malloc(smatrix_t* self, uint64_t bytes);
 void smatrix_mfree(smatrix_t* self, uint64_t bytes);
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes);
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes);
-
-void smatrix_meta_sync(smatrix_t* self);
-void smatrix_meta_load(smatrix_t* self);
 
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size);
 smatrix_rmap_slot_t* smatrix_rmap_probe(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
@@ -104,6 +104,8 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap);
+void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap);
+void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap);
 
 void smatrix_cmap_init(smatrix_t* self, smatrix_cmap_t* cmap, uint64_t size);
 smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key, int create);
@@ -112,12 +114,6 @@ smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, 
 void smatrix_cmap_resize(smatrix_t* self, smatrix_cmap_t* cmap);
 void smatrix_cmap_free(smatrix_t* self, smatrix_cmap_t* cmap);
 
-void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write);
-
-void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap);
-void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap);
-void smatrix_sync(smatrix_t* self);
-void smatrix_gc(smatrix_t* self);
 
 int smatrix_lock_trymutex(smatrix_lock_t* lock);
 void smatrix_lock_dropmutex(smatrix_lock_t* lock);

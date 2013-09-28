@@ -37,39 +37,24 @@ smatrix_t* smatrix_open(const char* fname) {
 
   if (self->fd == -1) {
     perror("cannot open file");
-    free(self->rmap.data);
     free(self);
     return NULL;
   }
-
-  smatrix_cmap_init(self, &self->cmap, 10); // FIXPAUL
 
   self->fpos = lseek(self->fd, 0, SEEK_END);
 
   if (self->fpos == 0) {
     printf("NEW FILE!\n");
     smatrix_falloc(self, SMATRIX_META_SIZE);
-    smatrix_rmap_init(self, &self->rmap, SMATRIX_RMAP_INITIAL_SIZE);
-    self->rmap.data = smatrix_malloc(self, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
-
-    if (!self->rmap.data) {
-      printf("can't load first level index. mem limit too small?\n");
-      exit(1); // fixpaul proper error handling
-    }
-
-    memset(self->rmap.data, 0, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
-    smatrix_rmap_sync(self, &self->rmap);
     smatrix_meta_sync(self);
+    smatrix_cmap_init(self, &self->cmap, 10); // FIXPAUL
   } else {
     printf("LOAD FILE!\n");
+    exit(1);
+    /*
     smatrix_meta_load(self);
-    smatrix_rmap_load(self, &self->rmap);
-    smatrix_unswap(self, &self->rmap);
-
-    if ((self->rmap.flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
-      printf("can't load first level index. mem limit too small?\n");
-      exit(1); // fixpaul proper error handling
-    }
+    //smatrix_rmap_load(self, &self->rmap);
+    //smatrix_unswap(self, &self->rmap);
 
     // FIXPAUL: put this into some method ---
     uint64_t pos;
@@ -90,6 +75,7 @@ smatrix_t* smatrix_open(const char* fname) {
       }
     }
     // ---
+    */
   }
 
   pthread_mutex_init(&self->lock, NULL);
@@ -97,9 +83,7 @@ smatrix_t* smatrix_open(const char* fname) {
 }
 
 void smatrix_close(smatrix_t* self) {
-  smatrix_sync(self);
-  smatrix_gc(self);
-
+  /*
   uint64_t pos;
   smatrix_rmap_t* rmap = &self->rmap;
 
@@ -116,10 +100,10 @@ void smatrix_close(smatrix_t* self) {
 
   printf("in used at exit: %lu\n", self->mem);
 
-  smatrix_cmap_free(self, &self->cmap);
+  */
 
+  smatrix_cmap_free(self, &self->cmap);
   pthread_mutex_destroy(&self->lock);
-  pthread_rwlock_destroy(&rmap->lock);
   close(self->fd);
   free(self);
 }
@@ -564,7 +548,7 @@ void smatrix_meta_sync(smatrix_t* self) {
   memset(&buf, 0x17, 8);
 
   // FIXPAUL what is byte ordering?
-  memcpy(&buf[8],  &self->rmap.fpos, 8);
+  memcpy(&buf[8],  &"fnordbar", 8);
 
   pwrite(self->fd, &buf, SMATRIX_META_SIZE, 0);
 }
@@ -586,7 +570,7 @@ void smatrix_meta_load(smatrix_t* self) {
   }
 
   // FIXPAUL because f**k other endianess, thats why...
-  memcpy(&self->rmap.fpos, &buf[8],  8);
+  //memcpy(&self->rmap.fpos, &buf[8],  8);
 }
 
 
