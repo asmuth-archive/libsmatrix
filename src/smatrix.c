@@ -284,7 +284,7 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
 
   slot = smatrix_rmap_probe(self, rmap, y);
 
-  if (slot == NULL || (slot->flags & SMATRIX_RMAP_SLOT_USED) == 0 || slot->key != y) {
+  if (slot == NULL || (!slot->key && !slot->value) || slot->key != y) {
     if (write) {
       slot = smatrix_rmap_insert(self, rmap, y);
     } else {
@@ -336,11 +336,10 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
   slot = smatrix_rmap_probe(self, rmap, key);
   assert(slot != NULL);
 
-  if ((slot->flags & SMATRIX_RMAP_SLOT_USED) == 0 || slot->key != key) {
+  if (!slot->key || slot->key != key) {
     rmap->used++;
     slot->key   = key;
     slot->value = 0;
-    slot->flags = SMATRIX_RMAP_SLOT_USED;
   }
 
   return slot;
@@ -354,10 +353,10 @@ smatrix_rmap_slot_t* smatrix_rmap_probe(smatrix_t* self, smatrix_rmap_t* rmap, u
 
   // linear probing
   for (n = 0; n < rmap->size; n++) {
-    if ((rmap->data[pos].flags & SMATRIX_RMAP_SLOT_USED) == 0)
+    if (rmap->data[pos].key == key)
       break;
 
-    if (rmap->data[pos].key == key)
+    if (!rmap->data[pos].key && !rmap->data[pos].value)
       break;
 
     pos = (pos + 1) % rmap->size;
@@ -390,7 +389,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   memset(new.data, 0, new_bytes_mem);
 
   for (pos = 0; pos < rmap->size; pos++) {
-    if ((rmap->data[pos].flags & SMATRIX_RMAP_SLOT_USED) == 0)
+    if (!rmap->data[pos].key && !rmap->data[pos].value)
       continue;
 
     slot = smatrix_rmap_insert(self, &new, rmap->data[pos].key);
@@ -442,7 +441,7 @@ void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
     for (pos = 0; pos < rmap->size; pos++) {
       buf_pos += 16;
 
-      if ((rmap->data[pos].flags & SMATRIX_RMAP_SLOT_USED) == 0)
+      if (!rmap->data[pos].key && !rmap->data[pos].value)
         continue;
 
       // FIXPAUL what is byte ordering?
@@ -521,7 +520,6 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
     if (rmap->data[pos].value) {
       memcpy(&rmap->data[pos].key, buf + pos * SMATRIX_RMAP_SLOT_SIZE + 4, 4);
       rmap->used++;
-      rmap->data[pos].flags = SMATRIX_RMAP_SLOT_USED;
     }
   }
 

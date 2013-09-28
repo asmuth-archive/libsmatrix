@@ -13,7 +13,6 @@
 #define SMATRIX_H
 
 #define SMATRIX_META_SIZE 512
-#define SMATRIX_RMAP_SLOT_USED 1
 #define SMATRIX_RMAP_FLAG_LOADED 4
 #define SMATRIX_RMAP_MAGIC "\x23\x23\x23\x23\x23\x23\x23\x23"
 #define SMATRIX_RMAP_MAGIC_SIZE 8
@@ -31,9 +30,8 @@ typedef struct {
 } smatrix_lock_t;
 
 typedef struct {
-  uint32_t            flags; // FIXPAUL remove me
-  uint32_t            key;
-  uint32_t            value; // FIXPAUL should be 32bit
+  uint32_t             key;
+  uint32_t             value;
 } smatrix_rmap_slot_t;
 
 typedef struct {
