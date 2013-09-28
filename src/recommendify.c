@@ -56,11 +56,13 @@ int main(int argc, char **argv) {
 */
 
 
+  printf("smatrix_lookup(23, 42, true)\n");
+  smatrix_lookup(db, 23, 42, 1);
+
+  exit(0);
+
   smatrix_cmap_t mycmap;
   smatrix_cmap_init(db, &mycmap, 5);
-
-  printf("cmap_lookup(23, false) => %p\n",
-    smatrix_cmap_lookup(db, &mycmap, 23, 0));
 
   printf("cmap_lookup(23, true) => %p\n",
     smatrix_cmap_lookup(db, &mycmap, 23, 1));

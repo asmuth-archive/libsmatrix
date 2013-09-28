@@ -386,12 +386,16 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
     smatrix_dropmutex(&rmap->_lock);
   }
 
-  slot = smatrix_rmap_lookup(self, rmap, y, write);
+  slot = smatrix_rmap_probe(self, rmap, y);
 
   if (slot == NULL) {
-    printf("####### NOT FOUND (%lu,%lu)\n", x, y); // FIXPAUL
-    smatrix_lock_decref(&rmap->_lock);
-    return;
+    if (write) {
+      slot = smatrix_rmap_insert(self, rmap, y);
+    } else {
+      printf("####### NOT FOUND (%lu,%lu)\n", x, y); // FIXPAUL
+      smatrix_lock_decref(&rmap->_lock);
+      return;
+    }
   }
 
   // FIXPAUL return here :)
@@ -413,10 +417,6 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
 
   if (rmap->used > rmap->size / 2) {
     smatrix_rmap_resize(self, rmap);
-
-    if (rmap->used > rmap->size / 2) {
-      return NULL;
-    }
   }
 
   slot = smatrix_rmap_lookup(self, rmap, key);
@@ -434,7 +434,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
 }
 
 // you need to hold a read or write lock on rmap to call this function safely
-smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
+smatrix_rmap_slot_t* smatrix_rmap_probe(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
   uint64_t n, pos;
 
   pos = key % rmap->size;
@@ -471,7 +471,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   new.data = smatrix_malloc(self, new_bytes_mem);
 
   if (new.data == NULL) {
-    return;
+    printf("MALLOC FAILED\n"); abort();
   }
 
   memset(new.data, 0, new_bytes_mem);
@@ -481,12 +481,6 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
       continue;
 
     slot = smatrix_rmap_insert(self, &new, rmap->data[pos].key);
-
-    if (slot == NULL) {
-      smatrix_mfree(self, new_bytes_mem);
-      free(new.data);
-      return;
-    }
 
     slot->value = rmap->data[pos].value;
     slot->next  = rmap->data[pos].next;

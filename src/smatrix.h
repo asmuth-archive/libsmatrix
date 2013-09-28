@@ -99,7 +99,7 @@ void smatrix_meta_sync(smatrix_t* self);
 void smatrix_meta_load(smatrix_t* self);
 
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size);
-smatrix_rmap_slot_t* smatrix_rmap_lookup(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
+smatrix_rmap_slot_t* smatrix_rmap_probe(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
 smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap);
