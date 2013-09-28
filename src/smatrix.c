@@ -299,6 +299,7 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
   if (write) {
     slot->value++;
     printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, slot->value); // FIXPAUL
+    smatrix_rmap_write_slot(self, rmap, slot);
     smatrix_lock_release(&rmap->_lock);
   } else {
     //printf("####### FOUND (%lu,%lu) => %llu\n", x, y, slot->value); // FIXPAUL
@@ -418,7 +419,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 // the caller of this must hold a read lock on rmap
 void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
   uint64_t pos = 0, fpos, bytes, batched, buf_pos = 0;
-  char *buf, fixed_buf[SMATRIX_RMAP_HEAD_SIZE] = {0};
+  unsigned char *buf, fixed_buf[SMATRIX_RMAP_HEAD_SIZE] = {0};
 
   if (full) {
     bytes  = rmap->size * SMATRIX_RMAP_SLOT_SIZE;
@@ -459,6 +460,22 @@ void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
   }
 
   pwrite(self->fd, buf, bytes, rmap->fpos); // FIXPAUL: check write
+}
+
+void smatrix_rmap_write_slot(smatrix_t* self, smatrix_rmap_t* rmap, smatrix_rmap_slot_t* slot) {
+  uint64_t rmap_pos, fpos;
+  unsigned char buf[SMATRIX_RMAP_SLOT_SIZE] = {0};
+
+  rmap_pos = slot - rmap->data;
+  fpos     = rmap_pos * SMATRIX_RMAP_SLOT_SIZE;
+  fpos     += rmap->fpos + SMATRIX_RMAP_HEAD_SIZE;
+
+  // FIXPAUL what is byte ordering?
+  memset(buf,  0,              4);
+  memcpy(buf + 4, &slot->key,   4);
+  memcpy(buf + 8, &slot->value, 8);
+
+  pwrite(self->fd, &buf, SMATRIX_RMAP_SLOT_SIZE, fpos); // FIXPAUL: check write
 }
 
 // caller must hold writelock on rmap

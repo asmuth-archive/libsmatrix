@@ -116,8 +116,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
 void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full);
-void smatrix_rmap_write(smatrix_t* self, smatrix_rmap_t* rmap);
-void smatrix_rmap_write(smatrix_t* self, smatrix_rmap_t* rmap);
+void smatrix_rmap_write_slot(smatrix_t* self, smatrix_rmap_t* rmap, smatrix_rmap_slot_t* slot);
 void smatrix_rmap_swap(smatrix_t* self, smatrix_rmap_t* rmap);
 
 void smatrix_cmap_init(smatrix_t* self, smatrix_cmap_t* cmap, uint64_t size);
