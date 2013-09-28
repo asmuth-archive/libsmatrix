@@ -746,6 +746,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
 
     if (slot && slot->key == key && (slot->flags & SMATRIX_CMAP_SLOT_USED) != 0) {
       // FIXPAUL: incref on rmap
+      rmap = slot->rmap;
       smatrix_lock_decref(&cmap->lock);
       return rmap;
     } else {
@@ -760,9 +761,12 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
         continue;
       }
 
-      slot = smatrix_cmap_insert(self, cmap, key);
-      rmap = NULL;
       // FIXPAUL: incref on rmap
+      rmap = 123; // FIXPAUL
+
+      slot = smatrix_cmap_insert(self, cmap, key);
+      slot->rmap = rmap;
+
       smatrix_lock_release(&cmap->lock);
       return rmap;
     }
@@ -790,7 +794,24 @@ smatrix_cmap_slot_t* smatrix_cmap_probe(smatrix_t* self, smatrix_cmap_t* cmap, u
 }
 
 smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key) {
-  return NULL;
+  smatrix_cmap_slot_t* slot;
+
+  if (cmap->used > cmap->size / 2) {
+    printf("FIXPAUL: cmap resize\n");
+    abort();
+    //smatrix_cmap_resize(self, rmap);
+  }
+
+  slot = smatrix_cmap_probe(self, cmap, key);
+  assert(slot != NULL);
+
+  if ((slot->flags & SMATRIX_CMAP_SLOT_USED) == 0 || slot->key != key) {
+    cmap->used++;
+    slot->key   = key;
+    slot->flags = SMATRIX_CMAP_SLOT_USED;
+  }
+
+  return slot;
 }
 
 // the caller of this function must have called smatrix_lock_incref before
