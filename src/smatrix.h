@@ -112,11 +112,8 @@ smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, 
 void smatrix_cmap_resize(smatrix_t* self, smatrix_cmap_t* cmap);
 void smatrix_cmap_free(smatrix_t* self, smatrix_cmap_t* cmap);
 
-
 void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write);
 
-uint64_t smatrix_update(smatrix_t* self, uint32_t x, uint32_t y, uint32_t op, uint64_t opval);
-smatrix_rmap_t* smatrix_retrieve(smatrix_t* self, uint32_t x);
 void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_sync(smatrix_t* self);
