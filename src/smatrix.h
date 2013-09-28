@@ -57,6 +57,11 @@ typedef struct {
   pthread_mutex_t  lock;
 } smatrix_t;
 
+typedef struct {
+  uint16_t        count;
+  uint16_t        mutex;
+} smatrix_lock_t;
+
 smatrix_t* smatrix_open(const char* fname);
 void smatrix_sync(smatrix_t* self);
 void smatrix_gc(smatrix_t* self);

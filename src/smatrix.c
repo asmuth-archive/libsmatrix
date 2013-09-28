@@ -759,3 +759,23 @@ void smatrix_vec_decref(smatrix_vec_t* vec) {
 }
 
 */
+
+void smatrix_lock_incref(smatrix_lock_t* lock) {
+  for (;;) {
+    // FIXPAUL handle overflow!
+    // FIXPAUL use atomic builtin with correct memory model (full barrier neccessary?)
+    __sync_add_and_fetch(&lock->count, 1);
+
+    if (lock->mutex) {
+      __sync_add_and_sub(&lock->count, 1);
+      // FIXPAUL issue PAUSE instruction
+    } else {
+      break;
+    }
+  }
+}
+
+void smatrix_lock_decref(smatrix_lock_t* lock) {
+  // FIXPAUL use atomic builtin. memory barrier neccessary at all?
+  __sync_add_and_sub(&lock->count, 1);
+}

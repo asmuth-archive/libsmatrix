@@ -55,6 +55,18 @@ int main(int argc, char **argv) {
     pthread_join(threads[n], NULL);
 */
 
+
+  smatrix_lock_t mylock;
+  smatrix_lock_incref(&mylock);
+  printf("count: %u\n", mylock.count);
+  smatrix_lock_incref(&mylock);
+  printf("count: %u\n", mylock.count);
+  smatrix_lock_decref(&mylock);
+  smatrix_lock_decref(&mylock);
+  printf("count: %u\n", mylock.count);
+
+
+
   smatrix_incr(db, 42, 23, 1);
   smatrix_incr(db, 42, 23, 1);
 
