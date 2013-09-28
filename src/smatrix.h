@@ -120,6 +120,7 @@ void smatrix_sync(smatrix_t* self);
 void smatrix_gc(smatrix_t* self);
 
 int smatrix_lock_trymutex(smatrix_lock_t* lock);
+void smatrix_lock_dropmutex(smatrix_lock_t* lock);
 void smatrix_lock_release(smatrix_lock_t* lock);
 void smatrix_lock_incref(smatrix_lock_t* lock);
 void smatrix_lock_decref(smatrix_lock_t* lock);

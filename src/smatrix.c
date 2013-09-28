@@ -351,7 +351,7 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
   }
 
   if (mutex && !write) {
-    smatrix_dropmutex(&rmap->_lock);
+    smatrix_lock_dropmutex(&rmap->_lock);
   }
 
   slot = smatrix_rmap_probe(self, rmap, y);
@@ -782,6 +782,16 @@ int smatrix_lock_trymutex(smatrix_lock_t* lock) {
     __sync_synchronize(); // FIXPAUL cpu burn + write barrier neccessary?
 
   return 0;
+}
+
+void smatrix_lock_dropmutex(smatrix_lock_t* lock) {
+  assert(lock->count == 0);
+
+  // FIXPAUL use atomic builtin. memory barrier neccessary at all?
+  __sync_add_and_fetch(&lock->count, 1);
+
+  __sync_synchronize();
+  lock->mutex = 0;
 }
 
 void smatrix_lock_release(smatrix_lock_t* lock) {
