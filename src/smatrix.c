@@ -767,7 +767,7 @@ void smatrix_lock_incref(smatrix_lock_t* lock) {
     if (lock->mutex) {
       __sync_sub_and_fetch(&lock->count, 1);
       // FIXPAUL issue PAUSE instruction
-    } else {
+    } else {
       break;
     }
   }
