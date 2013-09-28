@@ -42,7 +42,7 @@ typedef struct {
   uint32_t             key;
   uint32_t             flags;
   smatrix_rmap_slot_t* data;
-  smatrix_lock_t       _lock;
+  smatrix_lock_t       lock;
 } smatrix_rmap_t;
 
 typedef struct {

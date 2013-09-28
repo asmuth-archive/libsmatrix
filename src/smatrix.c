@@ -259,8 +259,8 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
       return; // NULL
 
     if (rmap->size == 0) {
-      if (smatrix_lock_trymutex(&rmap->_lock)) {
-        smatrix_lock_decref(&rmap->_lock);
+      if (smatrix_lock_trymutex(&rmap->lock)) {
+        smatrix_lock_decref(&rmap->lock);
         continue;
       }
 
@@ -269,8 +269,8 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
     }
 
     if (write && !mutex) {
-      if (smatrix_lock_trymutex(&rmap->_lock)) {
-        smatrix_lock_decref(&rmap->_lock);
+      if (smatrix_lock_trymutex(&rmap->lock)) {
+        smatrix_lock_decref(&rmap->lock);
         continue;
       }
     }
@@ -279,7 +279,7 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
   }
 
   if (mutex && !write) {
-    smatrix_lock_dropmutex(&rmap->_lock);
+    smatrix_lock_dropmutex(&rmap->lock);
   }
 
   slot = smatrix_rmap_probe(self, rmap, y);
@@ -289,7 +289,7 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
       slot = smatrix_rmap_insert(self, rmap, y);
     } else {
       //printf("####### NOT FOUND (%lu,%lu)\n", x, y); // FIXPAUL
-      smatrix_lock_decref(&rmap->_lock);
+      smatrix_lock_decref(&rmap->lock);
       return;
     }
   }
@@ -300,10 +300,10 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
     slot->value++;
     //printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, slot->value); // FIXPAUL
     smatrix_rmap_write_slot(self, rmap, slot);
-    smatrix_lock_release(&rmap->_lock);
+    smatrix_lock_release(&rmap->lock);
   } else {
     //printf("####### FOUND (%lu,%lu) => %llu\n", x, y, slot->value); // FIXPAUL
-    smatrix_lock_decref(&rmap->_lock);
+    smatrix_lock_decref(&rmap->lock);
   }
 
   return;
@@ -320,8 +320,8 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
   rmap->size = size;
   rmap->used = 0;
   rmap->flags = 0;
-  rmap->_lock.count = 0;
-  rmap->_lock.mutex = 0;
+  rmap->lock.count = 0;
+  rmap->lock.mutex = 0;
 }
 
 
@@ -598,7 +598,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
 
     if (slot && slot->key == key && (slot->flags & SMATRIX_CMAP_SLOT_USED) != 0) {
       rmap = slot->rmap;
-      smatrix_lock_incref(&rmap->_lock);
+      smatrix_lock_incref(&rmap->lock);
       smatrix_lock_decref(&cmap->lock);
       return rmap;
     } else {
@@ -629,7 +629,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
         slot->rmap = rmap;
       }
 
-      smatrix_lock_incref(&rmap->_lock);
+      smatrix_lock_incref(&rmap->lock);
       smatrix_lock_release(&cmap->lock);
       return rmap;
     }
