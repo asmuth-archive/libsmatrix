@@ -411,34 +411,28 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   smatrix_mfree(self, old_bytes_mem);
   free(old_data);
 
+  smatrix_rmap_write_batch(self, rmap, 1);
   smatrix_cmap_write(self, rmap);
 }
 
 // the caller of this must hold a read lock on rmap
-// FIXPAUL: this is doing waaaay to many pwrite syscalls for a large, dirty rmap...
-// FIXPAUL: also, the meta info needs to be written only on the first write
-void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
-  uint64_t pos = 0, fpos, rmap_bytes, batched, buf_pos = 0;
-  char *buf, fixed_buf[16] = {0};
+void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
+  uint64_t pos = 0, fpos, bytes, batched, buf_pos = 0;
+  char *buf, fixed_buf[SMATRIX_RMAP_HEAD_SIZE] = {0};
 
-  if ((rmap->flags & SMATRIX_RMAP_FLAG_DIRTY) == 0)
-    return;
-
-  fpos = rmap->fpos;
-
-  batched = 1; // FIXPAUL: implement some heuristic do decide if to batch or not to batch ;)
-
-  if (batched) {
-    rmap_bytes = rmap->size * 16 + 16;
-    buf = malloc(rmap_bytes);
+  if (full) {
+    bytes  = rmap->size * SMATRIX_RMAP_SLOT_SIZE;
+    bytes += SMATRIX_RMAP_HEAD_SIZE;
+    buf    = malloc(bytes);
 
     if (buf == NULL) {
-      batched = 0;
-      buf = fixed_buf;
-    } else {
-      memset(buf, 0, rmap_bytes);
+      printf("MALLOC FAILED\n"); // FIXPAUL
+      abort();
     }
+
+    memset(buf, 0, bytes);
   } else {
+    bytes = SMATRIX_RMAP_HEAD_SIZE;
     buf = fixed_buf;
   }
 
@@ -446,42 +440,25 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
   memset(buf,     0x23,          8);
   memcpy(buf + 8, &rmap->size,   8);
 
-  if (!batched) {
-    pwrite(self->fd, buf, 16, fpos); // FIXPAUL write needs to be checked
-  }
-
-  for (pos = 0; pos < rmap->size; pos++) {
-    fpos += 16;
-
-    if (batched) {
+  if (full) {
+    for (pos = 0; pos < rmap->size; pos++) {
       buf_pos += 16;
+
+      // FIXPAUL this should be one if statement ;)
+      if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
+        continue;
+
+      if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_DIRTY) == 0)
+        continue;
+
+      // FIXPAUL what is byte ordering?
+      memset(buf + buf_pos,  0,                         4);
+      memcpy(buf + buf_pos + 4, &rmap->data[pos].key,   4);
+      memcpy(buf + buf_pos + 8, &rmap->data[pos].value, 8);
     }
-
-    // FIXPAUL this should be one if statement ;)
-    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) == 0)
-      continue;
-
-    if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_DIRTY) == 0)
-      continue;
-
-    // FIXPAUL what is byte ordering?
-    memset(buf + buf_pos,  0,                         4);
-    memcpy(buf + buf_pos + 4, &rmap->data[pos].key,   4);
-    memcpy(buf + buf_pos + 8, &rmap->data[pos].value, 8);
-
-    if (!batched) {
-      pwrite(self->fd, buf, 16, fpos); // FIXPAUL: check write
-    }
-
-    // FIXPAUL flag unset needs to be a compare and swap loop as we only hold a read lock
-    rmap->data[pos].flags &= ~SMATRIX_ROW_FLAG_DIRTY;
   }
 
-  if (batched) {
-    pwrite(self->fd, buf, rmap_bytes, rmap->fpos); // FIXPAUL: check write
-  }
-
-  rmap->flags &= ~SMATRIX_RMAP_FLAG_DIRTY;
+  pwrite(self->fd, buf, bytes, rmap->fpos); // FIXPAUL: check write
 }
 
 // caller must hold writelock on rmap
@@ -544,10 +521,8 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   free(buf);
 }
 
-
 // caller must hold a write lock on rmap
 void smatrix_rmap_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
-  smatrix_rmap_sync(self, rmap);
   rmap->flags &= ~SMATRIX_RMAP_FLAG_LOADED;
   smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
   free(rmap->data);
@@ -644,6 +619,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
         rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
         rmap->fpos = smatrix_falloc(self, rmap->size * 16 + 16);
         smatrix_cmap_write(self, rmap);
+        smatrix_rmap_write_batch(self, rmap, 0);
         slot->rmap = rmap;
       }
 

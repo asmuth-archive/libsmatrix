@@ -12,7 +12,6 @@
 #ifndef SMATRIX_H
 #define SMATRIX_H
 
-#define SMATRIX_RMAP_INITIAL_SIZE 10
 #define SMATRIX_GROWTH_FACTOR 2
 #define SMATRIX_MAX_ROW_SIZE  4096
 #define SMATRIX_MAX_ID 100000000
@@ -28,8 +27,9 @@
 #define SMATRIX_RMAP_MAGIC "\x23\x23\x23\x23\x23\x23\x23\x23"
 #define SMATRIX_RMAP_MAGIC_SIZE 8
 
-
+#define SMATRIX_RMAP_INITIAL_SIZE 10
 #define SMATRIX_RMAP_SLOT_SIZE 16
+#define SMATRIX_RMAP_HEAD_SIZE 16
 
 #define SMATRIX_CMAP_SLOT_SIZE 12
 #define SMATRIX_CMAP_HEAD_SIZE 16
@@ -113,9 +113,11 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes);
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size);
 smatrix_rmap_slot_t* smatrix_rmap_probe(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
 smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
-void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap);
-void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap);
+void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap);
+void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full);
+void smatrix_rmap_write(smatrix_t* self, smatrix_rmap_t* rmap);
+void smatrix_rmap_write(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_swap(smatrix_t* self, smatrix_rmap_t* rmap);
 
 void smatrix_cmap_init(smatrix_t* self, smatrix_cmap_t* cmap, uint64_t size);
@@ -128,7 +130,6 @@ uint64_t smatrix_cmap_falloc(smatrix_t* self, smatrix_cmap_t* cmap);
 void smatrix_cmap_mkblock(smatrix_t* self, smatrix_cmap_t* cmap);
 void smatrix_cmap_write(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos);
-
 
 int smatrix_lock_trymutex(smatrix_lock_t* lock);
 void smatrix_lock_dropmutex(smatrix_lock_t* lock);
