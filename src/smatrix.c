@@ -258,14 +258,14 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
     if (rmap == NULL)
       return; // NULL
 
-    if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
+    if (rmap->size == 0) {
       if (smatrix_lock_trymutex(&rmap->_lock)) {
         smatrix_lock_decref(&rmap->_lock);
         continue;
       }
 
       mutex = 1;
-      smatrix_rmap_unswap(self, rmap);
+      smatrix_rmap_load(self, rmap);
     }
 
     if (write && !mutex) {
@@ -484,66 +484,50 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
   rmap->flags &= ~SMATRIX_RMAP_FLAG_DIRTY;
 }
 
+// caller must hold writelock on rmap
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
-  char meta_buf[16] = {0};
+  uint64_t pos, read_bytes, mem_bytes, disk_bytes;
+  unsigned char meta_buf[16] = {0}, *buf;
 
-  if (pread(self->fd, &meta_buf, 16, rmap->fpos) != 16) {
-    printf("CANNOT LOAD RMATRIX -- pread @ %lu\n", rmap->fpos); // FIXPAUL
-    abort();
+  if (rmap->flags & SMATRIX_RMAP_FLAG_LOADED)
+    return;
+
+  if (!rmap->size) {
+    if (pread(self->fd, &meta_buf, 16, rmap->fpos) != 16) {
+      printf("CANNOT LOAD RMATRIX -- pread @ %lu\n", rmap->fpos); // FIXPAUL
+      abort();
+    }
+
+    if (memcmp(&meta_buf, &SMATRIX_RMAP_MAGIC, SMATRIX_RMAP_MAGIC_SIZE)) {
+      printf("FILE IS CORRUPT\n"); // FIXPAUL
+      abort();
+    }
+
+    // FIXPAUL what is big endian?
+    rmap->size = *((uint32_t *) &meta_buf[8]);
+    assert(rmap->size > 0);
   }
 
-  if (memcmp(&meta_buf, &SMATRIX_RMAP_MAGIC, SMATRIX_RMAP_MAGIC_SIZE)) {
-    printf("FILE IS CORRUPT\n"); // FIXPAUL
-    abort();
-  }
-
-  // FIXPAUL what is big endian?
-  memcpy(&rmap->size, &meta_buf[8], 8);
+  mem_bytes  = rmap->size * sizeof(smatrix_rmap_slot_t);
+  disk_bytes = rmap->size * SMATRIX_RMAP_SLOT_SIZE;
   rmap->used = 0;
-  rmap->flags = SMATRIX_RMAP_FLAG_SWAPPED;
+  rmap->data = malloc(mem_bytes);
+  buf        = malloc(disk_bytes);
 
-  pthread_rwlock_init(&rmap->lock, NULL);
-}
-
-// caller must hold a write lock on rmap
-void smatrix_rmap_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
-  smatrix_rmap_sync(self, rmap);
-  rmap->flags |= SMATRIX_RMAP_FLAG_SWAPPED;
-  smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
-  free(rmap->data);
-}
-
-// caller must hold a write lock on rmap
-void smatrix_rmap_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
-  if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0)
-    return;
-
-  uint64_t data_size = sizeof(smatrix_rmap_slot_t) * rmap->size;
-  rmap->data = smatrix_malloc(self, data_size);
-
-  if (rmap->data == NULL) {
-    return;
-  }
-
-  memset(rmap->data, 0, data_size);
-
-  uint64_t pos, read_bytes, rmap_bytes;
-  rmap_bytes = rmap->size * 16;
-  char* buf = malloc(rmap_bytes);
-
-  if (buf == NULL) {
-    smatrix_mfree(self, data_size);
-    free(rmap->data);
-    return;
-  }
-
-  read_bytes = pread(self->fd, buf, rmap_bytes, rmap->fpos + 16);
-
-  if (read_bytes != rmap_bytes) {
-    printf("CANNOT LOAD RMATRIX -- read wrong number of bytes: %lu vs. %lu @ %lu\n", read_bytes, rmap_bytes, rmap->fpos); // FIXPAUL
+  if (rmap->data == NULL || buf == NULL) {
+    printf("MALLOC FAILED\n"); // FIXPAUL
     abort();
   }
 
+  memset(rmap->data, 0, mem_bytes);
+  read_bytes = pread(self->fd, buf, disk_bytes, rmap->fpos + 16);
+
+  if (read_bytes != disk_bytes) {
+    printf("CANNOT LOAD RMATRIX -- read wrong number of bytes: %lu vs. %lu @ %lu\n", read_bytes, disk_bytes, rmap->fpos); // FIXPAUL
+    abort();
+  }
+
+/*
   // byte ordering FIXPAUL
   for (pos = 0; pos < rmap->size; pos++) {
     memcpy(&rmap->data[pos].value, buf + pos * 16 + 8, 8);
@@ -554,9 +538,19 @@ void smatrix_rmap_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
       rmap->data[pos].flags = SMATRIX_ROW_FLAG_USED;
     }
   }
+*/
 
-  rmap->flags &= ~SMATRIX_RMAP_FLAG_SWAPPED;
+  rmap->flags = SMATRIX_RMAP_FLAG_LOADED;
   free(buf);
+}
+
+
+// caller must hold a write lock on rmap
+void smatrix_rmap_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
+  smatrix_rmap_sync(self, rmap);
+  rmap->flags &= ~SMATRIX_RMAP_FLAG_LOADED;
+  smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
+  free(rmap->data);
 }
 
 void smatrix_fcreate(smatrix_t* self) {

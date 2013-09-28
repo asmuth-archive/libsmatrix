@@ -22,12 +22,14 @@
 #define SMATRIX_ROW_FLAG_USED 1
 #define SMATRIX_ROW_FLAG_DIRTY 2
 
-#define SMATRIX_RMAP_FLAG_SWAPPED 4
+#define SMATRIX_RMAP_FLAG_LOADED 4
 #define SMATRIX_RMAP_FLAG_DIRTY 8
 
 #define SMATRIX_RMAP_MAGIC "\x23\x23\x23\x23\x23\x23\x23\x23"
 #define SMATRIX_RMAP_MAGIC_SIZE 8
 
+
+#define SMATRIX_RMAP_SLOT_SIZE 16
 
 #define SMATRIX_CMAP_SLOT_SIZE 12
 #define SMATRIX_CMAP_HEAD_SIZE 16
@@ -115,7 +117,6 @@ void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_swap(smatrix_t* self, smatrix_rmap_t* rmap);
-void smatrix_rmap_unswap(smatrix_t* self, smatrix_rmap_t* rmap);
 
 void smatrix_cmap_init(smatrix_t* self, smatrix_cmap_t* cmap, uint64_t size);
 smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key, int create);
