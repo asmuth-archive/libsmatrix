@@ -24,7 +24,7 @@ void* test(void* fnord) {
   for (m = 0; m < 100; m++) {
     for (n = 1; n < 30; n++) {
       for (i = 1; i < 50; i++) {
-        smatrix_lookup(db, n, i, 1);
+        smatrix_incr(db, n, i, 1);
       }
     }
   }
@@ -33,7 +33,7 @@ void* test(void* fnord) {
 }
 
 int main(int argc, char **argv) {
-  int n,m, num_threads = 4;
+  int i,n,m,x=0, num_threads = 4;
   pthread_t threads[num_threads];
 
   printf("\nloading\n");
@@ -52,13 +52,10 @@ int main(int argc, char **argv) {
 
   printf("\ndone\n");
 
-  int x=0;
-  for (n = 1; n < db->cmap.size; n++) {
-    if (db->cmap.data[n].flags == 0) continue;
-    for (m = 1; m < db->cmap.data[n].rmap->size; m++) {
-      if (db->cmap.data[n].rmap->data[m].key == 0) continue;
-      printf("(%u,%u) => %lu, ", db->cmap.data[n].key, db->cmap.data[n].rmap->data[m].key, db->cmap.data[n].rmap->data[m].value);
-      //if (x++ % 5 == 0) printf("\n");
+  for (n = 1; n < 30; n++) {
+    for (i = 1; i < 50; i++) {
+      printf("(%u,%u) => %lu, ", n, i, smatrix_get(db, n, i));
+      if (x++ % 5 == 0) printf("\n");
     }
   }
 

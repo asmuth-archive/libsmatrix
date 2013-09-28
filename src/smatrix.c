@@ -172,23 +172,17 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
 }
 
 uint64_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y) {
-  uint64_t retval = 0;
-/*
+  smatrix_ref_t ref;
+  uint64_t retval;
 
-  smatrix_rmap_t* rmap = smatrix_retrieve(self, x);
+  smatrix_lookup(self, &ref, x, y, 0);
 
-  if (rmap == NULL)
-    return retval;
+  if (ref.slot == NULL)
+    return 0;
 
-  smatrix_rmap_slot_t* slot = smatrix_rmap_lp(self, rmap, y);
+  retval = ref.slot->value;
 
-  if (slot && slot->key == y && (slot->flags & SMATRIX_RMAP_SLOT_USED) != 0) {
-    retval = slot->value;
-  }
-
-  pthread_rwlock_unlock(&rmap->lock);
-
-*/
+  smatrix_decref(self, &ref);
   return retval;
 }
 
@@ -217,37 +211,55 @@ uint64_t smatrix_getrow(smatrix_t* self, uint32_t x, uint64_t* ret, size_t ret_l
 }
 
 uint64_t smatrix_rowlen(smatrix_t* self, uint32_t x) {
-  uint64_t len;
+  smatrix_ref_t ref;
+  uint64_t len = 0;
 /*
-  smatrix_rmap_t* rmap = smatrix_retrieve(self, x);
+  smatrix_lookup(self, &ref, x, 0, 0);
 
-  if (rmap == NULL)
+  if (ref.slot == NULL)
     return 0;
 
-  len = rmap->used;
+  len = ref.rmap->used;
 
-  pthread_rwlock_unlock(&rmap->lock);
+  smatrix_decref(self, &ref);
 */
   return len;
 }
 
-
 uint64_t smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value) {
-  //return smatrix_update(self, x, y, SMATRIX_OP_SET, value);
-  return 0;
+  smatrix_ref_t ref;
+  uint64_t retval;
+
+  smatrix_lookup(self, &ref, x, y, 1);
+  retval = (ref.slot->value = value);
+  smatrix_decref(self, &ref);
+
+  return retval;
 }
 
 uint64_t smatrix_incr(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value) {
-  //return smatrix_update(self, x, y, SMATRIX_OP_INCR, value);
-  return 0;
+  smatrix_ref_t ref;
+  uint64_t retval;
+
+  smatrix_lookup(self, &ref, x, y, 1);
+  retval = (ref.slot->value += value);
+  smatrix_decref(self, &ref);
+
+  return retval;
 }
 
 uint64_t smatrix_decr(smatrix_t* self, uint32_t x, uint32_t y, uint64_t value) {
-  //return smatrix_update(self, x, y, SMATRIX_OP_DECR, value);
-  return 0;
+  smatrix_ref_t ref;
+  uint64_t retval;
+
+  smatrix_lookup(self, &ref, x, y, 1);
+  retval = (ref.slot->value -= value);
+  smatrix_decref(self, &ref);
+
+  return retval;
 }
 
-void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
+void smatrix_lookup(smatrix_t* self, smatrix_ref_t* ref, uint32_t x, uint32_t y, int write) {
   int mutex = 0;
   smatrix_rmap_t* rmap;
   smatrix_rmap_slot_t* slot;
@@ -288,25 +300,25 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
     if (write) {
       slot = smatrix_rmap_insert(self, rmap, y);
     } else {
-      //printf("####### NOT FOUND (%lu,%lu)\n", x, y); // FIXPAUL
+      ref->rmap  = NULL;
+      ref->slot  = NULL;
       smatrix_lock_decref(&rmap->lock);
       return;
     }
   }
 
-  // FIXPAUL return here :)
+  ref->rmap  = rmap;
+  ref->slot  = slot;
+  ref->write = write;
+}
 
-  if (write) {
-    slot->value++;
-    //printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, slot->value); // FIXPAUL
-    smatrix_rmap_write_slot(self, rmap, slot);
-    smatrix_lock_release(&rmap->lock);
+void smatrix_decref(smatrix_t* self, smatrix_ref_t* ref) {
+  if (ref->write) {
+    smatrix_rmap_write_slot(self, ref->rmap, ref->slot);
+    smatrix_lock_release(&ref->rmap->lock);
   } else {
-    //printf("####### FOUND (%lu,%lu) => %llu\n", x, y, slot->value); // FIXPAUL
-    smatrix_lock_decref(&rmap->lock);
+    smatrix_lock_decref(&ref->rmap->lock);
   }
-
-  return;
 }
 
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {

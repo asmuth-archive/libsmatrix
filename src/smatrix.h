@@ -63,6 +63,12 @@ typedef struct {
 } smatrix_cmap_t;
 
 typedef struct {
+  int                  write;
+  smatrix_rmap_t*      rmap;
+  smatrix_rmap_slot_t* slot;
+} smatrix_ref_t;
+
+typedef struct {
   int                  fd;
   uint64_t             fpos;
   uint64_t             mem;
@@ -84,7 +90,9 @@ void smatrix_close(smatrix_t* self);
 
 void smatrix_fcreate(smatrix_t* self);
 void smatrix_fload(smatrix_t* self);
-void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write);
+
+void smatrix_lookup(smatrix_t* self, smatrix_ref_t* ref, uint32_t x, uint32_t y, int write);
+void smatrix_decref(smatrix_t* self, smatrix_ref_t* ref);
 
 void* smatrix_malloc(smatrix_t* self, uint64_t bytes);
 void smatrix_mfree(smatrix_t* self, uint64_t bytes);
