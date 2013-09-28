@@ -249,7 +249,7 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
       }
 
       mutex = 1;
-      smatrix_unswap(self, rmap);
+      smatrix_rmap_unswap(self, rmap);
     }
 
     if (write && !mutex) {
@@ -488,7 +488,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 }
 
 // caller must hold a write lock on rmap
-void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
+void smatrix_rmap_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
   smatrix_rmap_sync(self, rmap);
   rmap->flags |= SMATRIX_RMAP_FLAG_SWAPPED;
   smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
@@ -496,7 +496,7 @@ void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
 }
 
 // caller must hold a write lock on rmap
-void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
+void smatrix_rmap_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
   if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0)
     return;
 
