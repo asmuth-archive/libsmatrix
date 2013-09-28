@@ -297,8 +297,8 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
   // FIXPAUL return here :)
 
   if (write) {
-    //printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, slot->value++); // FIXPAUL
     slot->value++;
+    printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, slot->value); // FIXPAUL
     smatrix_lock_release(&rmap->_lock);
   } else {
     //printf("####### FOUND (%lu,%lu) => %llu\n", x, y, slot->value); // FIXPAUL
@@ -309,15 +309,16 @@ void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
 }
 
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
-  size_t bytes = sizeof(smatrix_rmap_slot_t) * size;
+  if (size > 0) {
+    size_t bytes = sizeof(smatrix_rmap_slot_t) * size;
 
-  rmap->data = malloc(bytes);
-  memset(rmap->data, 0, bytes);
+    rmap->data = malloc(bytes);
+    memset(rmap->data, 0, bytes);
+  }
 
   rmap->size = size;
   rmap->used = 0;
   rmap->flags = 0;
-  rmap->fpos = smatrix_falloc(self, size * 16 + 16);
   rmap->_lock.count = 0;
   rmap->_lock.mutex = 0;
 }
@@ -592,6 +593,7 @@ void smatrix_fload(smatrix_t* self) {
   // FIXPAUL because f**k other endianess, thats why...
   memcpy(&cmap_head_fpos, &buf[8],  8);
 
+  smatrix_cmap_init(self, &self->cmap, 10); // FIXPAUL
   smatrix_cmap_load(self, cmap_head_fpos);
 }
 
@@ -646,6 +648,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
         smatrix_rmap_init(self, rmap, SMATRIX_RMAP_INITIAL_SIZE);
         rmap->key = key;
         rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
+        rmap->fpos = smatrix_falloc(self, rmap->size * 16 + 16);
         smatrix_cmap_write(self, rmap);
         slot->rmap = rmap;
       }
@@ -678,6 +681,7 @@ smatrix_cmap_slot_t* smatrix_cmap_probe(smatrix_t* self, smatrix_cmap_t* cmap, u
 }
 
 smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key) {
+  printf("cmap insert %u\n", key);
   smatrix_cmap_slot_t* slot;
 
   if (cmap->used > cmap->size / 2) {
@@ -738,7 +742,7 @@ uint64_t smatrix_cmap_falloc(smatrix_t* self, smatrix_cmap_t* cmap) {
   }
 
   fpos =  cmap->block_fpos + SMATRIX_CMAP_HEAD_SIZE;
-  fpos += cmap->block_used * SMATRIX_CMAP_BLOCK_SIZE;
+  fpos += cmap->block_used * SMATRIX_CMAP_SLOT_SIZE;
 
   cmap->block_used++;
 
@@ -780,7 +784,48 @@ void smatrix_cmap_write(smatrix_t* self, smatrix_rmap_t* rmap) {
 }
 
 void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
-  printf("CMAP LOAD @ %lu\n", head_fpos);
+  smatrix_rmap_t* rmap;
+  unsigned char meta_buf[SMATRIX_CMAP_HEAD_SIZE], *buf;
+  uint64_t fpos, bytes, pos, value;
+
+  for (fpos = head_fpos; fpos;) {
+    printf("CMAP LOAD @ %lu\n", fpos);
+
+    if (pread(self->fd, &meta_buf, SMATRIX_CMAP_HEAD_SIZE, fpos) != 16) {
+      printf("CANNOT LOAD CMAP -- pread @ %lu\n", fpos); // FIXPAUL
+      abort();
+    }
+
+    fpos += SMATRIX_CMAP_HEAD_SIZE;
+    bytes = *((uint64_t *) &meta_buf) * SMATRIX_CMAP_SLOT_SIZE; // FIXPAUL byte ordering
+    buf   = malloc(bytes);
+
+    if (pread(self->fd, buf, bytes, fpos) != bytes) {
+      printf("CANNOT LOAD CMAP -- pread @ %lu\n", fpos); // FIXPAUL
+      abort();
+    }
+
+    for (pos = 0; pos < bytes; pos += SMATRIX_CMAP_SLOT_SIZE) {
+      value = *((uint64_t *) &buf[pos + 4]); // FIXPAUL byte ordering
+
+      if (!value)
+        break;
+
+      rmap = malloc(sizeof(smatrix_rmap_t)); // FIXPAUL
+      smatrix_rmap_init(self, rmap, 0);
+      rmap->key = *((uint32_t *) &buf[pos]); // FIXPAUL byte ordering
+      rmap->meta_fpos = fpos + pos;
+      rmap->fpos = value;
+
+      printf("load with meta fpos %lu, fpos %lu\n", rmap->meta_fpos, rmap->fpos);
+
+      printf("cmap laod %u\n", rmap->key);
+      smatrix_cmap_insert(self, &self->cmap, rmap->key)->rmap = rmap;
+    }
+
+    free(buf);
+    fpos = *((uint64_t *) &meta_buf[8]); // FIXPAUL byte ordering
+  }
 }
 
 // the caller of this function must have called smatrix_lock_incref before

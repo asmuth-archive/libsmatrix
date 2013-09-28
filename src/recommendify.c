@@ -36,10 +36,15 @@ int main(int argc, char **argv) {
   int n,m, num_threads = 4;
   pthread_t threads[num_threads];
 
+  printf("\nloading\n");
   db = smatrix_open("/var/tmp/reco.db");
 
   if (db == NULL)
     abort();
+
+  smatrix_lookup(db, 23, 1, 1);
+  printf("---\n");
+  smatrix_lookup(db, 23, 1, 1);
 
   exit(0);
 
