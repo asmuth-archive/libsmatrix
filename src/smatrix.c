@@ -91,33 +91,7 @@ smatrix_t* smatrix_open(const char* fname) {
   if (self->fpos == 0) {
     smatrix_fcreate(self);
   } else {
-    printf("LOAD FILE!\n");
-    exit(1);
-    /*
-    smatrix_meta_load(self);
-    //smatrix_rmap_load(self, &self->rmap);
-    //smatrix_unswap(self, &self->rmap);
-
-    // FIXPAUL: put this into some method ---
-    uint64_t pos;
-    smatrix_rmap_t* rmap = &self->rmap;
-
-    for (pos = 0; pos < rmap->size; pos++) {
-      if ((rmap->data[pos].flags & SMATRIX_ROW_FLAG_USED) != 0) {
-        rmap->data[pos].next = smatrix_malloc(self, sizeof(smatrix_rmap_t));
-
-        if (!rmap->data[pos].next) {
-          printf("can't load first level index. mem limit too small?\n");
-          exit(1); // fixpaul proper error handling
-        }
-
-        ((smatrix_rmap_t *) rmap->data[pos].next)->fpos = rmap->data[pos].value;
-        smatrix_rmap_load(self, rmap->data[pos].next);
-        //smatrix_unswap(self, rmap->data[pos].next);
-      }
-    }
-    // ---
-    */
+    smatrix_fload(self);
   }
 
   pthread_mutex_init(&self->lock, NULL);
@@ -601,7 +575,7 @@ void smatrix_fcreate(smatrix_t* self) {
 
 void smatrix_fload(smatrix_t* self) {
   char buf[SMATRIX_META_SIZE];
-  uint64_t read;
+  uint64_t read, cmap_head_fpos;
 
   read = pread(self->fd, &buf, SMATRIX_META_SIZE, 0);
 
@@ -616,9 +590,10 @@ void smatrix_fload(smatrix_t* self) {
   }
 
   // FIXPAUL because f**k other endianess, thats why...
-  //memcpy(&self->rmap.fpos, &buf[8],  8);
-}
+  memcpy(&cmap_head_fpos, &buf[8],  8);
 
+  smatrix_cmap_load(self, cmap_head_fpos);
+}
 
 void smatrix_cmap_init(smatrix_t* self, smatrix_cmap_t* cmap, uint64_t size) {
   cmap->size = size;
@@ -802,6 +777,10 @@ void smatrix_cmap_write(smatrix_t* self, smatrix_rmap_t* rmap) {
   memcpy(&buf[4],  &rmap->fpos, 8);
 
   pwrite(self->fd, &buf, SMATRIX_CMAP_SLOT_SIZE, rmap->meta_fpos);
+}
+
+void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
+  printf("CMAP LOAD @ %lu\n", head_fpos);
 }
 
 // the caller of this function must have called smatrix_lock_incref before
