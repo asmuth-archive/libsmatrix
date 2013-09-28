@@ -762,7 +762,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
       }
 
       // FIXPAUL: incref on rmap
-      rmap = 123; // FIXPAUL
+      rmap = key; // FIXPAUL
 
       slot = smatrix_cmap_insert(self, cmap, key);
       slot->rmap = rmap;
@@ -797,9 +797,7 @@ smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, 
   smatrix_cmap_slot_t* slot;
 
   if (cmap->used > cmap->size / 2) {
-    printf("FIXPAUL: cmap resize\n");
-    abort();
-    //smatrix_cmap_resize(self, rmap);
+    smatrix_cmap_resize(self, cmap);
   }
 
   slot = smatrix_cmap_probe(self, cmap, key);
@@ -812,6 +810,38 @@ smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, 
   }
 
   return slot;
+}
+
+void smatrix_cmap_resize(smatrix_t* self, smatrix_cmap_t* cmap) {
+  uint64_t new_bytes, pos;
+  smatrix_cmap_slot_t *slot;
+  smatrix_cmap_t new;
+
+  new.used  = 0;
+  new.size  = cmap->size * 2;
+  new_bytes = sizeof(smatrix_cmap_slot_t) * new.size;
+  new.data  = malloc(new_bytes);
+
+  if (new.data == NULL) {
+    printf("MALLOC FAILED\n");
+    abort(); // FIXPAUL
+  }
+
+  memset(new.data, 0, new_bytes);
+
+  for (pos = 0; pos < cmap->size; pos++) {
+    if ((cmap->data[pos].flags & SMATRIX_CMAP_SLOT_USED) == 0)
+      continue;
+
+    slot = smatrix_cmap_insert(self, &new, cmap->data[pos].key);
+    slot->rmap = cmap->data[pos].rmap;
+  }
+
+  free(cmap->data);
+
+  cmap->data = new.data;
+  cmap->size = new.size;
+  cmap->used = new.used;
 }
 
 // the caller of this function must have called smatrix_lock_incref before
