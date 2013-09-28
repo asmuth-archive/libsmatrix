@@ -579,7 +579,7 @@ void smatrix_cmap_init(smatrix_t* self, smatrix_cmap_t* cmap, uint64_t size) {
   cmap->used = 0;
   cmap->lock.count = 0;
   cmap->lock.mutex = 0;
-  cmap->data = malloc(sizeof(smatrix_cmap_slot_t *) * size);
+  cmap->data = malloc(sizeof(smatrix_cmap_slot_t) * size);
 }
 
 void smatrix_cmap_free(smatrix_t* self, smatrix_cmap_t* cmap) {
