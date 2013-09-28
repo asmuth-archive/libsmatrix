@@ -83,6 +83,11 @@ void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_meta_sync(smatrix_t* self);
 void smatrix_meta_load(smatrix_t* self);
 
+int smatrix_lock_trymutex(smatrix_lock_t* lock);
+void smatrix_lock_release(smatrix_lock_t* lock);
+void smatrix_lock_incref(smatrix_lock_t* lock);
+void smatrix_lock_decref(smatrix_lock_t* lock);
+
 // ----
 
 uint64_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y);

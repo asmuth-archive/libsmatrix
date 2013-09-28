@@ -734,31 +734,29 @@ void smatrix_unlock(smatrix_t* self) {
   pthread_rwlock_rdlock(&self->lock);
 }
 
-void smatrix_vec_lock(smatrix_vec_t* vec) {
-  for (;;) {
-    __sync_synchronize();
-    volatile uint32_t flags = vec->flags;
-
-    if ((flags & 1) == 1)
-      continue;
-
-    if (__sync_bool_compare_and_swap(&vec->flags, flags, flags | 1))
-      break;
-  }
-}
-
-void smatrix_vec_unlock(smatrix_vec_t* vec) {
-  __sync_synchronize();
-  vec->flags &= ~1;
-}
-
-void smatrix_vec_incref(smatrix_vec_t* vec) {
-}
-
-void smatrix_vec_decref(smatrix_vec_t* vec) {
-}
-
 */
+
+// the caller of this function must have called smatrix_lock_incref before
+// returns 0 for success, 1 for failure
+int smatrix_lock_trymutex(smatrix_lock_t* lock) {
+  assert(lock->count > 0);
+
+  if (!__sync_bool_compare_and_swap(&lock->mutex, 0, 1))
+    return 1;
+
+  // FIXPAUL use atomic builtin. memory barrier neccessary at all?
+  __sync_sub_and_fetch(&lock->count, 1);
+
+  while (lock->count > 0) // FIXPAUL: volatile neccessary?
+    __sync_synchronize(); // FIXPAUL cpu burn + write barrier neccessary?
+
+  return 0;
+}
+
+void smatrix_lock_release(smatrix_lock_t* lock) {
+  __sync_synchronize();
+  lock->mutex = 0;
+}
 
 void smatrix_lock_incref(smatrix_lock_t* lock) {
   for (;;) {
@@ -767,7 +765,7 @@ void smatrix_lock_incref(smatrix_lock_t* lock) {
     __sync_add_and_fetch(&lock->count, 1);
 
     if (lock->mutex) {
-      __sync_add_and_sub(&lock->count, 1);
+      __sync_sub_and_fetch(&lock->count, 1);
       // FIXPAUL issue PAUSE instruction
     } else {
       break;
@@ -777,5 +775,5 @@ void smatrix_lock_incref(smatrix_lock_t* lock) {
 
 void smatrix_lock_decref(smatrix_lock_t* lock) {
   // FIXPAUL use atomic builtin. memory barrier neccessary at all?
-  __sync_add_and_sub(&lock->count, 1);
+  __sync_sub_and_fetch(&lock->count, 1);
 }

@@ -59,9 +59,16 @@ int main(int argc, char **argv) {
   smatrix_lock_t mylock;
   smatrix_lock_incref(&mylock);
   printf("count: %u\n", mylock.count);
+  smatrix_lock_decref(&mylock);
+  printf("count: %u\n", mylock.count);
+  printf("try mutex\n");
+  smatrix_lock_incref(&mylock);
+  smatrix_lock_trymutex(&mylock);
+  printf("got mutex\n");
+  smatrix_lock_release(&mylock);
+  printf("released mutex\n");
   smatrix_lock_incref(&mylock);
   printf("count: %u\n", mylock.count);
-  smatrix_lock_decref(&mylock);
   smatrix_lock_decref(&mylock);
   printf("count: %u\n", mylock.count);
 
