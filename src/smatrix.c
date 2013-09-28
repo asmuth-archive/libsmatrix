@@ -26,6 +26,51 @@
 //  + proper error handling / return codes for smatrix_open
 //  + file free list
 
+
+/*
+
+  libsmatrix file format (augmented BNF):
+  ---------------------------------------
+
+    FILE              ::= FILE_HEADER         ; header size is 512 bytes
+                          FILE_BODY
+
+    FILE_HEADER       ::= <8 Bytes 0x17>      ; uint64_t, magic number
+                          CMAP_HEAD_FPOS      ; uint64_t
+                          <496 Bytes 0x0>     ; padding to 512 bytes
+
+    FILE_BODY         ::= *( CMAP_BLOCK | RMAP_BLOCK )
+
+    CMAP_BLOCK        ::= CMAP_BLOCK_SIZE     ; uint64_t
+                          CMAP_BLOCK_NEXT     ; uint64_t, file offset
+                          *( CMAP_ENTRY )     ; 12 bytes each
+
+    CMAP_ENTRY        ::= CMAP_ENTRY_KEY      ; uint32_t
+                          CMAP_ENTRY_VALUE    ; uint64_t
+
+    CMAP_ENTRY_KEY    ::= <uint32_t>          ; key / first dimension
+    CMAP_ENTRY_VALUE  ::= <uint64_t>          ; file offset of the RMAP_BLOCK
+    CMAP_HEAD_FPOS    ::= <uint64_t>          ; file offset of the first CMAP_BLOCK
+    CMAP_BLOCK_SIZE   ::= <uint64_t>          ; number of entries in this block
+    CMAP_BLOCK_NEXT   ::= <uint64_t>          ; file offset of the next block or 0
+
+    RMAP_BLOCK        ::= <8 Bytes 0x23>      ; uint64_t, magic number
+                          RMAP_BLOCK_SIZE     ; uint64_t
+                          *( RMAP_SLOT )      ; 8 bytes each
+
+    RMAP_SLOT         ::= RMAP_ENTRY          ; used hashmap slot
+                          | RMAP_SLOT_UNUSED  ; unused hashmap slot
+
+    RMAP_ENTRY        ::= RMAP_ENTRY_KEY      ; uint32_t
+                          RMAP_ENTRY_VALUE    ; uint32_t
+
+    RMAP_SLOT_UNUSED  ::= <8 Bytes 0x0>       ; empty slot
+    RMAP_ENTRY_KEY    ::= <uint32_t>          ; key / second dimension
+    RMAP_ENTRY_VALUE  ::= <uint32_t>          ; value
+    RMAP_BLOCK_SIZE   ::= <uint64_t>          ; number of slots in this block
+
+*/
+
 smatrix_t* smatrix_open(const char* fname) {
   smatrix_t* self = malloc(sizeof(smatrix_t));
 
