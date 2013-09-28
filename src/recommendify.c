@@ -56,6 +56,12 @@ int main(int argc, char **argv) {
 */
 
 
+  smatrix_cmap_t mycmap;
+  smatrix_cmap_init(db, &mycmap, 1024);
+  smatrix_cmap_free(db, &mycmap);
+
+  exit(0);
+
   smatrix_lock_t mylock;
   smatrix_lock_incref(&mylock);
   printf("count: %u\n", mylock.count);

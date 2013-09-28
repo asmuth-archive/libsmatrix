@@ -722,19 +722,18 @@ void smatrix_meta_load(smatrix_t* self) {
   memcpy(&self->rmap.fpos, &buf[8],  8);
 }
 
-/*
 
-void smatrix_wrlock(smatrix_t* self) {
-  pthread_rwlock_unlock(&self->lock);
-  pthread_rwlock_wrlock(&self->lock);
+void smatrix_cmap_init(smatrix_t* self, smatrix_cmap_t* cmap, uint64_t size) {
+  cmap->size = size;
+  cmap->used = 0;
+  cmap->lock.count = 0;
+  cmap->lock.mutex = 0;
+  cmap->data = malloc(sizeof(smatrix_cmap_slot_t *) * size);
 }
 
-void smatrix_unlock(smatrix_t* self) {
-  pthread_rwlock_unlock(&self->lock);
-  pthread_rwlock_rdlock(&self->lock);
+void smatrix_cmap_free(smatrix_t* self, smatrix_cmap_t* cmap) {
+  free(cmap->data);
 }
-
-*/
 
 // the caller of this function must have called smatrix_lock_incref before
 // returns 0 for success, 1 for failure
