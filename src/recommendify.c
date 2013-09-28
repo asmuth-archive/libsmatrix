@@ -58,8 +58,20 @@ int main(int argc, char **argv) {
 
   smatrix_cmap_t mycmap;
   smatrix_cmap_init(db, &mycmap, 1024);
-  smatrix_cmap_free(db, &mycmap);
 
+  printf("cmap_lookup(23, false) => %p\n",
+    smatrix_cmap_lookup(db, &mycmap, 23, 0));
+
+  printf("cmap_lookup(23, true) => %p\n",
+    smatrix_cmap_lookup(db, &mycmap, 23, 1));
+
+  printf("cmap_lookup(23, false) => %p\n",
+    smatrix_cmap_lookup(db, &mycmap, 23, 0));
+
+  printf("cmap_lookup(23, true) => %p\n",
+    smatrix_cmap_lookup(db, &mycmap, 23, 1));
+
+  smatrix_cmap_free(db, &mycmap);
   exit(0);
 
   smatrix_lock_t mylock;
