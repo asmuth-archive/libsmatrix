@@ -545,7 +545,7 @@ void smatrix_fcreate(smatrix_t* self) {
   memset(&buf, 0x17, 8);
   pwrite(self->fd, &buf, SMATRIX_META_SIZE, 0);
 
-  smatrix_cmap_init(self, &self->cmap, 10); // FIXPAUL
+  smatrix_cmap_init(self); // FIXPAUL
   smatrix_cmap_mkblock(self, &self->cmap);
 
 }
@@ -569,19 +569,19 @@ void smatrix_fload(smatrix_t* self) {
   // FIXPAUL because f**k other endianess, thats why...
   memcpy(&cmap_head_fpos, &buf[8],  8);
 
-  smatrix_cmap_init(self, &self->cmap, 10); // FIXPAUL
+  smatrix_cmap_init(self); // FIXPAUL
   smatrix_cmap_load(self, cmap_head_fpos);
 }
 
-void smatrix_cmap_init(smatrix_t* self, smatrix_cmap_t* cmap, uint64_t size) {
-  cmap->size = size;
-  cmap->used = 0;
-  cmap->lock.count = 0;
-  cmap->lock.mutex = 0;
-  cmap->block_fpos = 0;
-  cmap->block_used = 0;
-  cmap->block_size = 0;
-  cmap->data = malloc(sizeof(smatrix_cmap_slot_t) * size);
+void smatrix_cmap_init(smatrix_t* self) {
+  self->cmap.size = SMATRIX_CMAP_INITIAL_SIZE;
+  self->cmap.used = 0;
+  self->cmap.lock.count = 0;
+  self->cmap.lock.mutex = 0;
+  self->cmap.block_fpos = 0;
+  self->cmap.block_used = 0;
+  self->cmap.block_size = 0;
+  self->cmap.data = malloc(sizeof(smatrix_cmap_slot_t) * self->cmap.size);
 }
 
 void smatrix_cmap_free(smatrix_t* self, smatrix_cmap_t* cmap) {

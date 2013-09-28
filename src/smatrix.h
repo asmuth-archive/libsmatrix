@@ -19,9 +19,10 @@
 #define SMATRIX_RMAP_INITIAL_SIZE 10
 #define SMATRIX_RMAP_SLOT_SIZE 16
 #define SMATRIX_RMAP_HEAD_SIZE 16
+#define SMATRIX_CMAP_INITIAL_SIZE 4096
 #define SMATRIX_CMAP_SLOT_SIZE 12
 #define SMATRIX_CMAP_HEAD_SIZE 16
-#define SMATRIX_CMAP_BLOCK_SIZE 2
+#define SMATRIX_CMAP_BLOCK_SIZE 8192
 #define SMATRIX_CMAP_SLOT_USED 1
 
 typedef struct {
@@ -99,7 +100,7 @@ void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full);
 void smatrix_rmap_write_slot(smatrix_t* self, smatrix_rmap_t* rmap, smatrix_rmap_slot_t* slot);
 void smatrix_rmap_swap(smatrix_t* self, smatrix_rmap_t* rmap);
 
-void smatrix_cmap_init(smatrix_t* self, smatrix_cmap_t* cmap, uint64_t size);
+void smatrix_cmap_init(smatrix_t* self);
 smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key, int create);
 smatrix_cmap_slot_t* smatrix_cmap_probe(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key);
 smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key);
