@@ -17,15 +17,16 @@
 #include "smatrix.h"
 
 // TODO
-//  + second level hashmap: remove used flag
 //  + second level hashmap slot size should be 8 byte
+//  + remove pthread dependency (smatrix->lock)
+//  + free all memory on exit
 //  + ftruncate in larger blocks
 //  + aquire lock on file to prevent concurrent access
 //  + constant-ify all the magic numbers
 //  + convert endianess when loading/saving to disk
 //  + proper error handling / return codes for smatrix_open
 //  + file free list
-
+//  + new gc method
 
 /*
 
