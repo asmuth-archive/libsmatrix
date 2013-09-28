@@ -17,7 +17,6 @@
 #include "smatrix.h"
 
 // TODO
-//  + second level hashmap slot size should be 8 byte
 //  + remove pthread dependency (smatrix->lock)
 //  + free all memory on exit
 //  + ftruncate in larger blocks
@@ -374,9 +373,9 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   uint64_t pos, old_fpos, new_size = rmap->size * 2;
 
-  uint64_t old_bytes_disk = 16 * rmap->size + 16;
+  uint64_t old_bytes_disk = SMATRIX_RMAP_SLOT_SIZE * rmap->size + SMATRIX_RMAP_HEAD_SIZE;
   uint64_t old_bytes_mem = sizeof(smatrix_rmap_slot_t) * rmap->size;
-  uint64_t new_bytes_disk = 16 * new_size + 16;
+  uint64_t new_bytes_disk = SMATRIX_RMAP_SLOT_SIZE * new_size + SMATRIX_RMAP_HEAD_SIZE;
   uint64_t new_bytes_mem = sizeof(smatrix_rmap_slot_t) * new_size;
 
   new.used = 0;
@@ -440,15 +439,14 @@ void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
 
   if (full) {
     for (pos = 0; pos < rmap->size; pos++) {
-      buf_pos += 16;
+      buf_pos += SMATRIX_RMAP_SLOT_SIZE;
 
       if (!rmap->data[pos].key && !rmap->data[pos].value)
         continue;
 
       // FIXPAUL what is byte ordering?
-      memset(buf + buf_pos,  0,                         4);
-      memcpy(buf + buf_pos + 4, &rmap->data[pos].key,   4);
-      memcpy(buf + buf_pos + 8, &rmap->data[pos].value, 8);
+      memcpy(buf + buf_pos,     &rmap->data[pos].key,   4);
+      memcpy(buf + buf_pos + 4, &rmap->data[pos].value, 4);
     }
   }
 
@@ -464,9 +462,8 @@ void smatrix_rmap_write_slot(smatrix_t* self, smatrix_rmap_t* rmap, smatrix_rmap
   fpos     += rmap->fpos + SMATRIX_RMAP_HEAD_SIZE;
 
   // FIXPAUL what is byte ordering?
-  memset(buf,  0,              4);
-  memcpy(buf + 4, &slot->key,   4);
-  memcpy(buf + 8, &slot->value, 8);
+  memcpy(buf,     &slot->key,   4);
+  memcpy(buf + 4, &slot->value, 4);
 
   pwrite(self->fd, &buf, SMATRIX_RMAP_SLOT_SIZE, fpos); // FIXPAUL: check write
 }
@@ -474,13 +471,13 @@ void smatrix_rmap_write_slot(smatrix_t* self, smatrix_rmap_t* rmap, smatrix_rmap
 // caller must hold writelock on rmap
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   uint64_t pos, read_bytes, mem_bytes, disk_bytes;
-  unsigned char meta_buf[16] = {0}, *buf;
+  unsigned char meta_buf[SMATRIX_RMAP_HEAD_SIZE] = {0}, *buf;
 
   if (rmap->flags & SMATRIX_RMAP_FLAG_LOADED)
     return;
 
   if (!rmap->size) {
-    if (pread(self->fd, &meta_buf, 16, rmap->fpos) != 16) {
+    if (pread(self->fd, &meta_buf, SMATRIX_RMAP_HEAD_SIZE, rmap->fpos) != SMATRIX_RMAP_HEAD_SIZE) {
       printf("CANNOT LOAD RMATRIX -- pread @ %llu\n", rmap->fpos); // FIXPAUL
       abort();
     }
@@ -516,10 +513,10 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   // byte ordering FIXPAUL
   for (pos = 0; pos < rmap->size; pos++) {
-    memcpy(&rmap->data[pos].value, buf + pos * SMATRIX_RMAP_SLOT_SIZE + 8, 8);
+    memcpy(&rmap->data[pos].value, buf + pos * SMATRIX_RMAP_SLOT_SIZE + 4, 4);
 
     if (rmap->data[pos].value) {
-      memcpy(&rmap->data[pos].key, buf + pos * SMATRIX_RMAP_SLOT_SIZE + 4, 4);
+      memcpy(&rmap->data[pos].key, buf + pos * SMATRIX_RMAP_SLOT_SIZE, 4);
       rmap->used++;
     }
   }
@@ -624,7 +621,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
         smatrix_rmap_init(self, rmap, SMATRIX_RMAP_INITIAL_SIZE);
         rmap->key = key;
         rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
-        rmap->fpos = smatrix_falloc(self, rmap->size * 16 + 16);
+        rmap->fpos = smatrix_falloc(self, rmap->size * SMATRIX_RMAP_SLOT_SIZE + SMATRIX_RMAP_HEAD_SIZE);
         smatrix_cmap_write(self, rmap);
         smatrix_rmap_write_batch(self, rmap, 0);
         slot->rmap = rmap;
