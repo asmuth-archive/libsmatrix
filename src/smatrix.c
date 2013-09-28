@@ -93,6 +93,7 @@ smatrix_t* smatrix_open(const char* fname) {
     smatrix_falloc(self, SMATRIX_META_SIZE);
     smatrix_meta_sync(self);
     smatrix_cmap_init(self, &self->cmap, 10); // FIXPAUL
+    smatrix_cmap_mkblock(self, &self->cmap);
   } else {
     printf("LOAD FILE!\n");
     exit(1);
@@ -662,8 +663,10 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
       if (slot->rmap) {
         rmap = slot->rmap;
       } else {
+        // FIXPAUL move to rmap_create method
         rmap = malloc(sizeof(smatrix_rmap_t)); // FIXPAUL
         smatrix_rmap_init(self, rmap, SMATRIX_RMAP_INITIAL_SIZE);
+        rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
         slot->rmap = rmap;
       }
 
@@ -744,6 +747,34 @@ void smatrix_cmap_resize(smatrix_t* self, smatrix_cmap_t* cmap) {
   cmap->data = new.data;
   cmap->size = new.size;
   cmap->used = new.used;
+}
+
+// caller must hold a write lock on cmap
+uint64_t smatrix_cmap_falloc(smatrix_t* self, smatrix_cmap_t* cmap) {
+  uint64_t fpos;
+
+  if (cmap->block_used >= cmap->block_size) {
+    smatrix_cmap_mkblock(self, cmap);
+  }
+
+  fpos =  cmap->block_fpos + SMATRIX_CMAP_HEAD_SIZE;
+  fpos += cmap->block_used * SMATRIX_CMAP_BLOCK_SIZE;
+
+  cmap->block_used++;
+
+  return fpos;
+}
+
+uint64_t smatrix_cmap_mkblock(smatrix_t* self, smatrix_cmap_t* cmap) {
+  uint64_t bytes;
+
+  bytes = SMATRIX_CMAP_BLOCK_SIZE * SMATRIX_CMAP_SLOT_SIZE;
+  bytes += SMATRIX_CMAP_HEAD_SIZE;
+
+  cmap->block_fpos = smatrix_falloc(self, bytes);
+  cmap->block_used = 0;
+  cmap->block_size = SMATRIX_CMAP_BLOCK_SIZE;
+  printf("new cmap block @ %lu\n", cmap->block_fpos);
 }
 
 // the caller of this function must have called smatrix_lock_incref before

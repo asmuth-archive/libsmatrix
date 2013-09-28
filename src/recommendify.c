@@ -41,6 +41,11 @@ int main(int argc, char **argv) {
   if (db == NULL)
     abort();
 
+  for (n=0; n<1000; n++)
+    smatrix_cmap_falloc(db, &db->cmap);
+
+  exit(0);
+
   for (n = 0; n < num_threads; n++)
     pthread_create(&threads[n], NULL, test, NULL);
 
@@ -57,7 +62,6 @@ int main(int argc, char **argv) {
 
   printf("used: %lu\n", db->cmap.used);
 
-  exit(0);
 
   smatrix_cmap_t mycmap;
   smatrix_cmap_init(db, &mycmap, 5);
