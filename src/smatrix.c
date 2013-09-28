@@ -521,18 +521,16 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
     abort();
   }
 
-/*
   // byte ordering FIXPAUL
   for (pos = 0; pos < rmap->size; pos++) {
-    memcpy(&rmap->data[pos].value, buf + pos * 16 + 8, 8);
+    memcpy(&rmap->data[pos].value, buf + pos * SMATRIX_RMAP_SLOT_SIZE + 8, 8);
 
     if (rmap->data[pos].value) {
-      memcpy(&rmap->data[pos].key, buf + pos * 16 + 4, 4);
+      memcpy(&rmap->data[pos].key, buf + pos * SMATRIX_RMAP_SLOT_SIZE + 4, 4);
       rmap->used++;
       rmap->data[pos].flags = SMATRIX_ROW_FLAG_USED;
     }
   }
-*/
 
   rmap->flags = SMATRIX_RMAP_FLAG_LOADED;
   free(buf);
