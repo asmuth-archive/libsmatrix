@@ -21,24 +21,19 @@ smatrix_t* db;
 void* test(void* fnord) {
   uint64_t i, n, m;
 
-  for (m = 1; m < 2; m++) {
+  for (m = 0; m < 50; m++) {
     for (n = 23; n < 100; n++) {
-      for (i = 0; i < 3000; i++) {
-        smatrix_incr(db, n * m, i * m * n, 1);
-        smatrix_get(db, n * m, i * m * n);
+      for (i = 0; i < 30; i++) {
+        smatrix_lookup(db, n, i, 1);
       }
-
-      smatrix_sync(db);
     }
-
-    //smatrix_gc(db);
   }
 
   return NULL;
 }
 
 int main(int argc, char **argv) {
-  int n, num_threads = 1;
+  int n,m, num_threads = 4;
   pthread_t threads[num_threads];
 
   db = smatrix_open("/var/tmp/reco.db");
@@ -46,18 +41,22 @@ int main(int argc, char **argv) {
   if (db == NULL)
     abort();
 
-  printf("...\n");
-/*
   for (n = 0; n < num_threads; n++)
     pthread_create(&threads[n], NULL, test, NULL);
 
   for (n = 0; n < num_threads; n++)
     pthread_join(threads[n], NULL);
-*/
 
 
-  printf("smatrix_lookup(23, 42, true)\n");
-  smatrix_lookup(db, 23, 42, 1);
+  for (n = 0; n < db->cmap.size; n++) {
+    if (db->cmap.data[n].flags == 0) continue;
+    for (m = 0; m < db->cmap.data[n].rmap->size; m++) {
+      if (db->cmap.data[n].rmap->data[m].key == 0) continue;
+      printf("(%u,%u) => %lu\n", db->cmap.data[n].key, db->cmap.data[n].rmap->data[m].key, db->cmap.data[n].rmap->data[m].value);
+    }
+  }
+
+  printf("used: %lu\n", db->cmap.used);
 
   exit(0);
 
