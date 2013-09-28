@@ -504,7 +504,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   rmap->data = malloc(mem_bytes);
   buf        = malloc(disk_bytes);
 
-  if (rmap->data == NULL || buf == NULL) {
+  if (rmap->data == NULL || buf == NULL) {
     printf("MALLOC FAILED\n"); // FIXPAUL
     abort();
   }
