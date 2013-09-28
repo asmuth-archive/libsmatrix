@@ -625,6 +625,9 @@ void smatrix_cmap_init(smatrix_t* self, smatrix_cmap_t* cmap, uint64_t size) {
   cmap->used = 0;
   cmap->lock.count = 0;
   cmap->lock.mutex = 0;
+  cmap->block_fpos = 0;
+  cmap->block_used = 0;
+  cmap->block_size = 0;
   cmap->data = malloc(sizeof(smatrix_cmap_slot_t) * size);
 }
 
@@ -751,7 +754,7 @@ void smatrix_cmap_resize(smatrix_t* self, smatrix_cmap_t* cmap) {
 
 // caller must hold a write lock on cmap
 uint64_t smatrix_cmap_falloc(smatrix_t* self, smatrix_cmap_t* cmap) {
-  uint64_t fpos;
+  uint64_t fpos, meta_fpos;
 
   if (cmap->block_used >= cmap->block_size) {
     smatrix_cmap_mkblock(self, cmap);
@@ -766,7 +769,10 @@ uint64_t smatrix_cmap_falloc(smatrix_t* self, smatrix_cmap_t* cmap) {
 }
 
 uint64_t smatrix_cmap_mkblock(smatrix_t* self, smatrix_cmap_t* cmap) {
-  uint64_t bytes;
+  char buf[SMATRIX_CMAP_HEAD_SIZE];
+  uint64_t bytes, meta_fpos;
+
+  meta_fpos = cmap->block_fpos + 8;
 
   bytes = SMATRIX_CMAP_BLOCK_SIZE * SMATRIX_CMAP_SLOT_SIZE;
   bytes += SMATRIX_CMAP_HEAD_SIZE;
@@ -774,7 +780,16 @@ uint64_t smatrix_cmap_mkblock(smatrix_t* self, smatrix_cmap_t* cmap) {
   cmap->block_fpos = smatrix_falloc(self, bytes);
   cmap->block_used = 0;
   cmap->block_size = SMATRIX_CMAP_BLOCK_SIZE;
+
+  // FIXPAUL what is byte ordering?
+  memcpy(&buf,    &cmap->block_size, 8);
+  memset(&buf[8], 0,                 8);
+
   printf("new cmap block @ %lu\n", cmap->block_fpos);
+  pwrite(self->fd, &buf, SMATRIX_CMAP_HEAD_SIZE, cmap->block_fpos);
+
+  // FIXPAUL what is byte ordering?
+  pwrite(self->fd, &cmap->block_fpos, 8, meta_fpos);
 }
 
 // the caller of this function must have called smatrix_lock_incref before
