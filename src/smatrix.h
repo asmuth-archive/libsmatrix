@@ -53,6 +53,7 @@ typedef struct {
   uint64_t             used;
   smatrix_rmap_slot_t* data;
   pthread_rwlock_t     lock;
+  smatrix_lock_t       _lock;
 } smatrix_rmap_t;
 
 typedef struct {
@@ -73,6 +74,7 @@ typedef struct {
   uint64_t             fpos;
   uint64_t             mem;
   smatrix_rmap_t       rmap;
+  smatrix_cmap_t       cmap;
   pthread_mutex_t      lock;
 } smatrix_t;
 
@@ -109,6 +111,9 @@ smatrix_cmap_slot_t* smatrix_cmap_probe(smatrix_t* self, smatrix_cmap_t* cmap, u
 smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key);
 void smatrix_cmap_resize(smatrix_t* self, smatrix_cmap_t* cmap);
 void smatrix_cmap_free(smatrix_t* self, smatrix_cmap_t* cmap);
+
+
+void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write);
 
 uint64_t smatrix_update(smatrix_t* self, uint32_t x, uint32_t y, uint32_t op, uint64_t opval);
 smatrix_rmap_t* smatrix_retrieve(smatrix_t* self, uint32_t x);

@@ -50,6 +50,8 @@ smatrix_t* smatrix_open(const char* fname) {
     return NULL;
   }
 
+  smatrix_cmap_init(self, &self->cmap, 10); // FIXPAUL
+
   self->fpos = lseek(self->fd, 0, SEEK_END);
 
   if (self->fpos == 0) {
@@ -121,6 +123,8 @@ void smatrix_close(smatrix_t* self) {
   free(rmap->data);
 
   printf("in used at exit: %lu\n", self->mem);
+
+  smatrix_cmap_free(self, &self->cmap);
 
   pthread_mutex_destroy(&self->lock);
   pthread_rwlock_destroy(&rmap->lock);
@@ -303,6 +307,8 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t size) {
   rmap->used = 0;
   rmap->flags = 0;
   rmap->fpos = smatrix_falloc(self, size * 16 + 16);
+  rmap->_lock.count = 0;
+  rmap->_lock.mutex = 0;
 
   pthread_rwlock_init(&rmap->lock, NULL);
 }
@@ -345,108 +351,60 @@ smatrix_rmap_t* smatrix_retrieve(smatrix_t* self, uint32_t x) {
   return rmap;
 }
 
-uint64_t smatrix_update(smatrix_t* self, uint32_t x, uint32_t y, uint32_t op, uint64_t opval) {
-  smatrix_rmap_t *rmap;
-  smatrix_rmap_slot_t *slot, *xslot = NULL, *yslot = NULL;
-  uint64_t old_fpos, new_fpos, retval;
+void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write) {
+  int mutex = 0;
+  smatrix_rmap_t* rmap;
+  smatrix_rmap_slot_t* slot;
 
-  while (!xslot) {
-    pthread_rwlock_rdlock(&self->rmap.lock);
-    slot = smatrix_rmap_lookup(self, &self->rmap, x);
+  for (;;) {
+    rmap = smatrix_cmap_lookup(self, &self->cmap, x, write);
 
-    if (slot && slot->key == x && (slot->flags & SMATRIX_ROW_FLAG_USED) != 0) {
-      xslot = slot;
-    } else {
-      // of course, un- and then re-locking introduces a race, this is handeled
-      // in smatrix_rmap_insert (it returns the existing row if one found)
-      pthread_rwlock_unlock(&self->rmap.lock);
-      pthread_rwlock_wrlock(&self->rmap.lock);
-      xslot = smatrix_rmap_insert(self, &self->rmap, x);
-
-      if (xslot == NULL) {
-        pthread_rwlock_unlock(&self->rmap.lock);
-        smatrix_gc(self);
-        return smatrix_update(self, x,  y, op, opval);
-      }
-
-      if (!xslot->next && !xslot->value) {
-        xslot->next = smatrix_malloc(self, sizeof(smatrix_rmap_t));
-
-        if (xslot->next == NULL) {
-          xslot->flags = 0;
-          pthread_rwlock_unlock(&self->rmap.lock);
-          smatrix_gc(self);
-          return smatrix_update(self, x,  y, op, opval);
-        }
-
-        ((smatrix_rmap_t *) xslot->next)->data = smatrix_malloc(self, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
-
-        if (((smatrix_rmap_t *) xslot->next)->data == NULL) {
-          xslot->flags = 0;
-          pthread_rwlock_unlock(&self->rmap.lock);
-          smatrix_gc(self);
-          return smatrix_update(self, x,  y, op, opval);
-        }
-
-        smatrix_rmap_init(self, xslot->next, SMATRIX_RMAP_INITIAL_SIZE);
-        memset(((smatrix_rmap_t *) xslot->next)->data, 0, sizeof(smatrix_rmap_slot_t) * SMATRIX_RMAP_INITIAL_SIZE);
-      }
-    }
-
-    if (xslot) {
-      // FIXPAUL flag set needs to be a compare and swap loop as we might only hold a read lock
-      xslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
-
-      old_fpos = xslot->value;
-      rmap     = (smatrix_rmap_t *) xslot->next;
-      assert(rmap != NULL);
-      pthread_rwlock_wrlock(&rmap->lock);
-    }
-
-    pthread_rwlock_unlock(&self->rmap.lock);
-  }
-
-  if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
-    smatrix_unswap(self, rmap);
+    if (rmap == NULL)
+      return; // NULL
 
     if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) != 0) {
-      pthread_rwlock_unlock(&rmap->lock);
-      smatrix_gc(self);
-      return smatrix_update(self, x,  y, op, opval);
+      if (smatrix_trymutex(&rmap->_lock)) {
+        smatrix_lock_decref(&rmap->_lock);
+        continue;
+      }
+
+      mutex = 1;
+      smatrix_unswap(self, rmap);
     }
+
+    if (write && !mutex) {
+      if (smatrix_trymutex(&rmap->_lock)) {
+        smatrix_lock_decref(&rmap->_lock);
+        continue;
+      }
+    }
+
+    break;
   }
 
-  yslot = smatrix_rmap_insert(self, rmap, y);
-  rmap->flags |= SMATRIX_RMAP_FLAG_DIRTY;
-
-  if (yslot == NULL) {
-    pthread_rwlock_unlock(&rmap->lock);
-    smatrix_gc(self);
-    return smatrix_update(self, x,  y, op, opval);
+  if (mutex && !write) {
+    smatrix_dropmutex(&rmap->_lock);
   }
 
-  assert(yslot != NULL);
-  assert(yslot->key == y);
+  slot = smatrix_rmap_lookup(self, rmap, y, write);
 
-  yslot->value++; // FIXPAUL
-  //printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, yslot->value++); // FIXPAUL
-  yslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
-
-  retval = yslot->value;
-
-  new_fpos = rmap->fpos;
-  pthread_rwlock_unlock(&rmap->lock);
-
-  if (old_fpos != new_fpos) {
-    pthread_rwlock_wrlock(&self->rmap.lock);
-    xslot = smatrix_rmap_lookup(self, &self->rmap, x);
-    assert(xslot != NULL);
-    xslot->value = new_fpos;
-    xslot->flags |= SMATRIX_ROW_FLAG_DIRTY;
-    pthread_rwlock_unlock(&self->rmap.lock);
+  if (slot == NULL) {
+    printf("####### NOT FOUND (%lu,%lu)\n", x, y); // FIXPAUL
+    smatrix_lock_decref(&rmap->_lock);
+    return;
   }
 
-  return retval;
+  // FIXPAUL return here :)
+
+  if (write) {
+    printf("####### UPDATING (%lu,%lu) => %llu\n", x, y, slot->value++); // FIXPAUL
+    smatrix_lock_release(&rmap->_lock);
+  } else {
+    printf("####### FOUND (%lu,%lu) => %llu\n", x, y, slot->value); // FIXPAUL
+    smatrix_lock_decref(&rmap->_lock);
+  }
+
+  return;
 }
 
 // you need to hold a write lock on rmap to call this function safely
@@ -649,6 +607,9 @@ void smatrix_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
 
 // caller must hold a write lock on rmap
 void smatrix_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
+  if ((rmap->flags & SMATRIX_RMAP_FLAG_SWAPPED) == 0)
+    return;
+
   uint64_t data_size = sizeof(smatrix_rmap_slot_t) * rmap->size;
   rmap->data = smatrix_malloc(self, data_size);
 
@@ -745,8 +706,8 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
     slot = smatrix_cmap_probe(self, cmap, key);
 
     if (slot && slot->key == key && (slot->flags & SMATRIX_CMAP_SLOT_USED) != 0) {
-      // FIXPAUL: incref on rmap
       rmap = slot->rmap;
+      smatrix_lock_incref(&rmap->_lock);
       smatrix_lock_decref(&cmap->lock);
       return rmap;
     } else {
@@ -761,8 +722,8 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
         continue;
       }
 
-      // FIXPAUL: incref on rmap
       rmap = key; // FIXPAUL
+      smatrix_lock_incref(&rmap->_lock);
 
       slot = smatrix_cmap_insert(self, cmap, key);
       slot->rmap = rmap;
@@ -874,7 +835,9 @@ void smatrix_lock_incref(smatrix_lock_t* lock) {
 
     if (lock->mutex) {
       __sync_sub_and_fetch(&lock->count, 1);
-      // FIXPAUL issue PAUSE instruction
+
+      while (lock->mutex != 0) // FIXPAUL bolatile neccessary?
+        1; // FIXPAUL issue PAUSE instruction
     } else {
       break;
     }
