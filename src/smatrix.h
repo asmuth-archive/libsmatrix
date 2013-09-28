@@ -98,8 +98,8 @@ uint64_t smatrix_getrow(smatrix_t* self, uint32_t x, uint64_t* ret, size_t ret_l
 void smatrix_close(smatrix_t* self);
 // ---
 
-void smatrix_meta_sync(smatrix_t* self);
-void smatrix_meta_load(smatrix_t* self);
+void smatrix_fcreate(smatrix_t* self);
+void smatrix_fload(smatrix_t* self);
 void smatrix_lookup(smatrix_t* self, uint32_t x, uint32_t y, int write);
 
 void* smatrix_malloc(smatrix_t* self, uint64_t bytes);

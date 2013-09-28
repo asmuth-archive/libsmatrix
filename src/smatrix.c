@@ -89,11 +89,7 @@ smatrix_t* smatrix_open(const char* fname) {
   self->fpos = lseek(self->fd, 0, SEEK_END);
 
   if (self->fpos == 0) {
-    printf("NEW FILE!\n");
-    smatrix_falloc(self, SMATRIX_META_SIZE);
-    smatrix_meta_sync(self);
-    smatrix_cmap_init(self, &self->cmap, 10); // FIXPAUL
-    smatrix_cmap_mkblock(self, &self->cmap);
+    smatrix_fcreate(self);
   } else {
     printf("LOAD FILE!\n");
     exit(1);
@@ -587,19 +583,22 @@ void smatrix_rmap_unswap(smatrix_t* self, smatrix_rmap_t* rmap) {
   free(buf);
 }
 
-void smatrix_meta_sync(smatrix_t* self) {
+void smatrix_fcreate(smatrix_t* self) {
   char buf[SMATRIX_META_SIZE];
+
+  printf("NEW FILE!\n");
+  smatrix_falloc(self, SMATRIX_META_SIZE);
 
   memset(&buf, 0, SMATRIX_META_SIZE);
   memset(&buf, 0x17, 8);
-
-  // FIXPAUL what is byte ordering?
-  memcpy(&buf[8],  &"fnordbar", 8);
-
   pwrite(self->fd, &buf, SMATRIX_META_SIZE, 0);
+
+  smatrix_cmap_init(self, &self->cmap, 10); // FIXPAUL
+  smatrix_cmap_mkblock(self, &self->cmap);
+
 }
 
-void smatrix_meta_load(smatrix_t* self) {
+void smatrix_fload(smatrix_t* self) {
   char buf[SMATRIX_META_SIZE];
   uint64_t read;
 
