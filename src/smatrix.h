@@ -62,6 +62,22 @@ typedef struct {
   uint16_t        mutex;
 } smatrix_lock_t;
 
+typedef struct {
+  uint32_t             flags;
+  uint32_t             key;
+  smatrix_rmap_t*      rmap;
+} smatrix_cmap_slot_t;
+
+typedef struct {
+  uint64_t             size;
+  uint64_t             used;
+  smatrix_cmap_slot_t* data;
+  smatrix_lock_t       lock;
+} smatrix_cmap_t;
+
+
+
+
 smatrix_t* smatrix_open(const char* fname);
 void smatrix_sync(smatrix_t* self);
 void smatrix_gc(smatrix_t* self);
