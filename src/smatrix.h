@@ -33,19 +33,17 @@ typedef struct {
 typedef struct {
   uint32_t            flags; // FIXPAUL remove me
   uint32_t            key;
-  uint64_t            value; // FIXPAUL should be 32bit
-  void*               next;  // FIXPAUL remove me
+  uint32_t            value; // FIXPAUL should be 32bit
 } smatrix_rmap_slot_t;
 
 typedef struct {
-  uint32_t             flags;
   uint64_t             fpos;
   uint64_t             meta_fpos;
-  uint64_t             size;
-  uint64_t             used;
+  uint32_t             size;
+  uint32_t             used;
   uint32_t             key;
+  uint32_t             flags;
   smatrix_rmap_slot_t* data;
-  pthread_rwlock_t     lock;
   smatrix_lock_t       _lock;
 } smatrix_rmap_t;
 

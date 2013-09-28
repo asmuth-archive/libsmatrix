@@ -341,7 +341,6 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
     slot->key   = key;
     slot->value = 0;
     slot->flags = SMATRIX_RMAP_SLOT_USED;
-    slot->next  = NULL;
   }
 
   return slot;
@@ -395,9 +394,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
       continue;
 
     slot = smatrix_rmap_insert(self, &new, rmap->data[pos].key);
-
     slot->value = rmap->data[pos].value;
-    slot->next  = rmap->data[pos].next;
   }
 
   old_data = rmap->data;
