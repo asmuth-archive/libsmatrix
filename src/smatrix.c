@@ -421,17 +421,17 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 // the caller of this must hold a read lock on rmap
 void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
   uint64_t pos = 0, bytes, buf_pos, rmap_size = rmap->size;
-  unsigned char *buf, fixed_buf[SMATRIX_RMAP_HEAD_SIZE] = {0};
+  unsigned char *buf;
 
   if (full) {
     bytes  = rmap->size * SMATRIX_RMAP_SLOT_SIZE;
     bytes += SMATRIX_RMAP_HEAD_SIZE;
-    buf    = smatrix_malloc(self, bytes);
-    memset(buf, 0, bytes);
   } else {
     bytes = SMATRIX_RMAP_HEAD_SIZE;
-    buf = fixed_buf;
   }
+
+  buf = smatrix_malloc(self, bytes);
+  memset(buf, 0, bytes);
 
   // FIXPAUL: what is byte ordering?
   memset(buf,     0x23,          8);
@@ -741,16 +741,16 @@ void smatrix_cmap_mkblock(smatrix_t* self, smatrix_cmap_t* cmap) {
   cmap->block_size = SMATRIX_CMAP_BLOCK_SIZE;
 
   // FIXPAUL what is byte ordering?
-  memcpy(&meta_buf, &cmap->block_fpos, 8);
-  memcpy(&buf,      &cmap->block_size, 8);
-  memset(&buf[8],   0,                 8);
+  memcpy(meta_buf, &cmap->block_fpos, 8);
+  memcpy(buf,      &cmap->block_size, 8);
+  memset(buf + 8,  0,                 8);
 
   smatrix_write(self, NULL, cmap->block_fpos, buf, SMATRIX_CMAP_HEAD_SIZE);
   smatrix_write(self, NULL, meta_fpos, meta_buf, 8);
 }
 
 void smatrix_cmap_write(smatrix_t* self, smatrix_rmap_t* rmap) {
-  char buf = smatrix_malloc(self, SMATRIX_CMAP_SLOT_SIZE);
+  char* buf = smatrix_malloc(self, SMATRIX_CMAP_SLOT_SIZE);
 
   // FIXPAUL what is byte ordering?
   memcpy(buf,     &rmap->key,  4);
@@ -804,7 +804,25 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
 
 
 void smatrix_write(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t fpos, char* data, uint64_t bytes) {
-  printf("write %lu bytes @ %lu\n", bytes, fpos);
+  //printf("write %lu bytes @ %lu\n", bytes, fpos);
+
+  if (rmap) {
+    // FIXPAUL: increment pending_writes count
+  }
+
+  // FIXPAUL queue and return here
+
+  if (pwrite(self->fd, data, bytes, fpos) != bytes) {
+    printf("error while writing %lu bytes @ %lu\n", bytes, fpos);
+    abort(); // FIXPAUL
+  }
+
+  free(data);
+  smatrix_mfree(self, bytes);
+
+  if (rmap) {
+    // FIXPAUL: decrement pending_writes count
+  }
 }
 
 // the caller of this function must have called smatrix_lock_incref before
