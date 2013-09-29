@@ -577,6 +577,8 @@ void smatrix_fload(smatrix_t* self) {
 }
 
 void smatrix_cmap_init(smatrix_t* self) {
+  uint64_t bytes;
+
   self->cmap.size = SMATRIX_CMAP_INITIAL_SIZE;
   self->cmap.used = 0;
   self->cmap.lock.count = 0;
@@ -584,7 +586,10 @@ void smatrix_cmap_init(smatrix_t* self) {
   self->cmap.block_fpos = 0;
   self->cmap.block_used = 0;
   self->cmap.block_size = 0;
-  self->cmap.data = malloc(sizeof(smatrix_cmap_slot_t) * self->cmap.size);
+
+  bytes = sizeof(smatrix_cmap_slot_t) * self->cmap.size;
+  self->cmap.data = malloc(bytes);
+  memset(self->cmap.data, 0, bytes);
 }
 
 void smatrix_cmap_free(smatrix_t* self, smatrix_cmap_t* cmap) {
