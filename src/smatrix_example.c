@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 
   for (n = 1; n < 30; n++) {
     for (i = 1; i < 50; i++) {
-      printf("(%u,%u) => %lu, ", n, i, smatrix_get(db, n, i));
+      printf("(%u,%u) => %u, ", n, i, smatrix_get(db, n, i));
       if (x++ % 5 == 0) printf("\n");
     }
   }
