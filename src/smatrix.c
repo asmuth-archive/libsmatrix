@@ -153,6 +153,12 @@ void* smatrix_malloc(smatrix_t* self, uint64_t bytes) {
   }
 
   void* ptr = malloc(bytes);
+
+  if (ptr == NULL) {
+    printf("malloc failed!\n"); // FIXPAUL
+    abort();
+  }
+
   return ptr;
 }
 
@@ -319,7 +325,7 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t size) {
   if (size > 0) {
     size_t bytes = sizeof(smatrix_rmap_slot_t) * size;
 
-    rmap->data = malloc(bytes);
+    rmap->data = smatrix_malloc(self, bytes);
     memset(rmap->data, 0, bytes);
   }
 
@@ -387,11 +393,6 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
   new.used = 0;
   new.size = new_size;
   new.data = smatrix_malloc(self, new_bytes_mem);
-
-  if (new.data == NULL) {
-    printf("MALLOC FAILED\n"); abort();
-  }
-
   memset(new.data, 0, new_bytes_mem);
 
   for (pos = 0; pos < rmap->size; pos++) {
@@ -494,19 +495,14 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   mem_bytes  = rmap->size * sizeof(smatrix_rmap_slot_t);
   disk_bytes = rmap->size * SMATRIX_RMAP_SLOT_SIZE;
   rmap->used = 0;
-  rmap->data = malloc(mem_bytes);
-  buf        = malloc(disk_bytes);
-
-  if (rmap->data == NULL || buf == NULL) {
-    printf("MALLOC FAILED\n"); // FIXPAUL
-    abort();
-  }
+  rmap->data = smatrix_malloc(self, mem_bytes);
+  buf        = smatrix_malloc(self, disk_bytes);
 
   memset(rmap->data, 0, mem_bytes);
   read_bytes = pread(self->fd, buf, disk_bytes, rmap->fpos + SMATRIX_RMAP_HEAD_SIZE);
 
   if (read_bytes != disk_bytes) {
-    printf("CANNOT LOAD RMATRIX -- read wrong number of bytes: %llu vs. %llu @ %llu\n", read_bytes, disk_bytes, rmap->fpos); // FIXPAUL
+    printf("CANNOT LOAD RMATRIX -- read wrong number of bytes: %lu vs. %lu @ %lu\n", read_bytes, disk_bytes, rmap->fpos); // FIXPAUL
     abort();
   }
 
@@ -521,6 +517,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   }
 
   rmap->flags = SMATRIX_RMAP_FLAG_LOADED;
+  smatrix_mfree(self, disk_bytes);
   free(buf);
 }
 
@@ -581,11 +578,13 @@ void smatrix_cmap_init(smatrix_t* self) {
   self->cmap.block_size = 0;
 
   bytes = sizeof(smatrix_cmap_slot_t) * self->cmap.size;
-  self->cmap.data = malloc(bytes);
+  self->cmap.data = smatrix_malloc(self, bytes);
   memset(self->cmap.data, 0, bytes);
 }
 
 void smatrix_cmap_free(smatrix_t* self, smatrix_cmap_t* cmap) {
+  uint64_t bytes = sizeof(smatrix_cmap_slot_t) * cmap->size;
+  smatrix_mfree(self, bytes);
   free(cmap->data);
 }
 
@@ -621,7 +620,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
         rmap = slot->rmap;
       } else {
         // FIXPAUL move to rmap_create method
-        rmap = malloc(sizeof(smatrix_rmap_t)); // FIXPAUL
+        rmap = smatrix_malloc(self, sizeof(smatrix_rmap_t)); // FIXPAUL
         smatrix_rmap_init(self, rmap, SMATRIX_RMAP_INITIAL_SIZE);
         rmap->key = key;
         rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
@@ -686,13 +685,9 @@ void smatrix_cmap_resize(smatrix_t* self, smatrix_cmap_t* cmap) {
   new.used  = 0;
   new.size  = cmap->size * 2;
   new_bytes = sizeof(smatrix_cmap_slot_t) * new.size;
-  new.data  = malloc(new_bytes);
+  new.data  = smatrix_malloc(self, new_bytes);
 
-  if (new.data == NULL) {
-    printf("MALLOC FAILED\n");
-    abort(); // FIXPAUL
-  }
-
+  smatrix_mfree(self, sizeof(smatrix_cmap_slot_t) * cmap->size);
   memset(new.data, 0, new_bytes);
 
   for (pos = 0; pos < cmap->size; pos++) {
@@ -775,7 +770,7 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
 
     fpos += SMATRIX_CMAP_HEAD_SIZE;
     bytes = *((uint64_t *) &meta_buf) * SMATRIX_CMAP_SLOT_SIZE; // FIXPAUL byte ordering
-    buf   = malloc(bytes);
+    buf   = smatrix_malloc(self, bytes);
 
     if (pread(self->fd, buf, bytes, fpos) != bytes) {
       printf("CANNOT LOAD CMAP -- pread @ %llu\n", fpos); // FIXPAUL
@@ -788,7 +783,7 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
       if (!value)
         break;
 
-      rmap = malloc(sizeof(smatrix_rmap_t)); // FIXPAUL
+      rmap = smatrix_malloc(self, sizeof(smatrix_rmap_t)); // FIXPAUL
       smatrix_rmap_init(self, rmap, 0);
       rmap->key = *((uint32_t *) &buf[pos]); // FIXPAUL byte ordering
       rmap->meta_fpos = fpos + pos;
@@ -797,6 +792,7 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
       smatrix_cmap_insert(self, &self->cmap, rmap->key)->rmap = rmap;
     }
 
+    smatrix_mfree(self, bytes);
     free(buf);
     fpos = *((uint64_t *) &meta_buf[8]); // FIXPAUL byte ordering
   }
