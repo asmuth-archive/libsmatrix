@@ -21,7 +21,6 @@
 //  + free all memory on exit
 //  + ftruncate in larger blocks
 //  + aquire lock on file to prevent concurrent access
-//  + constant-ify all the magic numbers
 //  + convert endianess when loading/saving to disk
 //  + proper error handling / return codes for smatrix_open
 //  + file free list
@@ -519,7 +518,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   }
 
   memset(rmap->data, 0, mem_bytes);
-  read_bytes = pread(self->fd, buf, disk_bytes, rmap->fpos + 16);
+  read_bytes = pread(self->fd, buf, disk_bytes, rmap->fpos + SMATRIX_RMAP_HEAD_SIZE);
 
   if (read_bytes != disk_bytes) {
     printf("CANNOT LOAD RMATRIX -- read wrong number of bytes: %llu vs. %llu @ %llu\n", read_bytes, disk_bytes, rmap->fpos); // FIXPAUL
@@ -779,7 +778,7 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
   for (fpos = head_fpos; fpos;) {
     self->cmap.block_fpos = fpos;
 
-    if (pread(self->fd, &meta_buf, SMATRIX_CMAP_HEAD_SIZE, fpos) != 16) {
+    if (pread(self->fd, &meta_buf, SMATRIX_CMAP_HEAD_SIZE, fpos) != SMATRIX_CMAP_HEAD_SIZE) {
       printf("CANNOT LOAD CMAP -- pread @ %llu\n", fpos); // FIXPAUL
       abort();
     }
