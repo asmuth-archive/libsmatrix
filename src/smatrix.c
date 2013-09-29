@@ -76,6 +76,8 @@ smatrix_t* smatrix_open(const char* fname) {
   if (self == NULL)
     return NULL;
 
+  pthread_mutex_init(&self->lock, NULL);
+
   self->mem = 0;
   self->fd  = open(fname, O_RDWR | O_CREAT, 00600);
 
@@ -93,7 +95,6 @@ smatrix_t* smatrix_open(const char* fname) {
     smatrix_fload(self);
   }
 
-  pthread_mutex_init(&self->lock, NULL);
   return self;
 }
 
