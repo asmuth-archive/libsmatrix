@@ -304,7 +304,9 @@ void smatrix_lookup(smatrix_t* self, smatrix_ref_t* ref, uint32_t x, uint32_t y,
 }
 
 void smatrix_decref(smatrix_t* self, smatrix_ref_t* ref) {
-  if (ref->write) {
+  if (!ref->rmap) {
+    return;
+  } else if (ref->write) {
     smatrix_rmap_write_slot(self, ref->rmap, ref->slot);
     smatrix_lock_release(&ref->rmap->lock);
   } else {
