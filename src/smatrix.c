@@ -420,7 +420,7 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 
 // the caller of this must hold a read lock on rmap
 void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
-  uint64_t pos = 0, bytes, buf_pos = 0, rmap_size = rmap->size;
+  uint64_t pos = 0, bytes, buf_pos, rmap_size = rmap->size;
   unsigned char *buf, fixed_buf[SMATRIX_RMAP_HEAD_SIZE] = {0};
 
   if (full) {
@@ -444,15 +444,17 @@ void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
   memcpy(buf + 8, &rmap_size,    8);
 
   if (full) {
-    for (pos = 0; pos < rmap->size; pos++) {
-      buf_pos += SMATRIX_RMAP_SLOT_SIZE;
+    buf_pos = SMATRIX_RMAP_HEAD_SIZE;
 
+    for (pos = 0; pos < rmap->size; pos++) {
       if (!rmap->data[pos].key && !rmap->data[pos].value)
         continue;
 
       // FIXPAUL what is byte ordering?
       memcpy(buf + buf_pos,     &rmap->data[pos].key,   4);
       memcpy(buf + buf_pos + 4, &rmap->data[pos].value, 4);
+
+      buf_pos += SMATRIX_RMAP_SLOT_SIZE;
     }
   }
 
