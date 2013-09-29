@@ -172,14 +172,12 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
 
 uint32_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y) {
   smatrix_ref_t ref;
-  uint32_t retval;
+  uint32_t retval = 0;
 
   smatrix_lookup(self, &ref, x, y, 0);
 
-  if (ref.slot == NULL)
-    return 0;
-
-  retval = ref.slot->value;
+  if (ref.slot)
+    retval = ref.slot->value;
 
   smatrix_decref(self, &ref);
   return retval;
@@ -263,8 +261,8 @@ void smatrix_lookup(smatrix_t* self, smatrix_ref_t* ref, uint32_t x, uint32_t y,
   smatrix_rmap_t* rmap;
   smatrix_rmap_slot_t* slot;
 
-  ref->rmap  = NULL;
-  ref->slot  = NULL;
+  ref->rmap = NULL;
+  ref->slot = NULL;
 
   for (;;) {
     rmap = smatrix_cmap_lookup(self, &self->cmap, x, write);
@@ -297,20 +295,16 @@ void smatrix_lookup(smatrix_t* self, smatrix_ref_t* ref, uint32_t x, uint32_t y,
     smatrix_lock_dropmutex(&rmap->lock);
   }
 
+  ref->rmap  = rmap;
+  ref->write = write;
+
   slot = smatrix_rmap_probe(self, rmap, y);
 
-  if (slot == NULL || (!slot->key && !slot->value) || slot->key != y) {
-    if (write) {
-      slot = smatrix_rmap_insert(self, rmap, y);
-    } else {
-      smatrix_lock_decref(&rmap->lock);
-      return;
-    }
+  if (slot != NULL && slot->key == y) {
+    ref->slot = slot;
+  } else if (write) {
+    ref->slot = smatrix_rmap_insert(self, rmap, y);
   }
-
-  ref->rmap  = rmap;
-  ref->slot  = slot;
-  ref->write = write;
 }
 
 void smatrix_decref(smatrix_t* self, smatrix_ref_t* ref) {
