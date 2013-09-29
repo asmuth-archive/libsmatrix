@@ -1,4 +1,4 @@
-// This file is part of the "recommendify" project
+// This file is part of the "libsmatrix" project
 //   (c) 2011-2013 Paul Asmuth <paul@paulasmuth.com>
 //
 // Licensed under the MIT License (the "License"); you may not use this
@@ -8,11 +8,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/socket.h>
-#include <netinet/tcp.h>
-#include <netinet/in.h>
+#include <pthread.h>
 
 #include "smatrix.h"
 
