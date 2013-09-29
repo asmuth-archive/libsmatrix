@@ -99,24 +99,13 @@ smatrix_t* smatrix_open(const char* fname) {
 }
 
 void smatrix_close(smatrix_t* self) {
-  /*
   uint64_t pos;
-  smatrix_rmap_t* rmap = &self->rmap;
 
-  for (pos = 0; pos < rmap->size; pos++) {
-    if ((rmap->data[pos].flags & SMATRIX_RMAP_SLOT_USED) != 0) {
-      smatrix_mfree(self, sizeof(smatrix_rmap_t));
-      pthread_rwlock_destroy(&((smatrix_rmap_t *) rmap->data[pos].next)->lock);
-      free(rmap->data[pos].next);
+  for (pos = 0; pos < self->cmap.size; pos++) {
+    if (self->cmap.data[pos].flags & SMATRIX_CMAP_SLOT_USED) {
+      smatrix_rmap_free(self, self->cmap.data[pos].rmap);
     }
   }
-
-  smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
-  free(rmap->data);
-
-  printf("in used at exit: %lu\n", self->mem);
-
-  */
 
   smatrix_cmap_free(self, &self->cmap);
   pthread_mutex_destroy(&self->lock);
@@ -526,6 +515,13 @@ void smatrix_rmap_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
   rmap->flags &= ~SMATRIX_RMAP_FLAG_LOADED;
   smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
   free(rmap->data);
+}
+
+void smatrix_rmap_free(smatrix_t* self, smatrix_rmap_t* rmap) {
+  smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
+  free(rmap->data);
+  smatrix_mfree(self, sizeof(smatrix_rmap_t));
+  free(rmap);
 }
 
 void smatrix_fcreate(smatrix_t* self) {
