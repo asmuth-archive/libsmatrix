@@ -17,14 +17,14 @@
 #include "smatrix.h"
 
 // TODO
-//  + remove pthread dependency (smatrix->lock)
-//  + free all memory on exit
 //  + ftruncate in larger blocks
+//  + convert smatrix->lock to spinlock
+//  + queue off to second thread in smatrix_write
+//  + re-implement gc
 //  + aquire lock on file to prevent concurrent access
-//  + convert endianess when loading/saving to disk
+//  + check correct endianess on file open
 //  + proper error handling / return codes for smatrix_open
 //  + file free list
-//  + new gc method
 
 /*
 
@@ -161,7 +161,6 @@ void smatrix_mfree(smatrix_t* self, uint64_t bytes) {
   }
 }
 
-// FIXPAUL: this needs to be atomic (compare and swap!) or locked
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
   //printf("FREED %llu bytes @ %llu\n", bytes, fpos);
 }
@@ -421,17 +420,15 @@ void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
   }
 
   buf = smatrix_malloc(self, bytes);
-  memset(buf, 0, bytes);
 
-  // FIXPAUL: what is byte ordering?
-  memset(buf,     0x23,          8);
-  memcpy(buf + 8, &rmap_size,    8);
+  memset(buf,     0,           bytes);
+  memset(buf,     0x23,        8);
+  memcpy(buf + 8, &rmap_size,  8);
 
   if (full) {
     buf_pos = SMATRIX_RMAP_HEAD_SIZE;
 
     for (pos = 0; pos < rmap->size; pos++) {
-      // FIXPAUL what is byte ordering?
       memcpy(buf + buf_pos,     &rmap->data[pos].key,   4);
       memcpy(buf + buf_pos + 4, &rmap->data[pos].value, 4);
       buf_pos += SMATRIX_RMAP_SLOT_SIZE;
@@ -449,7 +446,6 @@ void smatrix_rmap_write_slot(smatrix_t* self, smatrix_rmap_t* rmap, smatrix_rmap
   fpos     = rmap_pos * SMATRIX_RMAP_SLOT_SIZE;
   fpos     += rmap->fpos + SMATRIX_RMAP_HEAD_SIZE;
 
-  // FIXPAUL what is byte ordering?
   memcpy(buf,     &slot->key,   4);
   memcpy(buf + 4, &slot->value, 4);
 
@@ -475,7 +471,6 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
       abort();
     }
 
-    // FIXPAUL what is big endian?
     rmap_size = *((uint64_t *) &meta_buf[8]);
     rmap->size = rmap_size;
     assert(rmap->size > 0);
@@ -495,7 +490,6 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
     abort();
   }
 
-  // byte ordering FIXPAUL
   for (pos = 0; pos < rmap->size; pos++) {
     memcpy(&rmap->data[pos].value, buf + pos * SMATRIX_RMAP_SLOT_SIZE + 4, 4);
 
@@ -534,9 +528,8 @@ void smatrix_fcreate(smatrix_t* self) {
   memset(&buf, 0x17, 8);
   pwrite(self->fd, &buf, SMATRIX_META_SIZE, 0);
 
-  smatrix_cmap_init(self); // FIXPAUL
+  smatrix_cmap_init(self);
   smatrix_cmap_mkblock(self, &self->cmap);
-
 }
 
 void smatrix_fload(smatrix_t* self) {
@@ -555,10 +548,9 @@ void smatrix_fload(smatrix_t* self) {
     abort();
   }
 
-  // FIXPAUL because f**k other endianess, thats why...
   memcpy(&cmap_head_fpos, &buf[8],  8);
 
-  smatrix_cmap_init(self); // FIXPAUL
+  smatrix_cmap_init(self);
   smatrix_cmap_load(self, cmap_head_fpos);
 }
 
@@ -616,7 +608,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
         rmap = slot->rmap;
       } else {
         // FIXPAUL move to rmap_create method
-        rmap = smatrix_malloc(self, sizeof(smatrix_rmap_t)); // FIXPAUL
+        rmap = smatrix_malloc(self, sizeof(smatrix_rmap_t));
         smatrix_rmap_init(self, rmap, SMATRIX_RMAP_INITIAL_SIZE);
         rmap->key = key;
         rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
@@ -731,7 +723,6 @@ void smatrix_cmap_mkblock(smatrix_t* self, smatrix_cmap_t* cmap) {
   cmap->block_used = 0;
   cmap->block_size = SMATRIX_CMAP_BLOCK_SIZE;
 
-  // FIXPAUL what is byte ordering?
   memcpy(meta_buf, &cmap->block_fpos, 8);
   memcpy(buf,      &cmap->block_size, 8);
   memset(buf + 8,  0,                 8);
@@ -743,7 +734,6 @@ void smatrix_cmap_mkblock(smatrix_t* self, smatrix_cmap_t* cmap) {
 void smatrix_cmap_write(smatrix_t* self, smatrix_rmap_t* rmap) {
   char* buf = smatrix_malloc(self, SMATRIX_CMAP_SLOT_SIZE);
 
-  // FIXPAUL what is byte ordering?
   memcpy(buf,     &rmap->key,  4);
   memcpy(buf + 4, &rmap->fpos, 8);
 
@@ -765,7 +755,7 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
     }
 
     fpos += SMATRIX_CMAP_HEAD_SIZE;
-    bytes = *((uint64_t *) &meta_buf) * SMATRIX_CMAP_SLOT_SIZE; // FIXPAUL byte ordering
+    bytes = *((uint64_t *) &meta_buf) * SMATRIX_CMAP_SLOT_SIZE;
     buf   = smatrix_malloc(self, bytes);
 
     if (pread(self->fd, buf, bytes, fpos) != bytes) {
@@ -774,14 +764,14 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
     }
 
     for (pos = 0; pos < bytes; pos += SMATRIX_CMAP_SLOT_SIZE) {
-      value = *((uint64_t *) &buf[pos + 4]); // FIXPAUL byte ordering
+      value = *((uint64_t *) &buf[pos + 4]);
 
       if (!value)
         break;
 
-      rmap = smatrix_malloc(self, sizeof(smatrix_rmap_t)); // FIXPAUL
+      rmap = smatrix_malloc(self, sizeof(smatrix_rmap_t));
       smatrix_rmap_init(self, rmap, 0);
-      rmap->key = *((uint32_t *) &buf[pos]); // FIXPAUL byte ordering
+      rmap->key = *((uint32_t *) &buf[pos]);
       rmap->meta_fpos = fpos + pos;
       rmap->fpos = value;
 
@@ -790,7 +780,7 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
 
     smatrix_mfree(self, bytes);
     free(buf);
-    fpos = *((uint64_t *) &meta_buf[8]); // FIXPAUL byte ordering
+    fpos = *((uint64_t *) &meta_buf[8]);
   }
 }
 
