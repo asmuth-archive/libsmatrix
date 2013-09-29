@@ -1,4 +1,4 @@
-# This file is part of the "recommendify" project
+# This file is part of the "smatrix_example" project
 #   (c) 2011-2013 Paul Asmuth <paul@paulasmuth.com>
 #
 # Licensed under the MIT License (the "License"); you may not use this
@@ -13,10 +13,10 @@ LDFLAGS      = -lpthread -lm
 DEBUGFLAGS   = -g3 -O0 -D _DEBUG
 RELEASEFLAGS = -O3 -march=native -mtune=native -D NDEBUG
 
-TARGET       = recommendify
-TARGET_DBG   = recommendify_dbg
-SOURCES      = recommendify.c smatrix.c
-HEADERS      = recommendify.h smatrix.h
+TARGET       = smatrix_example
+TARGET_DBG   = smatrix_example_dbg
+SOURCES      = smatrix_example.c smatrix.c
+HEADERS      = smatrix.h
 OBJECTS      = $(SOURCES:.c=.o)
 
 PREFIX       = $(DESTDIR)/usr/local
@@ -26,7 +26,7 @@ all: $(TARGET)
 debug: $(TARGET_DBG)
 
 clean:
-	rm recommendify recommendify_dbg *.o
+	rm smatrix_example smatrix_example_dbg *.o
 
 $(TARGET): $(OBJECTS)
 	$(CC) $(FLAGS) $(CFLAGS) $(RELEASEFLAGS) -o $(TARGET) $(OBJECTS) $(LDFLAGS)

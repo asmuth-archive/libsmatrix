@@ -1,9 +1,4 @@
-bin/
 *.o
 *.bundle
 *.so
-recommendify
-recommendify_dbg
-*.gem
-Gemfile.lock
-ext/Makefile
+smatrix_example
