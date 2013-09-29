@@ -29,7 +29,7 @@ void* test(void* fnord) {
 }
 
 int main(int argc, char **argv) {
-  int i,n,m,x=0, num_threads = 4;
+  int i,n,m,l,x=0, num_threads = 4;
   pthread_t threads[num_threads];
 
   printf("\nloading\n");
@@ -55,7 +55,17 @@ int main(int argc, char **argv) {
     }
   }
 
-  printf("rowlen: %u\n", smatrix_rowlen(db, 23));
+  printf("rowlen: %u\n", l = smatrix_rowlen(db, 23));
+  size_t bytes = sizeof(uint32_t) * l * 2;
+  uint32_t* data = malloc(bytes);
+
+  l = smatrix_getrow(db, 23, data, bytes);
+
+  for (i = 0; i < l; i++) {
+    printf("%u => %u, ", data[i * 2], data[i * 2 + 1]);
+  }
+
+  printf("\n");
 
   smatrix_close(db);
   printf("in use at exit: %lu\n", db->mem);

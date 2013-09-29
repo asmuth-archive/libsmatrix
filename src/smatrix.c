@@ -167,24 +167,25 @@ uint32_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y) {
 // returns a whole row as an array of uint32_t's, odd slots contain indexes, even slots contain
 // values. example: [index, value, index, value...]
 uint32_t smatrix_getrow(smatrix_t* self, uint32_t x, uint32_t* ret, size_t ret_len) {
+  smatrix_ref_t ref;
   uint32_t pos, num = 0;
-/*
-  smatrix_rmap_t* rmap = smatrix_retrieve(self, x);
 
-  if (rmap == NULL)
-    return 0;
+  smatrix_lookup(self, &ref, x, 0, 0);
 
-  for (pos = 0; pos < rmap->size && (num * 2 * sizeof(uint32_t)) < ret_len; pos++) {
-    if ((rmap->data[pos].flags & SMATRIX_RMAP_SLOT_USED) == 0)
-      continue;
+  if (ref.rmap) {
+    for (pos = 0; pos < ref.rmap->size; pos++) {
+      if (!ref.rmap->data[pos].key && !ref.rmap->data[pos].value)
+        continue;
 
-    ret[num * 2] = (uint32_t) rmap->data[pos].key;
-    ret[num * 2 + 1] = rmap->data[pos].value;
-    num++;
+      ret[num * 2]     = ref.rmap->data[pos].key;
+      ret[num * 2 + 1] = ref.rmap->data[pos].value;
+
+      if ((++num * 2 * sizeof(uint32_t)) >= ret_len)
+        break;
+    }
   }
 
-  pthread_rwlock_unlock(&rmap->lock);
-*/
+  smatrix_decref(self, &ref);
   return num;
 }
 
