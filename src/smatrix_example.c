@@ -56,8 +56,9 @@ int main(int argc, char **argv) {
   }
 
   printf("rowlen: %u\n", smatrix_rowlen(db, 23));
-  printf("in use at exit: %lu\n", db->mem);
 
   smatrix_close(db);
+  printf("in use at exit: %lu\n", db->mem);
+
   return 0;
 }

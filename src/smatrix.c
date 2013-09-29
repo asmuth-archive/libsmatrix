@@ -131,15 +131,7 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 }
 
 void* smatrix_malloc(smatrix_t* self, uint64_t bytes) {
-  if (self->mem > 4294967296) return NULL;
-
-  for (;;) {
-    __sync_synchronize();
-    volatile uint64_t mem = self->mem;
-
-    if (__sync_bool_compare_and_swap(&self->mem, mem, mem + bytes))
-      break;
-  }
+  __sync_add_and_fetch(&self->mem, bytes);
 
   void* ptr = malloc(bytes);
 
@@ -152,13 +144,7 @@ void* smatrix_malloc(smatrix_t* self, uint64_t bytes) {
 }
 
 void smatrix_mfree(smatrix_t* self, uint64_t bytes) {
-  for (;;) {
-    __sync_synchronize();
-    volatile uint64_t mem = self->mem;
-
-    if (__sync_bool_compare_and_swap(&self->mem, mem, mem - bytes))
-      break;
-  }
+  __sync_sub_and_fetch(&self->mem, bytes);
 }
 
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
