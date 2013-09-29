@@ -210,16 +210,13 @@ uint32_t smatrix_getrow(smatrix_t* self, uint32_t x, uint32_t* ret, size_t ret_l
 uint32_t smatrix_rowlen(smatrix_t* self, uint32_t x) {
   smatrix_ref_t ref;
   uint32_t len = 0;
-/*
+
   smatrix_lookup(self, &ref, x, 0, 0);
 
-  if (ref.slot == NULL)
-    return 0;
-
-  len = ref.rmap->used;
+  if (ref.rmap)
+    len = ref.rmap->used;
 
   smatrix_decref(self, &ref);
-*/
   return len;
 }
 

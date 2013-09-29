@@ -59,6 +59,8 @@ int main(int argc, char **argv) {
     }
   }
 
+  printf("rowlen: %u\n", smatrix_rowlen(db, 23));
+
   smatrix_close(db);
   return 0;
 }
