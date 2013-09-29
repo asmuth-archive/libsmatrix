@@ -447,13 +447,9 @@ void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
     buf_pos = SMATRIX_RMAP_HEAD_SIZE;
 
     for (pos = 0; pos < rmap->size; pos++) {
-      if (!rmap->data[pos].key && !rmap->data[pos].value)
-        continue;
-
       // FIXPAUL what is byte ordering?
       memcpy(buf + buf_pos,     &rmap->data[pos].key,   4);
       memcpy(buf + buf_pos + 4, &rmap->data[pos].value, 4);
-
       buf_pos += SMATRIX_RMAP_SLOT_SIZE;
     }
   }
