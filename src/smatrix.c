@@ -264,11 +264,15 @@ void smatrix_lookup(smatrix_t* self, smatrix_ref_t* ref, uint32_t x, uint32_t y,
   smatrix_rmap_t* rmap;
   smatrix_rmap_slot_t* slot;
 
+  ref->rmap  = NULL;
+  ref->slot  = NULL;
+
   for (;;) {
     rmap = smatrix_cmap_lookup(self, &self->cmap, x, write);
 
-    if (rmap == NULL)
-      return; // NULL
+    if (rmap == NULL) {
+      return;
+    }
 
     if (rmap->size == 0) {
       if (smatrix_lock_trymutex(&rmap->lock)) {
@@ -300,8 +304,6 @@ void smatrix_lookup(smatrix_t* self, smatrix_ref_t* ref, uint32_t x, uint32_t y,
     if (write) {
       slot = smatrix_rmap_insert(self, rmap, y);
     } else {
-      ref->rmap  = NULL;
-      ref->slot  = NULL;
       smatrix_lock_decref(&rmap->lock);
       return;
     }
