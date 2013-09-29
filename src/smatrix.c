@@ -482,7 +482,7 @@ void smatrix_rmap_write_slot(smatrix_t* self, smatrix_rmap_t* rmap, smatrix_rmap
 
 // caller must hold writelock on rmap
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
-  uint64_t pos, read_bytes, mem_bytes, disk_bytes;
+  uint64_t pos, read_bytes, mem_bytes, disk_bytes, rmap_size;
   unsigned char meta_buf[SMATRIX_RMAP_HEAD_SIZE] = {0}, *buf;
 
   if (rmap->flags & SMATRIX_RMAP_FLAG_LOADED)
@@ -500,7 +500,8 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
     }
 
     // FIXPAUL what is big endian?
-    rmap->size = *((uint32_t *) &meta_buf[8]);
+    rmap_size = *((uint64_t *) &meta_buf[8]);
+    rmap->size = rmap_size;
     assert(rmap->size > 0);
   }
 
