@@ -172,12 +172,12 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
 }
 
 uint64_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y) {
-  smatrix_ref_t ref;
+  smatrix_ref_t ref = {0};
   uint64_t retval;
 
   smatrix_lookup(self, &ref, x, y, 0);
 
-  if (ref.slot == NULL)
+  if (!ref.slot)
     return 0;
 
   retval = ref.slot->value;
