@@ -18,13 +18,12 @@
 
 // TODO
 //  + ftruncate in larger blocks
-//  + convert smatrix->lock to spinlock
-//  + queue off to second thread in smatrix_write
-//  + re-implement gc
 //  + aquire lock on file to prevent concurrent access
 //  + check correct endianess on file open
+//  + convert smatrix->lock to spinlock, remove pthread dependency
 //  + proper error handling / return codes for smatrix_open
 //  + file free list
+//  + re-implement (a smart) gc
 
 /*
 
