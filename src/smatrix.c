@@ -847,7 +847,7 @@ void smatrix_lock_incref(smatrix_lock_t* lock) {
       __sync_sub_and_fetch(&lock->count, 1);
 
       while (lock->mutex != 0) // FIXPAUL bolatile neccessary?
-        1; // FIXPAUL issue PAUSE instruction
+        __sync_synchronize(); // FIXPAUL issue PAUSE instruction
     } else {
       break;
     }

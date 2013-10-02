@@ -26,8 +26,8 @@
 #define SMATRIX_CMAP_SLOT_USED 1
 
 typedef struct {
-  uint16_t             count;
-  uint16_t             mutex;
+  volatile uint16_t    count;
+  volatile uint16_t    mutex;
 } smatrix_lock_t;
 
 typedef struct {
