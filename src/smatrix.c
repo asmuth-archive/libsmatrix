@@ -70,14 +70,18 @@
 */
 
 smatrix_t* smatrix_open(const char* fname) {
-  smatrix_t* self = malloc(sizeof(smatrix_t));
+  smatrix_t* self = calloc(1, sizeof(smatrix_t));
 
   if (self == NULL)
     return NULL;
 
   pthread_mutex_init(&self->lock, NULL);
 
-  self->mem = 0;
+  if (!fname) {
+    smatrix_cmap_init(self);
+    return self;
+  }
+
   self->fd  = open(fname, O_RDWR | O_CREAT, 00600);
 
   if (self->fd == -1) {
@@ -288,7 +292,10 @@ void smatrix_decref(smatrix_t* self, smatrix_ref_t* ref) {
   if (!ref->rmap) {
     return;
   } else if (ref->write) {
-    smatrix_rmap_write_slot(self, ref->rmap, ref->slot);
+    if (self->fd) {
+      smatrix_rmap_write_slot(self, ref->rmap, ref->slot);
+    }
+
     smatrix_lock_release(&ref->rmap->lock);
   } else {
     smatrix_lock_decref(&ref->rmap->lock);
@@ -377,20 +384,21 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
     slot->value = rmap->data[pos].value;
   }
 
-  old_data = rmap->data;
-  old_fpos = rmap->fpos;
-
-  rmap->fpos = smatrix_falloc(self, new_bytes_disk);
+  old_data   = rmap->data;
+  old_fpos   = rmap->fpos;
   rmap->data = new.data;
   rmap->size = new.size;
   rmap->used = new.used;
 
-  smatrix_ffree(self, old_fpos, old_bytes_disk);
+  if (self->fd) {
+    rmap->fpos = smatrix_falloc(self, new_bytes_disk);
+    smatrix_ffree(self, old_fpos, old_bytes_disk);
+    smatrix_rmap_write_batch(self, rmap, 1);
+    smatrix_cmap_write(self, rmap);
+  }
+
   smatrix_mfree(self, old_bytes_mem);
   free(old_data);
-
-  smatrix_rmap_write_batch(self, rmap, 1);
-  smatrix_cmap_write(self, rmap);
 }
 
 // the caller of this must hold a read lock on rmap
@@ -597,10 +605,14 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
         rmap = smatrix_malloc(self, sizeof(smatrix_rmap_t));
         smatrix_rmap_init(self, rmap, SMATRIX_RMAP_INITIAL_SIZE);
         rmap->key = key;
-        rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
-        rmap->fpos = smatrix_falloc(self, rmap->size * SMATRIX_RMAP_SLOT_SIZE + SMATRIX_RMAP_HEAD_SIZE);
-        smatrix_cmap_write(self, rmap);
-        smatrix_rmap_write_batch(self, rmap, 0);
+
+        if (self->fd) {
+          rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
+          rmap->fpos = smatrix_falloc(self, rmap->size * SMATRIX_RMAP_SLOT_SIZE + SMATRIX_RMAP_HEAD_SIZE);
+          smatrix_cmap_write(self, rmap);
+          smatrix_rmap_write_batch(self, rmap, 0);
+        }
+
         slot->rmap = rmap;
       }
 

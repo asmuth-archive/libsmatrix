@@ -34,6 +34,7 @@ int main(int argc, char **argv) {
 
   printf("\nloading\n");
   db = smatrix_open("/var/tmp/reco.db");
+  //db = smatrix_open(NULL); // in-memory only mode
 
   if (db == NULL)
     abort();
