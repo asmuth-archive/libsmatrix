@@ -646,7 +646,7 @@ smatrix_cmap_slot_t* smatrix_cmap_probe(smatrix_t* self, smatrix_cmap_t* cmap, u
 smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key) {
   smatrix_cmap_slot_t* slot;
 
-  if (cmap->used > cmap->size / 2) {
+  if (cmap->used * 4 >= cmap->size * 3) {
     smatrix_cmap_resize(self, cmap);
   }
 
