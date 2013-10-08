@@ -1,0 +1,4 @@
+default: all
+
+.DEFAULT:
+	make -C src/ -f Makefile.old $@
