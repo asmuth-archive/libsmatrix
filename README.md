@@ -16,23 +16,23 @@ this mode, the data is also persisted across restarts.
 API
 ---
 
+
 Open a smatrix (if filename is NULL, use in memory only mode; otherwise open or create file)
 
     smatrix_t* smatrix_open(const char* fname);
 
 Close a smatrix:
-    
+
     void smatrix_close(smatrix_t* self);
 
-Get, Set, Increment, Decrement a (x,y) position
-
+Get, Set, Increment, Decrement a (x,y) position. _All of the methods are threadsafe_
 
     uint32_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y);
     uint32_t smatrix_set(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value);
     uint32_t smatrix_incr(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value);
     uint32_t smatrix_decr(smatrix_t* self, uint32_t x, uint32_t y, uint32_t value);
 
-Get a whole "row" of the matrix by row coordinate x
+Get a whole "row" of the matrix by row coordinate x. _All of the methods are threadsafe_
 
     uint32_t smatrix_rowlen(smatrix_t* self, uint32_t x);
     uint32_t smatrix_getrow(smatrix_t* self, uint32_t x, uint32_t* ret, size_t ret_len);
@@ -41,7 +41,8 @@ Get a whole "row" of the matrix by row coordinate x
 Example
 -------
 
-There is a simple example in src/smatrix_example.c
++ There is a simple example in src/smatrix_example.c
++ There is a simple Collaborative Filtering based recommendation engine in src/smatrix_example_recommender.c
 
 
 License
