@@ -2,7 +2,8 @@ libsmatrix
 ==========
 
 A memory-efficient sparse matrix data structure. We use this to run a Collaborative 
-Filterng recommendation engine. It is thread-safe and features two modes of operation:
+Filterng recommendation engine for a large ecommerce platform. It is thread-safe and
+features two modes of operation:
 
 + A memory-only mode in which all data is kept in main memory
 
@@ -10,12 +11,10 @@ Filterng recommendation engine. It is thread-safe and features two modes of oper
 kept in memory. Use this to handle datasets larger than your available main memory. In
 this mode, the data is also persisted across restarts.
 
-**No big-data bullshit**
-
-We are using this code for "small-data" datasets, i.e. up to 200 million input data points,
-13 million recommandable items and tens of millions of users in 40GB in-memory matrices. If
-your data is actually much bigger (measured in terrabytes, not gigabytes) this library is
-nothing for you.
+**No big-data:** We are using this code for "small-data" datasets, i.e. up to 200 million
+input data points, 13 million recommandable items and tens of millions of users in 40GB
+in-memory matrices. If your data is actually much bigger (measured in terrabytes, not
+gigabytes) this library is nothing for you.
 
 
 API
