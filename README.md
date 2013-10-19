@@ -10,7 +10,7 @@ Filterng recommendation engine. It is thread-safe and features two modes of oper
 kept in memory. Use this to handle datasets larger than your available main memory. In
 this mode, the data is also persisted across restarts.
 
-*No big-data bullshit*
+**No big-data bullshit**
 
 We are using this code for "small-data" datasets, i.e. up to 200 million input data points,
 13 million recommandable items and tens of millions of users in 40GB in-memory matrices. If
