@@ -16,7 +16,7 @@ this mode, the data is also persisted across restarts.
 API
 ---
 
-Open a smatrix (if filename is NULL, use in memory only mode, otherwise create file)
+Open a smatrix (if filename is NULL, use in memory only mode; otherwise open or create file)
 
     smatrix_t* smatrix_open(const char* fname);
 
