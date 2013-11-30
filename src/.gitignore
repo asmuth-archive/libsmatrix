@@ -1,0 +1,5 @@
+*.o
+*.so
+*.bundle
+*.class
+Test.java
