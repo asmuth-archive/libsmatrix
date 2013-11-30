@@ -9,6 +9,9 @@
 #include "smatrix_jni.h"
 #include "smatrix.h"
 
+#define _JM(X) Java_com_paulasmuth_libsmatrix_SparseMatrix_##X
+#define ERR_PTRNOTFOUND "can't find native object. maybe close() was already called"
+
 void throw_exception(JNIEnv* env, const char* error) {
   jclass exception = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
   (*env)->ThrowNew(env, exception, error);
@@ -17,7 +20,7 @@ void throw_exception(JNIEnv* env, const char* error) {
 void set_ptr(JNIEnv* env, jobject self, void* ptr_) {
   jclass   cls;
   jfieldID fid;
-  long     ptr = ptr_;
+  long     ptr = (long) ptr_;
 
   cls = (*env)->FindClass(env, "com/paulasmuth/libsmatrix/SparseMatrix");
   fid = (*env)->GetFieldID(env, cls, "ptr", "J");
@@ -38,18 +41,18 @@ int get_ptr(JNIEnv* env, jobject self, void** ptr) {
     *ptr = (void *) ptr_;
     return 0;
   } else {
-    throw_exception(env, "can't find native object. maybe close() was already called");
+    throw_exception(env, ERR_PTRNOTFOUND);
+
     return 1;
   }
 }
 
-
-JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_init (JNIEnv* env, jobject self, jstring file_) {
+JNIEXPORT void JNICALL _JM(init) (JNIEnv* env, jobject self, jstring file_) {
   void* ptr;
   char* file = NULL;
 
   if (file_ != NULL) {
-    file = (*env)->GetStringUTFChars(env, file_, 0);
+    file = (char *) (*env)->GetStringUTFChars(env, file_, 0);
   }
 
   ptr = smatrix_open(file);
@@ -65,7 +68,7 @@ JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_init (JNIEnv*
   }
 }
 
-JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_close (JNIEnv* env, jobject self) {
+JNIEXPORT void JNICALL _JM(close) (JNIEnv* env, jobject self) {
   void* ptr = NULL;
 
   if (!get_ptr(env, self, &ptr)) {
