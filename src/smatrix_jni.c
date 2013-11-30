@@ -8,6 +8,11 @@
  */
 #include "smatrix_jni.h"
 
-JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_test (JNIEnv* env, jobject self) {
-  printf("hallo jni! :)\n");
+JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_init (JNIEnv * env, jobject self) {
+
+  printf("smatrix_init :)\n");
+}
+
+JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_close (JNIEnv * env, jobject self) {
+  printf("smatrix_close :)\n");
 }

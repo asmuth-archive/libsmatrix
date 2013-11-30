@@ -9,10 +9,18 @@ extern "C" {
 #endif
 /*
  * Class:     com_paulasmuth_libsmatrix_SparseMatrix
- * Method:    test
+ * Method:    init
  * Signature: ()V
  */
-JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_test
+JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_init
+  (JNIEnv *, jobject);
+
+/*
+ * Class:     com_paulasmuth_libsmatrix_SparseMatrix
+ * Method:    close
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_close
   (JNIEnv *, jobject);
 
 #ifdef __cplusplus

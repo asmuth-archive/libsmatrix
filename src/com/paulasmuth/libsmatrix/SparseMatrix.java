@@ -38,7 +38,7 @@ public class SparseMatrix {
   }
 
   private native void init();
-  private native void close();
+  public  native void close();
 
   private void load() {
     File libfile = new File("libsmatrix.so");
