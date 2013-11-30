@@ -15,15 +15,34 @@ void throw_exception(JNIEnv* env, const char* error) {
 }
 
 void set_ptr(JNIEnv* env, jobject self, void* ptr_) {
-  long ptr = ptr_;
-  jclass cls;
+  jclass   cls;
   jfieldID fid;
+  long     ptr = ptr_;
 
   cls = (*env)->FindClass(env, "com/paulasmuth/libsmatrix/SparseMatrix");
   fid = (*env)->GetFieldID(env, cls, "ptr", "J");
 
   (*env)->SetLongField(env, self, fid, ptr);
 }
+
+int get_ptr(JNIEnv* env, jobject self, void** ptr) {
+  jclass   cls;
+  jfieldID fid;
+  jlong    ptr_;
+
+  cls  = (*env)->FindClass(env, "com/paulasmuth/libsmatrix/SparseMatrix");
+  fid  = (*env)->GetFieldID(env, cls, "ptr", "J");
+  ptr_ = (*env)->GetLongField(env, self, fid);
+
+  if (ptr_ > 0) {
+    *ptr = (void *) ptr_;
+    return 0;
+  } else {
+    throw_exception(env, "can't find native object. maybe close() was already called");
+    return 1;
+  }
+}
+
 
 JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_init (JNIEnv* env, jobject self, jstring file_) {
   void* ptr;
@@ -47,6 +66,11 @@ JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_init (JNIEnv*
 }
 
 JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_close (JNIEnv* env, jobject self) {
-  printf("smatrix_close :)\n");
+  void* ptr = NULL;
+
+  if (!get_ptr(env, self, &ptr)) {
+    smatrix_close(ptr);
+    set_ptr(env, self, NULL);
+  }
 }
 
