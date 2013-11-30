@@ -121,11 +121,7 @@ JNIEXPORT void JNICALL _JM(getRowNative) (JNIEnv* env, jobject self, jint x, job
   cls = (*env)->GetObjectClass(env, map);
   mid = (*env)->GetMethodID(env, cls, "putIntTuple", "(II)V");
 
-  if (mid == NULL) {
-    return;
-  }
-
-  if (get_ptr(env, self, &ptr)) {
+  if (mid == NULL || get_ptr(env, self, &ptr)) {
     return;
   }
 
