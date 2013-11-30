@@ -9,10 +9,38 @@
 package com.paulasmuth.libsmatrix;
 import java.io.File;
 
+/**
+ * A libsmatrix sparse matrix
+ */
 public class SparseMatrix {
-  public native void test();
 
-  static {
+  /**
+   * Create a new in-memory only Sparse Matrix
+   *
+   * @return a new SparseMatrix
+   */
+  public SparseMatrix() {
+    System.out.println("in-memory mode");
+    load();
+    init();
+  }
+
+  /**
+   * Create a new persistent disk/memory Sparse Matrix. This will create
+   * the file if it doesn't exist yet and open it if it already exists.
+   *
+   * @param filename path to the file
+   * @return a new SparseMatrix
+   */
+  public SparseMatrix(String filename) {
+    System.out.println("hybrid mode");
+    load();
+  }
+
+  private native void init();
+  private native void close();
+
+  private void load() {
     File libfile = new File("libsmatrix.so");
 
     if (libfile.exists()) {
@@ -21,4 +49,5 @@ public class SparseMatrix {
       System.loadLibrary("libsmatrix");
     }
   }
+
 }
