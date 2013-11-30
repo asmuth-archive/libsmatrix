@@ -16,12 +16,11 @@ BINDIR       = $(PREFIX)/bin
 all: libsmatrix.so
 
 clean:
-	find . -name "*.o" -o -name "*.class" -exec rm {} \;
-	rm smatrix_example
+	find . -name "*.o" -o -name "*.class" -o -name "*.so" -exec rm {} \;
 
 smatrix_jni.h:
 	javac com/paulasmuth/libsmatrix/SparseMatrix.java
 	javah -o smatrix_jni.h com.paulasmuth.libsmatrix.SparseMatrix
 
 libsmatrix.so: smatrix_jni.h
-	$(CC) $(CFLAGS) -shared -o libsmatrix.so smatrix.c $(LDFLAGS)
+	$(CC) $(CFLAGS) -shared -o libsmatrix.so -I /System/Library/Frameworks/JavaVM.framework/Headers smatrix.c smatrix_jni.c $(LDFLAGS)
