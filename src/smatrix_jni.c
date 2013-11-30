@@ -116,6 +116,12 @@ JNIEXPORT jobject JNICALL _JM(getRow) (JNIEnv* env, jobject self, jint x) {
 }
 
 JNIEXPORT jint JNICALL _JM(getRowLength) (JNIEnv* env, jobject self, jint x) {
-  return NULL;
+void* ptr = NULL;
+
+  if (get_ptr(env, self, &ptr)) {
+    return 0;
+  } else {
+    return (jint) smatrix_rowlen(ptr, x);
+  }
 }
 

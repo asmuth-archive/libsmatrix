@@ -78,6 +78,23 @@ class Test {
     }
   }); }
 
+  static { testCases.add(new TestCase() {
+    public String getName() {
+      return "1000 increments + getRowLength()";
+    }
+    public boolean run(SparseMatrix smx) {
+      int i = 0;
+      int n = 42;
+
+      for (i = 0; i < 1000; i++) {
+        smx.incr(i, n, 1);
+      }
+
+      return smx.getRowLength(n) == 1000;
+    }
+  }); }
+
+
   public static void main(String[] opts) {
     boolean success = true;
     SparseMatrix.setLibraryPath("libsmatrix.so");
