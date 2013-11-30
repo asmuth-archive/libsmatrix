@@ -1,9 +1,15 @@
 libsmatrix
 ==========
 
-A memory-efficient sparse matrix data structure. We use this to run a Collaborative 
-Filterng recommendation engine for a large ecommerce platform. It is thread-safe and
-features two modes of operation:
+A thread-safe sparse matrix data structure with C, Java and Ruby bindings. It was created
+to make loadig and accessing medium sized (10GB+) matrices in boxed languages like Java/Scala
+or Ruby easier.
+
+While the chosen internal storage format (nested hashmaps) is neither extremly memory-efficient
+nor extremly fast in terms of access/insert time it seems to be a good tradoff between these
+two goals.
+
+A libsmatrix sparse matrix features two modes of operation:
 
 + A memory-only mode in which all data is kept in main memory
 
@@ -11,15 +17,19 @@ features two modes of operation:
 kept in memory. Use this to handle datasets larger than your available main memory. In
 this mode, the data is also persisted across restarts.
 
-**No big-data:** We are using this code for "small-data" datasets, i.e. up to 200 million
-input data points, 13 million recommandable items and tens of millions of users in 40GB
-in-memory matrices. If your data is actually much bigger (measured in terrabytes, not
-gigabytes) this library is nothing for you.
+**No big-data:** We are using this code to run a Collaborative Filtering recommendation
+engine for one of Germany's largest ecommerce sites. It is tested on "small-data" datasets
+with up to 40GB per matrix (1.5 billion values in 13 million rows). If your data is actually
+much bigger (measured in terrabytes, not gigabytes) this library is not for you.
+
+Java / Scala API
+----------------
+
+here be dragons
 
 
-API
----
-
+C API
+-----
 
 Open a smatrix (if filename is NULL, use in memory only mode; otherwise open or create file)
 
@@ -42,7 +52,13 @@ Get a whole "row" of the matrix by row coordinate x. _All of the methods are thr
     uint32_t smatrix_getrow(smatrix_t* self, uint32_t x, uint32_t* ret, size_t ret_len);
 
 
-Example
+Ruby API
+--------
+
+here be dragons
+
+
+Examples
 -------
 
 + There is a simple example in src/smatrix_example.c
