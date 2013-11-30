@@ -26,7 +26,6 @@ class Test {
         return "fnord";
       }
       public boolean run(SparseMatrix smx) {
-        System.out.println("run test");
         return true;
       }
     });
@@ -34,29 +33,42 @@ class Test {
   }
 
   public static void main(String[] opts) {
+    boolean success = true;
     SparseMatrix.setLibraryPath("libsmatrix.so");
 
     SparseMatrix smx1 = new SparseMatrix();
-    run_tests(smx1);
+    success &= run_tests(smx1);
     smx1.close();
 
     SparseMatrix smx2 = new SparseMatrix("/tmp/fnord.smx");
-    run_tests(smx2);
+    success &= run_tests(smx2);
     smx2.close();
+
+    if (success) {
+      System.out.println("\033[1;32mAll tests finished successfully :)\033[0m");
+      System.exit(0);
+    } else {
+      System.out.println("\033[1;31mTests failed :(\033[0m");
+      System.exit(1);
+    }
   }
 
-  public static void run_tests(SparseMatrix smx) {
+  public static boolean run_tests(SparseMatrix smx) {
+    boolean success = true;
     Iterator iter = testCases.iterator();
 
     while (iter.hasNext()) {
       TestCase testcase = (TestCase) iter.next();
 
       if (testcase.run(smx)) {
-        System.out.println("[SUCCESS] " + testcase.getName());
+        System.out.println("\033[1;32m[SUCCESS] " + testcase.getName() + "\033[0m");
       } else {
-        System.out.println("[FAILED] " + testcase.getName());
+        System.out.println("\033[1;31m[FAILED] "  + testcase.getName() + "\033[0m");
+        success = false;
       }
     }
+
+    return success;
   }
 
 }
