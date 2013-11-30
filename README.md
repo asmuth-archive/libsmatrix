@@ -2,7 +2,7 @@ libsmatrix
 ==========
 
 A thread-safe sparse matrix data structure with C, Java and Ruby bindings. It was created
-to make loadig and accessing medium sized (10GB+) matrices in boxed languages like Java/Scala
+to make loading and accessing medium sized (10GB+) matrices in boxed languages like Java/Scala
 or Ruby easier.
 
 While the chosen internal storage format (nested hashmaps) is neither the most memory-efficient
@@ -14,8 +14,8 @@ A libsmatrix sparse matrix features two modes of operation:
 + A memory-only mode in which all data is kept in main memory
 
 + A hybrid memory/disk mode in which only a pool of recently/frequently used records is
-kept in memory. Use this to handle datasets larger than your available main memory. In
-this mode, the data is also persisted across restarts.
+kept in memory. In this mode the data is persisted across program restarts. It also allows
+yout to handle datasets larger than your available main memory
 
 **No big-data:** We are using this code to run a Collaborative Filtering recommendation
 engine for one of Germany's largest ecommerce sites. It is tested on "small-data" datasets

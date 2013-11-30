@@ -51,6 +51,33 @@ class Test {
     }
   }); }
 
+  static { testCases.add(new TestCase() {
+    public String getName() {
+      return "1 million increments + 1 million gets";
+    }
+    public boolean run(SparseMatrix smx) {
+      int v = 34;
+      int i;
+      int n;
+
+      for (n = 0; n < 1000; n++) {
+        for (i = 0; i < 1000; i++) {
+          smx.set(i, n, v);
+        }
+      }
+
+      for (n = 0; n < 1000; n++) {
+        for (i = 0; i < 1000; i++) {
+          if ((smx.get(i, n) != v)) {
+            return false;
+          }
+        }
+      }
+
+      return true;
+    }
+  }); }
+
   public static void main(String[] opts) {
     boolean success = true;
     SparseMatrix.setLibraryPath("libsmatrix.so");
