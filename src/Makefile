@@ -1,4 +1,4 @@
-# This file is part of the "smatrix_example" project
+# This file is part of the "libsmatrix" project
 #   (c) 2011-2013 Paul Asmuth <paul@paulasmuth.com>
 #
 # Licensed under the MIT License (the "License"); you may not use this
@@ -19,9 +19,15 @@ clean:
 	rm -f smatrix_jni.h
 	find . -name "*.o" -o -name "*.class" -o -name "*.so" -exec rm {} \;
 
-smatrix_jni.h: com/paulasmuth/libsmatrix/SparseMatrix.java
-	javac com/paulasmuth/libsmatrix/SparseMatrix.java
+smatrix_jni.h: java/com/paulasmuth/libsmatrix/SparseMatrix.java
+	javac java/com/paulasmuth/libsmatrix/SparseMatrix.java
 	javah -o smatrix_jni.h com.paulasmuth.libsmatrix.SparseMatrix
 
 libsmatrix.so: smatrix_jni.h
 	$(CC) $(CFLAGS) -shared -o libsmatrix.so -I /System/Library/Frameworks/JavaVM.framework/Headers smatrix.c smatrix_jni.c $(LDFLAGS)
+
+test: test_java
+
+test_java:
+	javac -classpath ./src test/java/Test.java
+	java -classpath ./src:./test/java Test
