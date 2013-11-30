@@ -22,8 +22,45 @@ engine for one of Germany's largest ecommerce sites. It is tested on "small-data
 with up to 40GB per matrix (1.5 billion values in 13 million rows). If your data is actually
 much bigger (measured in terrabytes, not gigabytes) this library is not for you.
 
-Java / Scala API
-----------------
+### Table of Contents
+
++ [Getting Started](#getting-started)
++ [C API](#c-api)
++ [Java/Scala API](#fnord)
++ [Ruby API](#ruby-api)
++ [Internals](#internals)
++ [Benchmarks](#benchmarks)
++ [Examples](#examples)
++ [License](#license)
+
+
+Getting Started (Building)
+--------------------------
+
+There are multiple ways to install libsmatrix:
+
+### Compile from source
+
+1) Compile. Ruby/Java bindings will be compiled if the respective header files are found:
+
+    $ ./configure
+    $ make
+
+2) Run tests (requires java and ruby)
+
+    $ make test
+
+3) Install into system
+
+    $ make install
+
+
+### Via maven/sbt (java/scala only)
+
+here be dragons
+
+
+### Via rubygems (ruby only)
 
 here be dragons
 
@@ -50,6 +87,12 @@ Get a whole "row" of the matrix by row coordinate x. _All of the methods are thr
 
     uint32_t smatrix_rowlen(smatrix_t* self, uint32_t x);
     uint32_t smatrix_getrow(smatrix_t* self, uint32_t x, uint32_t* ret, size_t ret_len);
+
+
+Java / Scala API
+----------------
+
+here be dragons
 
 
 Ruby API
