@@ -2,4 +2,5 @@
 *.so
 *.bundle
 *.class
+*.smx
 Test.java

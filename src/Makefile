@@ -18,7 +18,7 @@ all: libsmatrix.so
 clean:
 	find . -name "*.o" -o -name "*.class" -o -name "*.so" -exec rm {} \;
 
-smatrix_jni.h:
+smatrix_jni.h: com/paulasmuth/libsmatrix/SparseMatrix.java
 	javac com/paulasmuth/libsmatrix/SparseMatrix.java
 	javah -o smatrix_jni.h com.paulasmuth.libsmatrix.SparseMatrix
 
