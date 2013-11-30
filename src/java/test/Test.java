@@ -15,22 +15,41 @@ interface TestCase {
   public boolean run(SparseMatrix smx);
 }
 
-
 class Test {
   static LinkedList<TestCase> testCases = new LinkedList<TestCase>();
 
-  static {
+  static { testCases.add(new TestCase() {
+    public String getName() {
+      return "simple set/get";
+    }
+    public boolean run(SparseMatrix smx) {
+      smx.set(42,23,17);
+      return smx.get(42,23) == 17;
+    }
+  }); }
 
-    testCases.add(new TestCase() {
-      public String getName() {
-        return "fnord";
-      }
-      public boolean run(SparseMatrix smx) {
-        return true;
-      }
-    });
+  static { testCases.add(new TestCase() {
+    public String getName() {
+      return "simple increment 1";
+    }
+    public boolean run(SparseMatrix smx) {
+      smx.set(4231,2634,0);
+      smx.incr(4231,2634,1);
+      return smx.get(4231,2634) == 1;
+    }
+  }); }
 
-  }
+  static { testCases.add(new TestCase() {
+    public String getName() {
+      return "simple increment 5";
+    }
+    public boolean run(SparseMatrix smx) {
+      smx.set(1231,2634,0);
+      smx.incr(1231,2634,1);
+      smx.incr(1231,2634,5);
+      return smx.get(1231,2634) == 6;
+    }
+  }); }
 
   public static void main(String[] opts) {
     boolean success = true;
