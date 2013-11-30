@@ -17,11 +17,6 @@ A libsmatrix sparse matrix features two modes of operation:
 kept in memory. In this mode the data is persisted across program restarts. It also allows
 yout to handle datasets larger than your available main memory
 
-**No big-data:** We are using this code to run a Collaborative Filtering recommendation
-engine for one of Germany's largest ecommerce sites. It is tested on "small-data" datasets
-with up to 40GB per matrix (1.5 billion values in 13 million rows). If your data is actually
-much bigger (measured in terrabytes, not gigabytes) this library is not for you.
-
 ### Table of Contents
 
 + [Getting Started](#getting-started)
@@ -32,6 +27,13 @@ much bigger (measured in terrabytes, not gigabytes) this library is not for you.
 + [Benchmarks](#benchmarks)
 + [Examples](#examples)
 + [License](#license)
+
+
+**No big-data disclaimer:** We are using this code to run a Collaborative Filtering
+recommendation engine for one of Germany's largest ecommerce sites. It is tested on "small-data"
+datasets with up to 40GB per matrix (1.5 billion values in 13 million rows). If your data is
+actually much bigger (measured in terrabytes, not gigabytes) this library is not for you.
+
 
 
 Getting Started (Building)
