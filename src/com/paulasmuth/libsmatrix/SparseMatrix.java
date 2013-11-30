@@ -25,6 +25,7 @@ public class SparseMatrix {
   public SparseMatrix() {
     SparseMatrix.loadLibrary();
     init(null);
+    System.out.println(ptr);
   }
 
   /**

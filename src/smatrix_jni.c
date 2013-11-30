@@ -9,8 +9,23 @@
 #include "smatrix_jni.h"
 #include "smatrix.h"
 
+void throw_exception(JNIEnv* env, const char* error) {
+  jclass exception = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
+  (*env)->ThrowNew(env, exception, error);
+}
+
+void set_ptr(JNIEnv* env, jobject self, void* ptr_) {
+  long ptr = ptr_;
+  jclass cls;
+  jfieldID fid;
+
+  cls = (*env)->FindClass(env, "com/paulasmuth/libsmatrix/SparseMatrix");
+  fid = (*env)->GetFieldID(env, cls, "ptr", "J");
+
+  (*env)->SetLongField(env, self, fid, ptr);
+}
+
 JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_init (JNIEnv* env, jobject self, jstring file_) {
-  jclass exception;
   void* ptr;
   char* file = NULL;
 
@@ -21,10 +36,9 @@ JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_init (JNIEnv*
   ptr = smatrix_open(file);
 
   if (ptr == NULL) {
-    exception = (*env)->FindClass(env, "java/lang/IllegalArgumentException");
-    (*env)->ThrowNew(env, exception, "smatrix_open() failed");
+    throw_exception(env, "smatrix_open() failed");
   } else {
-    printf("smatrix_init :)\n");
+    set_ptr(env, self, ptr);
   }
 
   if (file != NULL) {
@@ -35,3 +49,4 @@ JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_init (JNIEnv*
 JNIEXPORT void JNICALL Java_com_paulasmuth_libsmatrix_SparseMatrix_close (JNIEnv* env, jobject self) {
   printf("smatrix_close :)\n");
 }
+
