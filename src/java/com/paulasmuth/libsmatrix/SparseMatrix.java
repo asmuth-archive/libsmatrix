@@ -84,13 +84,20 @@ public class SparseMatrix {
    * HERE BE DRAGONS
    */
   public SortedMap<Integer,Integer> getRow(int x) {
+    return getRow(x, 0);
+  }
+
+  /**
+   * HERE BE DRAGONS
+   */
+  public SortedMap<Integer,Integer> getRow(int x, int maxlen) {
     SortedMap<Integer, Integer> map = new ConcurrentSkipListMap<Integer, Integer>() {
       public void putIntTuple(int k, int v) {
         this.put(k, v);
       }
     };
 
-    getRowNative(x, map);
+    getRowNative(x, map, maxlen);
 
     return map;
   }
@@ -104,7 +111,7 @@ public class SparseMatrix {
   /**
    * HERE BE DRAGONS
    */
-  private native void getRowNative(int x, SortedMap<Integer,Integer> map);
+  private native void getRowNative(int x, SortedMap<Integer,Integer> map, int maxlen);
 
   /**
    * Load the native shared object (libsmatrix.so)

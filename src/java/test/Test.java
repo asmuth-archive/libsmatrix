@@ -113,6 +113,23 @@ class Test {
     }
   }); }
 
+  static { testCases.add(new TestCase() {
+    public String getName() {
+      return "1000 increments + getRow() with maxlen";
+    }
+    public boolean run(SparseMatrix smx) {
+      int i = 0;
+      int n = 83;
+
+      for (i = 0; i < 1000; i++) {
+        smx.incr(i, n, 1);
+      }
+
+      SortedMap<Integer, Integer> row = smx.getRow(n, 230);
+      return row.size() == 230;
+    }
+  }); }
+
   public static void main(String[] opts) {
     boolean success = true;
     SparseMatrix.setLibraryPath("libsmatrix.so");

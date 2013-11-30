@@ -111,7 +111,7 @@ JNIEXPORT void JNICALL _JM(decr) (JNIEnv* env, jobject self, jint x, jint y, jin
   }
 }
 
-JNIEXPORT void JNICALL _JM(getRowNative) (JNIEnv* env, jobject self, jint x, jobject map) {
+JNIEXPORT void JNICALL _JM(getRowNative) (JNIEnv* env, jobject self, jint x, jobject map, jint maxlen) {
   jclass    cls;
   jmethodID mid;
   uint32_t  len, *data, i;
@@ -141,8 +141,14 @@ JNIEXPORT void JNICALL _JM(getRowNative) (JNIEnv* env, jobject self, jint x, job
   len = smatrix_getrow(ptr, (uint32_t) x, data, bytes);
 
   for (i = 0; i < len; i++) {
+    if (maxlen > 0 && i >= maxlen) {
+      break;
+    }
+
     (*env)->CallVoidMethod(env, map, mid, data[i * 2], data[i * 2 + 1]);
   }
+
+  free(data);
 }
 
 JNIEXPORT jint JNICALL _JM(getRowLength) (JNIEnv* env, jobject self, jint x) {
