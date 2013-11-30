@@ -77,3 +77,27 @@ JNIEXPORT void JNICALL _JM(close) (JNIEnv* env, jobject self) {
   }
 }
 
+JNIEXPORT jint _JM(get) (JNIEnv* env, jobject self, jint x, jint y) {
+  return NULL;
+}
+
+JNIEXPORT void JNICALL _JM(set) (JNIEnv* env, jobject self, jint x, jint y, jint v) {
+  void* ptr = NULL;
+
+  if (!get_ptr(env, self, &ptr)) {}
+}
+
+JNIEXPORT void JNICALL _JM(incr) (JNIEnv* env, jobject self, jint x, jint y, jint v) {
+}
+
+JNIEXPORT void JNICALL _JM(decr) (JNIEnv* env, jobject self, jint x, jint y, jint v) {
+}
+
+JNIEXPORT jobject JNICALL _JM(getRow) (JNIEnv* env, jobject self, jint x) {
+  return NULL;
+}
+
+JNIEXPORT jint JNICALL _JM(getRowLength) (JNIEnv* env, jobject self, jint x) {
+  return NULL;
+}
+
