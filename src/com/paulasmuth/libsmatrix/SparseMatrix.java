@@ -7,11 +7,18 @@
  * the License at: http://opensource.org/licenses/MIT
  */
 package com.paulasmuth.libsmatrix;
+import java.io.File;
 
 public class SparseMatrix {
   public native void test();
 
   static {
-    System.loadLibrary("libsmatrix");
+    File libfile = new File("libsmatrix.so");
+
+    if (libfile.exists()) {
+      System.load(libfile.getAbsolutePath());
+    } else {
+      System.loadLibrary("libsmatrix");
+    }
   }
 }
