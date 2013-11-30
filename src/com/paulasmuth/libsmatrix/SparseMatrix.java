@@ -8,6 +8,7 @@
  */
 package com.paulasmuth.libsmatrix;
 import java.io.File;
+import java.util.SortedMap;
 
 /**
  * A libsmatrix sparse matrix
@@ -52,6 +53,36 @@ public class SparseMatrix {
     library_path = path;
     loadLibrary();
   }
+
+  /**
+   * HERE BE DRAGONS
+   */
+  public native int get(int x, int y);
+
+  /**
+   * HERE BE DRAGONS
+   */
+  public native void set(int x, int y, int val);
+
+  /**
+   * HERE BE DRAGONS
+   */
+  public native void incr(int x, int y, int val);
+
+  /**
+   * HERE BE DRAGONS
+   */
+  public native void decr(int x, int y, int val);
+
+  /**
+   * HERE BE DRAGONS
+   */
+  public native SortedMap<Integer,Integer> getRow(int x);
+
+  /**
+   * HERE BE DRAGONS
+   */
+  public native int getRowLength(int x);
 
   /**
    * Close this matrix. Calling any other method on the instance after it was
