@@ -111,7 +111,7 @@ JNIEXPORT void JNICALL _JM(decr) (JNIEnv* env, jobject self, jint x, jint y, jin
   }
 }
 
-JNIEXPORT jobject JNICALL _JM(getRow) (JNIEnv* env, jobject self, jint x) {
+JNIEXPORT jobject JNICALL _JM(getRowNative) (JNIEnv* env, jobject self, jint x, jobject map) {
   return NULL;
 }
 

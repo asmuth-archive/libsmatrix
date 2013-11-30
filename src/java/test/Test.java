@@ -8,6 +8,7 @@
  */
 import java.util.LinkedList;
 import java.util.Iterator;
+import java.util.SortedMap;
 import com.paulasmuth.libsmatrix.SparseMatrix;
 
 interface TestCase {
@@ -94,6 +95,23 @@ class Test {
     }
   }); }
 
+  static { testCases.add(new TestCase() {
+    public String getName() {
+      return "1000 increments + getRow()";
+    }
+    public boolean run(SparseMatrix smx) {
+      int i = 0;
+      int n = 85;
+
+      for (i = 0; i < 1000; i++) {
+        smx.incr(i, n, 1);
+      }
+
+      SortedMap<Integer, Integer> row = smx.getRow(n);
+
+      return row.size() == 1000;
+    }
+  }); }
 
   public static void main(String[] opts) {
     boolean success = true;

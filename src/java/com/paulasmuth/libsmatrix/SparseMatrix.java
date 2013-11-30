@@ -9,6 +9,7 @@
 package com.paulasmuth.libsmatrix;
 import java.io.File;
 import java.util.SortedMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 /**
  * A libsmatrix sparse matrix
@@ -77,18 +78,33 @@ public class SparseMatrix {
   /**
    * HERE BE DRAGONS
    */
-  public native SortedMap<Integer,Integer> getRow(int x);
+  public native int getRowLength(int x);
 
   /**
    * HERE BE DRAGONS
    */
-  public native int getRowLength(int x);
+  public SortedMap<Integer,Integer> getRow(int x) {
+    SortedMap<Integer, Integer> map = new ConcurrentSkipListMap<Integer, Integer>() {
+      public void putIntTuple(int k, int v) {
+        System.out.println("puttuple " + k + " -> " + v);
+      }
+    };
+
+    getRowNative(x, map);
+
+    return map;
+  }
 
   /**
    * Close this matrix. Calling any other method on the instance after it was
    * closed will throw an exception.
    */
   public native void close();
+
+  /**
+   * HERE BE DRAGONS
+   */
+  private native void getRowNative(int x, SortedMap<Integer,Integer> map);
 
   /**
    * Load the native shared object (libsmatrix.so)
