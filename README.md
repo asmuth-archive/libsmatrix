@@ -5,8 +5,8 @@ A thread-safe sparse matrix data structure with C, Java and Ruby bindings. It wa
 to make loadig and accessing medium sized (10GB+) matrices in boxed languages like Java/Scala
 or Ruby easier.
 
-While the chosen internal storage format (nested hashmaps) is neither extremly memory-efficient
-nor extremly fast in terms of access/insert time it seems to be a good tradoff between these
+While the chosen internal storage format (nested hashmaps) is neither the most memory-efficient
+nor extremely fast in terms of access/insert time it seems to be a good tradeoff between these
 two goals.
 
 A libsmatrix sparse matrix features two modes of operation:
