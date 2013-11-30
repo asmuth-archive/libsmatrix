@@ -28,5 +28,5 @@ libsmatrix.so: smatrix_jni.h
 test: test_java
 
 test_java:
-	javac -classpath ./src test/java/Test.java
-	java -classpath ./src:./test/java Test
+	javac -classpath ./src:./java java/test/Test.java
+	java -classpath ./src:./java:./java/test Test
