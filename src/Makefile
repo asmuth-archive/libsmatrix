@@ -16,6 +16,7 @@ BINDIR       = $(PREFIX)/bin
 all: libsmatrix.so
 
 clean:
+	rm -f smatrix_jni.h
 	find . -name "*.o" -o -name "*.class" -o -name "*.so" -exec rm {} \;
 
 smatrix_jni.h: com/paulasmuth/libsmatrix/SparseMatrix.java
