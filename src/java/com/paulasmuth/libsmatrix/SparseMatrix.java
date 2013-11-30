@@ -86,7 +86,7 @@ public class SparseMatrix {
   public SortedMap<Integer,Integer> getRow(int x) {
     SortedMap<Integer, Integer> map = new ConcurrentSkipListMap<Integer, Integer>() {
       public void putIntTuple(int k, int v) {
-        System.out.println("puttuple " + k + " -> " + v);
+        this.put(k, v);
       }
     };
 

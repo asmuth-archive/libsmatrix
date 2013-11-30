@@ -111,12 +111,42 @@ JNIEXPORT void JNICALL _JM(decr) (JNIEnv* env, jobject self, jint x, jint y, jin
   }
 }
 
-JNIEXPORT jobject JNICALL _JM(getRowNative) (JNIEnv* env, jobject self, jint x, jobject map) {
-  return NULL;
+JNIEXPORT void JNICALL _JM(getRowNative) (JNIEnv* env, jobject self, jint x, jobject map) {
+  jclass    cls;
+  jmethodID mid;
+  uint32_t  len, *data, i;
+  void*     ptr = NULL;
+  size_t    bytes;
+
+  cls = (*env)->GetObjectClass(env, map);
+  mid = (*env)->GetMethodID(env, cls, "putIntTuple", "(II)V");
+
+  if (mid == NULL) {
+    return;
+  }
+
+  if (get_ptr(env, self, &ptr)) {
+    return;
+  }
+
+  len   = smatrix_rowlen(ptr, x);
+  bytes = len * 8;
+  data  = malloc(bytes);
+
+  if (data == NULL) {
+    throw_exception(env, "malloc() failed");
+    return;
+  }
+
+  len = smatrix_getrow(ptr, (uint32_t) x, data, bytes);
+
+  for (i = 0; i < len; i++) {
+    (*env)->CallVoidMethod(env, map, mid, data[i * 2], data[i * 2 + 1]);
+  }
 }
 
 JNIEXPORT jint JNICALL _JM(getRowLength) (JNIEnv* env, jobject self, jint x) {
-void* ptr = NULL;
+  void* ptr = NULL;
 
   if (get_ptr(env, self, &ptr)) {
     return 0;
