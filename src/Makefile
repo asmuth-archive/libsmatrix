@@ -7,24 +7,21 @@
 
 SHELL        = /bin/sh
 CC           = clang
-FLAGS        =
-CFLAGS       = -Wall -Wextra
+CFLAGS       = -Wall -Wextra -O3 -march=native -mtune=native -D NDEBUG
 LDFLAGS      = -lpthread -lm
 DEBUGFLAGS   = -g3 -O0 -D _DEBUG
-RELEASEFLAGS = -O3 -march=native -mtune=native -D NDEBUG
 PREFIX       = $(DESTDIR)/usr/local
 BINDIR       = $(PREFIX)/bin
 
-all:
-	echo "hello world"
+all: libsmatrix.so
 
 clean:
 	find . -name "*.o" -o -name "*.class" -exec rm {} \;
 	rm smatrix_example
 
-java:
+smatrix_jni.h:
 	javac com/paulasmuth/libsmatrix/SparseMatrix.java
 	javah -o smatrix_jni.h com.paulasmuth.libsmatrix.SparseMatrix
 
-smatrix_example: $(OBJECTS)
-	$(CC) $(FLAGS) $(CFLAGS) $(RELEASEFLAGS) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
+libsmatrix.so: smatrix_jni.h
+	$(CC) $(CFLAGS) -shared -o libsmatrix.so smatrix.c $(LDFLAGS)
