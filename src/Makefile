@@ -12,24 +12,19 @@ CFLAGS       = -Wall -Wextra
 LDFLAGS      = -lpthread -lm
 DEBUGFLAGS   = -g3 -O0 -D _DEBUG
 RELEASEFLAGS = -O3 -march=native -mtune=native -D NDEBUG
-
-TARGET       = smatrix_example
-TARGET_DBG   = smatrix_example_dbg
-SOURCES      = smatrix_example.c smatrix.c
-HEADERS      = smatrix.h
-OBJECTS      = $(SOURCES:.c=.o)
-
 PREFIX       = $(DESTDIR)/usr/local
 BINDIR       = $(PREFIX)/bin
 
-all: $(TARGET)
-debug: $(TARGET_DBG)
+all:
+	echo "hello world"
 
 clean:
-	rm smatrix_example smatrix_example_dbg *.o
+	find . -name "*.o" -o -name "*.class" -exec rm {} \;
+	rm smatrix_example
 
-$(TARGET): $(OBJECTS)
+java:
+	javac com/paulasmuth/libsmatrix/SparseMatrix.java
+	javah -o smatrix_jni.h com.paulasmuth.libsmatrix.SparseMatrix
+
+smatrix_example: $(OBJECTS)
 	$(CC) $(FLAGS) $(CFLAGS) $(RELEASEFLAGS) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
-
-$(TARGET_DBG): $(OBJECTS)
-	$(CC) $(FLAGS) $(CFLAGS) $(DEBUGFLAGS) -o $(TARGET_DBG) $(OBJECTS) $(LDFLAGS)
