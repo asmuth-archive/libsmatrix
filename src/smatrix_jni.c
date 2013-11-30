@@ -78,13 +78,21 @@ JNIEXPORT void JNICALL _JM(close) (JNIEnv* env, jobject self) {
 }
 
 JNIEXPORT jint _JM(get) (JNIEnv* env, jobject self, jint x, jint y) {
-  return NULL;
+  void* ptr = NULL;
+
+  if (get_ptr(env, self, &ptr)) {
+    return 0;
+  } else {
+    return (jint) smatrix_get(ptr, x, y);
+  }
 }
 
 JNIEXPORT void JNICALL _JM(set) (JNIEnv* env, jobject self, jint x, jint y, jint v) {
   void* ptr = NULL;
 
-  if (!get_ptr(env, self, &ptr)) {}
+  if (!get_ptr(env, self, &ptr)) {
+    smatrix_set(ptr, (uint32_t) x, (uint32_t) y, (uint32_t) v);
+  }
 }
 
 JNIEXPORT void JNICALL _JM(incr) (JNIEnv* env, jobject self, jint x, jint y, jint v) {
