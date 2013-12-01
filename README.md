@@ -57,21 +57,26 @@ jni.h) are found:
 
 ### Import artifact via Maven/sbt (java/scala)
 
-Currently the maven artifact only contains the binding code and doesn't actually build the
-native shared object. You need to compile & install it yourself on the target host, otherwise
-you'll get a "UnsatisfiedLinkError".
+Currently the maven artifact only contains the binding glue code and doesn't actually build
+the native shared object. You need to compile & install "libsmatrix.so" yourself on the target
+host, otherwise you'll get a "UnsatisfiedLinkError".
 
 Import artifact via sbt:
 
-    libraryDependencies += "com.paulasmuth" %% "libsmatrix" % "0.1"
-    resolvers += "sbt-libsmatrix-repo" at "http://paulasmuth.github.com/maven/"
+    resolvers += "sbt-libsmatrix-repo" at "https://raw.github.com/paulasmuth/libsmatrix/mvn-repo/"
 
-    addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "0.11.1-SNAPSHOT")
+    libraryDependencies += "com.paulasmuth.libsmatrix" % "libsmatrix" % "0.1-SNAPSHOT"
 
-Import artifact via Maven2:
+Import artifact via Maven2 (put this into your pom.xml):
 
-    HERE BE DRAGONS
-
+    <repository>
+      <id>libsmatrix-mvn-repo</id>
+      <url>https://raw.github.com/paulsmuth/libsmatrix/mvn-repo/</url>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>always</updatePolicy>
+      </snapshots>
+    </repository>
 
 To build the maven artifact from source, check out libsmatrix and run this:
 
