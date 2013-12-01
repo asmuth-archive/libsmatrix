@@ -16,5 +16,9 @@ test_java:
 build_maven:
 	mvn -f build/maven/pom.xml package
 
+publish_maven:
+	mvn -f build/maven/pom.xml deploy
+
+
 .DEFAULT:
 	cd src && $(MAKE) $@

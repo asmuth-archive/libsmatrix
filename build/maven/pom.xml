@@ -2,6 +2,8 @@
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <name>libsmatrix sparse matrix</name>
+  <url>http://github.com/paulasmuth/libsmatrix</url>
   <groupId>com.paulasmuth.libsmatrix</groupId>
   <artifactId>libsmatrix</artifactId>
   <version>0.1-SNAPSHOT</version>
@@ -9,8 +11,57 @@
 
   <build>
     <sourceDirectory>src/java</sourceDirectory>
+
+    <plugins>
+      <plugin>
+        <groupId>com.github.github</groupId>
+        <artifactId>site-maven-plugin</artifactId>
+        <version>0.8</version>
+        <!--
+          put this into ~/.m2/settings.xml:
+
+          <settings>
+            <servers>
+              <server>
+                <id>github</id>
+                <username>USERNAME</username>
+                <password>PASSWORD</password>
+              </server>
+            </servers>
+          </settings>
+        -->
+        <configuration>
+            <message>Maven artifacts for ${project.version}</message> 
+            <noJekyll>true</noJekyll>
+            <outputDirectory>${project.build.directory}/mvn-repo</outputDirectory>
+            <branch>refs/heads/mvn-repo</branch>
+            <includes><include>**/*</include></includes>
+            <repositoryName>libsmatrix</repositoryName>
+            <repositoryOwner>paulasmuth</repositoryOwner>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>site</goal>
+            </goals>
+            <phase>deploy</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
 
-  <name>libsmatrix sparse matrix</name>
-  <url>http://github.com/paulasmuth/libsmatrix</url>
+  <distributionManagement>
+    <repository>
+      <id>internal.repo</id>
+      <name>Temporary Staging Repository</name>
+      <url>file://${project.build.directory}/mvn-repo</url>
+    </repository>
+  </distributionManagement>
+
+  <properties>
+    <!-- github server corresponds to entry in ~/.m2/settings.xml -->
+    <github.global.server>github</github.global.server>
+  </properties>
+
 </project>
