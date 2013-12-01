@@ -14,11 +14,13 @@ test_java:
 	java -classpath ./src:./src/java:./src/java/test TestSparseMatrix
 
 build_maven:
-	mvn -f build/maven/pom.xml package
+	mvn package
 
-publish_maven:
-	mvn -f build/maven/pom.xml deploy
+publish_maven: build_maven
+	mvn deploy
 
+pom.xml:
+	ln -s build/maven/pom.xml
 
 .DEFAULT:
 	cd src && $(MAKE) $@

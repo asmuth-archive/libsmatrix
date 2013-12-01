@@ -65,7 +65,7 @@ Import artifact via sbt:
 
     resolvers += "sbt-libsmatrix-repo" at "https://raw.github.com/paulasmuth/libsmatrix/mvn-repo/"
 
-    libraryDependencies += "com.paulasmuth.libsmatrix" % "libsmatrix" % "0.1-SNAPSHOT"
+    libraryDependencies += "com.paulasmuth.libsmatrix" % "libsmatrix" % "0.2-SNAPSHOT"
 
 Import artifact via Maven2 (put this into your pom.xml):
 
