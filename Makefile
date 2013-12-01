@@ -14,7 +14,7 @@ test_java:
 	java -classpath ./src:./src/java:./src/java/test TestSparseMatrix
 
 build_maven:
-	mvn package
+	mvn -f build/maven/pom.xml package
 
 .DEFAULT:
 	cd src && $(MAKE) $@
