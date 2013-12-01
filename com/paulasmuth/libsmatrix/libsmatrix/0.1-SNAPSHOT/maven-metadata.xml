@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata modelVersion="1.1.0">
+  <groupId>com.paulasmuth.libsmatrix</groupId>
+  <artifactId>libsmatrix</artifactId>
+  <version>0.1-SNAPSHOT</version>
+  <versioning>
+    <snapshot>
+      <timestamp>20131201.171112</timestamp>
+      <buildNumber>7</buildNumber>
+    </snapshot>
+    <lastUpdated>20131201171112</lastUpdated>
+    <snapshotVersions>
+      <snapshotVersion>
+        <extension>jar</extension>
+        <value>0.1-20131201.171112-7</value>
+        <updated>20131201171112</updated>
+      </snapshotVersion>
+      <snapshotVersion>
+        <extension>pom</extension>
+        <value>0.1-20131201.171112-7</value>
+        <updated>20131201171112</updated>
+      </snapshotVersion>
+    </snapshotVersions>
+  </versioning>
+</metadata>
