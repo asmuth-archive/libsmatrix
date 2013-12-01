@@ -112,7 +112,11 @@ void smatrix_close(smatrix_t* self) {
 
   smatrix_cmap_free(self, &self->cmap);
   pthread_mutex_destroy(&self->lock);
-  close(self->fd);
+
+  if (self->fd) {
+    close(self->fd);
+  }
+
   free(self);
 }
 
