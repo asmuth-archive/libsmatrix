@@ -5,7 +5,46 @@
 # file except in compliance with the License. You may obtain a copy of
 # the License at: http://opensource.org/licenses/MIT
 
-default: all
+SHELL        = /bin/sh
+CC           = clang
+CFLAGS_      = $(CFLAGS) -Wall -Wextra -O3 -march=native -mtune=native -D NDEBUG -fPIC
+LDFLAGS      = -lpthread -lm
+PREFIX       = $(DESTDIR)/usr/local
+LIBDIR       = $(PREFIX)/lib
+UNAME        = $(shell uname)
+SOURCES      = src/smatrix.c src/smatrix_jni.c
+
+ifeq ($(UNAME), Linux)
+LIBEXT       = dylib
+endif
+ifeq ($(UNAME), Darwin)
+LIBEXT       = so
+endif
+
+all: src/smatrix_jni.h src/config.h
+ifeq ($(UNAME), Linux)
+	$(CC) $(CFLAGS_) -shared -o src/libsmatrix.so -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux $(SOURCES) $(LDFLAGS)
+endif
+ifeq ($(UNAME), Darwin)
+	$(CC) $(CFLAGS_) -dynamiclib -o src/libsmatrix.dylib -I /System/Library/Frameworks/JavaVM.framework/Headers -I /System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Headers $(SOURCES) $(LDFLAGS)
+endif
+
+install: libsmatrix.$(LIBEXT)
+	cp libsmatrix.$(LIBEXT) $(LIBDIR)
+
+src/config.h:
+	touch src/config.h
+
+pom.xml:
+	ln -s build/maven/pom.xml
+
+src/smatrix_jni.h:
+	javac java/com/paulasmuth/libsmatrix/SparseMatrix.java
+	javah -o smatrix_jni.h -classpath ./java com.paulasmuth.libsmatrix.SparseMatrix
+
+clean:
+	find . -name "*.o" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -exec rm {} \;
+	rm -rf target pom.xml src/config.h
 
 test: clean all test_java
 
@@ -18,9 +57,3 @@ build_maven:
 
 publish_maven: build_maven
 	mvn deploy
-
-pom.xml:
-	ln -s build/maven/pom.xml
-
-.DEFAULT:
-	cd src && $(MAKE) $@

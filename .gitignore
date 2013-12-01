@@ -1,2 +1,9 @@
 pom.xml
 target/
+src/config.h
+*.o
+*.so
+*.bundle
+*.dylib
+*.class
+*.smx
