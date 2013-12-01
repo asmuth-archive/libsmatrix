@@ -11,7 +11,7 @@ CFLAGS       = -Wall -Wextra -O3 -march=native -mtune=native -D NDEBUG
 LDFLAGS      = -lpthread -lm
 DEBUGFLAGS   = -g3 -O0 -D _DEBUG
 PREFIX       = $(DESTDIR)/usr/local
-LIBDIR       = $(PREFIX)/bin
+LIBDIR       = $(PREFIX)/lib
 UNAME        = $(shell uname)
 SOURCES      = smatrix.c smatrix_jni.c
 

@@ -37,18 +37,14 @@ This will produce a single shared object "libsmatrix.so" file that exports all c
 in "C API" as well as MRI ruby and Java JNI bindings if their respective header files (ruby.h,
 jni.h) are found:
 
-1) Compile
+1) Compile and install into system
 
-    $ ./configure
     $ make
+    $ make install
 
 2) Run tests (optional, requires java and ruby)
 
     $ make test
-
-3) Install into system
-
-    $ make install
 
 4) Compile examples (optional)
 
