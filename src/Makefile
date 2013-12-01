@@ -24,9 +24,3 @@ smatrix_jni.h:
 
 libsmatrix.so: smatrix_jni.h
 	$(CC) $(CFLAGS) -shared -o libsmatrix.so -I /System/Library/Frameworks/JavaVM.framework/Headers smatrix.c smatrix_jni.c $(LDFLAGS)
-
-test: clean test_java
-
-test_java: libsmatrix.so
-	javac -classpath ./src:./java java/test/Test.java
-	java -classpath ./src:./java:./java/test Test

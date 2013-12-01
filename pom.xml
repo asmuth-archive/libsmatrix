@@ -7,7 +7,9 @@
   <version>0.1-SNAPSHOT</version>
   <packaging>jar</packaging>
 
-  <sourceDirectory>src/java</sourceDirectory>
+  <build>
+    <sourceDirectory>src/java</sourceDirectory>
+  </build>
 
   <name>libsmatrix sparse matrix</name>
   <url>http://github.com/paulasmuth/libsmatrix</url>
