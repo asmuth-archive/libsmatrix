@@ -57,12 +57,40 @@ jni.h) are found:
 
 ### Import artifact via Maven/sbt (java/scala)
 
-here be dragons
+Currently the maven artifact only contains the binding code and doesn't actually build the
+native shared object. You need to compile & install it yourself on the target host, otherwise
+you'll get a "UnsatisfiedLinkError".
+
+Import artifact via sbt:
+
+    libraryDependencies += "com.paulasmuth" %% "libsmatrix" % "0.1"
+    resolvers += "sbt-libsmatrix-repo" at "http://paulasmuth.github.com/maven/"
+
+    addSbtPlugin("com.github.mpeltonen" % "sbt-idea" % "0.11.1-SNAPSHOT")
+
+Import artifact via Maven2:
+
+    HERE BE DRAGONS
+
+
+To build the maven artifact from source, check out libsmatrix and run this:
+
+    $ make maven
 
 
 ### Import gem via rubygems (ruby only)
 
-here be dragons
+This will install the ruby bindings and compile the native shared object:
+
+    $ gem install libsmatrix
+
+To use libsmatrix in your project, require it like this:
+
+    require "libsmatrix"
+
+To build the rubygem from source, check out libsmatrix and run this:
+
+    $ make rubygem
 
 
 C API
