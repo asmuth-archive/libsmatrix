@@ -6,7 +6,7 @@
   <url>http://github.com/paulasmuth/libsmatrix</url>
   <groupId>com.paulasmuth.libsmatrix</groupId>
   <artifactId>libsmatrix</artifactId>
-  <version>0.2-SNAPSHOT</version>
+  <version>0.3-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <build>

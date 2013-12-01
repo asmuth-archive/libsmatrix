@@ -11,7 +11,7 @@ test: clean all test_java
 
 test_java:
 	javac -classpath ./src:./src/java src/java/test/TestSparseMatrix.java
-	java -classpath ./src:./src/java:./src/java/test TestSparseMatrix
+	java -Djava.library.path=./src -classpath ./src:./src/java:./src/java/test TestSparseMatrix
 
 build_maven:
 	mvn package

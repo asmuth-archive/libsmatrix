@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * A libsmatrix sparse matrix
  */
 public class SparseMatrix {
-  private static String library_path = "libsmatrix.so";
+  private static String library_path = null;
   private String filename = null;
   private long ptr;
 
@@ -126,13 +126,16 @@ public class SparseMatrix {
    * Load the native shared object (libsmatrix.so)
    */
   private static void loadLibrary() {
-    File libfile = new File(library_path);
+    if (library_path != null) {
+      File libfile = new File(library_path);
 
-    if (libfile.exists()) {
-      System.load(libfile.getAbsolutePath());
-    } else {
-      System.loadLibrary("libsmatrix");
+      if (libfile.exists()) {
+        System.load(libfile.getAbsolutePath());
+        return;
+      }
     }
+
+    System.loadLibrary("smatrix");
   }
 
   /**
