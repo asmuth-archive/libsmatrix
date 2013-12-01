@@ -75,7 +75,7 @@ Import artifact via Maven2:
 
 To build the maven artifact from source, check out libsmatrix and run this:
 
-    $ make maven
+    $ make build_maven
 
 
 ### Import gem via rubygems (ruby only)
@@ -90,7 +90,7 @@ To use libsmatrix in your project, require it like this:
 
 To build the rubygem from source, check out libsmatrix and run this:
 
-    $ make rubygem
+    $ make build_gem
 
 
 C API

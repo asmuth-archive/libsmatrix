@@ -14,5 +14,8 @@ test_java:
 	#javac -classpath ./src:./java java/test/Test.java
 	#java -classpath ./src:./java:./java/test Test
 
+build_maven:
+	mvn package
+
 .DEFAULT:
 	cd src && $(MAKE) $@
