@@ -11,16 +11,29 @@ CFLAGS       = -Wall -Wextra -O3 -march=native -mtune=native -D NDEBUG
 LDFLAGS      = -lpthread -lm
 DEBUGFLAGS   = -g3 -O0 -D _DEBUG
 PREFIX       = $(DESTDIR)/usr/local
-BINDIR       = $(PREFIX)/bin
-
-all: libsmatrix.so
+LIBDIR       = $(PREFIX)/bin
+UNAME        = $(shell uname)
+SOURCES      = smatrix.c smatrix_jni.c
 
 clean:
-	find . -name "*.o" -o -name "*.class" -o -name "*.so" -exec rm {} \;
+	find . -name "*.o" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -exec rm {} \;
 
 smatrix_jni.h:
 	javac java/com/paulasmuth/libsmatrix/SparseMatrix.java
 	javah -o smatrix_jni.h -classpath ./java com.paulasmuth.libsmatrix.SparseMatrix
 
-libsmatrix.so: smatrix_jni.h
-	$(CC) $(CFLAGS) -shared -o libsmatrix.so -I /System/Library/Frameworks/JavaVM.framework/Headers smatrix.c smatrix_jni.c $(LDFLAGS)
+all: smatrix_jni.h
+ifeq ($(UNAME), Linux)
+	$(CC) $(CFLAGS) -shared -o libsmatrix.so $(SOURCES) $(LDFLAGS)
+endif
+ifeq ($(UNAME), Darwin)
+	$(CC) $(CFLAGS) -dynamiclib -o libsmatrix.dylib -I /System/Library/Frameworks/JavaVM.framework/Headers -I /System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Headers $(SOURCES) $(LDFLAGS)
+endif
+
+install:
+ifeq ($(UNAME), Linux)
+	cp libsmatrix.so $(LIBDIR)
+endif
+ifeq ($(UNAME), Darwin)
+	cp libsmatrix.dylib $(LIBDIR)
+endif
