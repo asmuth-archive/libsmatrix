@@ -1,22 +1,20 @@
 libsmatrix
 ==========
 
-A thread-safe two dimensional sparse matrix data structure with C, Java and Ruby bindings. 
-It was created to make loading and accessing medium sized (10GB+) matrices in boxed languages like Java/Scala or Ruby easier.
+A thread-safe two dimensional sparse matrix data structure with C, Java and Ruby bindings.
+It was created to make loading and accessing medium sized (10GB+) matrices in boxed languages
+like Java/Scala or Ruby easier.
 
 While the chosen internal storage format (nested hashmaps) is neither the most memory-efficient
 nor extremely fast in terms of access/insert time it seems to be a good tradeoff between these
 two goals.
 
-A libsmatrix sparse matrix features two modes of operation:
+A libsmatrix sparse matrix features two modes of operation; a memory-only mode in which all data
+is kept in main memory and a mode in which the data is stored on disk and only a pool of recently
+used rows is kept in memory. In this mode the data is persisted across program restarts. It also
+allows you to handle datasets larger than your available main memory.
 
-+ A memory-only mode in which all data is kept in main memory
-
-+ A hybrid memory/disk mode in which only a pool of recently/frequently used records is
-kept in memory. In this mode the data is persisted across program restarts. It also allows
-yout to handle datasets larger than your available main memory
-
-#### Table of Contents
+#### Documentation
 
 + [Getting Started](#getting-started)
 + [C API](#c-api)
@@ -35,12 +33,16 @@ There are multiple ways to install libsmatrix:
 
 ### Compile from source
 
-1) Compile. Ruby/Java bindings will be compiled if the respective header files are found:
+This will produce a single shared object "libsmatrix.so" file that exports all calls documented
+in "C API" as well as MRI ruby and Java JNI bindings if their respective header files (ruby.h,
+jni.h) are found:
+
+1) Compile
 
     $ ./configure
     $ make
 
-2) Run tests (requires java and ruby)
+2) Run tests (optional, requires java and ruby)
 
     $ make test
 
@@ -48,13 +50,17 @@ There are multiple ways to install libsmatrix:
 
     $ make install
 
+4) Compile examples (optional)
 
-### Via maven/sbt (java/scala only)
+    $ make examples
+
+
+### Import artifact via Maven/sbt (java/scala)
 
 here be dragons
 
 
-### Via rubygems (ruby only)
+### Import gem via rubygems (ruby only)
 
 here be dragons
 
