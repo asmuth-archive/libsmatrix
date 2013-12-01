@@ -7,9 +7,8 @@
 
 SHELL        = /bin/sh
 CC           = clang
-CFLAGS       = -Wall -Wextra -O3 -march=native -mtune=native -D NDEBUG
+CFLAGS_      = $(CFLAGS) -Wall -Wextra -O3 -march=native -mtune=native -D NDEBUG
 LDFLAGS      = -lpthread -lm
-DEBUGFLAGS   = -g3 -O0 -D _DEBUG
 PREFIX       = $(DESTDIR)/usr/local
 LIBDIR       = $(PREFIX)/lib
 UNAME        = $(shell uname)
@@ -24,10 +23,10 @@ smatrix_jni.h:
 
 all: smatrix_jni.h
 ifeq ($(UNAME), Linux)
-	$(CC) $(CFLAGS) -shared -o libsmatrix.so $(SOURCES) $(LDFLAGS)
+	$(CC) $(CFLAGS_) -shared -o libsmatrix.so -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux $(SOURCES) $(LDFLAGS)
 endif
 ifeq ($(UNAME), Darwin)
-	$(CC) $(CFLAGS) -dynamiclib -o libsmatrix.dylib -I /System/Library/Frameworks/JavaVM.framework/Headers -I /System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Headers $(SOURCES) $(LDFLAGS)
+	$(CC) $(CFLAGS_) -dynamiclib -o libsmatrix.dylib -I /System/Library/Frameworks/JavaVM.framework/Headers -I /System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Headers $(SOURCES) $(LDFLAGS)
 endif
 
 install:
