@@ -10,9 +10,8 @@ default: all
 test: clean all test_java
 
 test_java:
-	mvn test
-	#javac -classpath ./src:./java java/test/Test.java
-	#java -classpath ./src:./java:./java/test Test
+	javac -classpath ./src:./src/java src/java/test/TestSparseMatrix.java
+	java -classpath ./src:./src/java:./src/java/test TestSparseMatrix
 
 build_maven:
 	mvn package

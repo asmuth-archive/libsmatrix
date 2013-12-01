@@ -16,7 +16,7 @@ interface TestCase {
   public boolean run(SparseMatrix smx);
 }
 
-class Test {
+class TestSparseMatrix {
   static LinkedList<TestCase> testCases = new LinkedList<TestCase>();
 
   static { testCases.add(new TestCase() {
@@ -167,7 +167,7 @@ class Test {
 
   public static void main(String[] opts) {
     boolean success = true;
-    SparseMatrix.setLibraryPath("libsmatrix.so");
+    SparseMatrix.setLibraryPath("src/libsmatrix.so");
 
     SparseMatrix smx1 = new SparseMatrix();
     success &= run_tests(smx1);
