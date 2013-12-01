@@ -312,6 +312,8 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t size) {
 
     rmap->data = smatrix_malloc(self, bytes);
     memset(rmap->data, 0, bytes);
+  } else {
+    rmap->data = NULL;
   }
 
   rmap->size = size;
@@ -510,8 +512,11 @@ void smatrix_rmap_swap(smatrix_t* self, smatrix_rmap_t* rmap) {
 }
 
 void smatrix_rmap_free(smatrix_t* self, smatrix_rmap_t* rmap) {
-  smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
-  free(rmap->data);
+  if (rmap->data) {
+    smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * rmap->size);
+    free(rmap->data);
+  }
+
   smatrix_mfree(self, sizeof(smatrix_rmap_t));
   free(rmap);
 }

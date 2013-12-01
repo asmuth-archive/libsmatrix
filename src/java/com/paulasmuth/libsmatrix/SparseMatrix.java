@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
  */
 public class SparseMatrix {
   private static String library_path = "libsmatrix.so";
+  private String filename = null;
   private long ptr;
 
   /**
@@ -42,6 +43,7 @@ public class SparseMatrix {
    */
   public SparseMatrix(String file_path) {
     SparseMatrix.loadLibrary();
+    filename = file_path;
     init(file_path);
   }
 
@@ -53,6 +55,13 @@ public class SparseMatrix {
   public static void setLibraryPath(String path) {
     library_path = path;
     loadLibrary();
+  }
+
+  /**
+   * HERE BE DRAGONS
+   */
+  public String getFilename() {
+    return filename;
   }
 
   /**

@@ -130,6 +130,41 @@ class Test {
     }
   }); }
 
+  static { testCases.add(new TestCase() {
+    public String getName() {
+      return "1 million increments; close; 1 million gets";
+    }
+    public boolean run(SparseMatrix smx1) {
+      if (smx1.getFilename() == null) {
+        return true;
+      }
+
+      int v = 123;
+      int i;
+      int n;
+
+      for (n = 0; n < 1000; n++) {
+        for (i = 0; i < 1000; i++) {
+          smx1.set(i, n, v);
+        }
+      }
+
+      SparseMatrix smx2 = new SparseMatrix("/tmp/fnord.smx");
+
+      for (n = 0; n < 1000; n++) {
+        for (i = 0; i < 1000; i++) {
+          if ((smx2.get(i, n) != v)) {
+            smx2.close();
+            return false;
+          }
+        }
+      }
+
+      smx2.close();
+      return true;
+    }
+  }); }
+
   public static void main(String[] opts) {
     boolean success = true;
     SparseMatrix.setLibraryPath("libsmatrix.so");
