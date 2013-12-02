@@ -43,7 +43,7 @@ src/smatrix_jni.h:
 	javah -o smatrix_jni.h -classpath ./java com.paulasmuth.libsmatrix.SparseMatrix
 
 clean:
-	find . -name "*.o" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -exec rm {} \;
+	find . -name "*.o" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -delete
 	rm -rf target pom.xml src/config.h
 
 test: clean all test_java
