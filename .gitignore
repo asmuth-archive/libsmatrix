@@ -1,6 +1,7 @@
 pom.xml
 target/
 src/config.h
+src/smatrix_benchmark
 *.o
 *.so
 *.bundle

@@ -46,6 +46,12 @@ clean:
 	find . -name "*.o" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -delete
 	rm -rf target pom.xml src/config.h
 
+benchmark: src/smatrix_benchmark
+	src/smatrix_benchmark
+
+src/smatrix_benchmark: src/smatrix_benchmark.c
+	/bin/bash -c '$(CC) $(CFLAGS_) -o src/smatrix_benchmark src/smatrix_benchmark.c -lsmatrix $(LDFLAGS)'
+
 test: clean all test_java
 
 test_java:
