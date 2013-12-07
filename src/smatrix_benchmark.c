@@ -120,114 +120,51 @@ void print_header() {
   printf("-------------------------------------------------------------------------------------------------------------\n");
 }
 
-void test_incr() {
-  smatrix_t* smx_mem = smatrix_open(NULL);
-
-  print_header();
-
-  for (;;) {
-    printf("500k x incr (independent, mem)      |");
-    measure(&benchmark_incr_independent, 1,  smx_mem, 512);
-    measure(&benchmark_incr_independent, 2,  smx_mem, 256);
-    measure(&benchmark_incr_independent, 4,  smx_mem, 128);
-    measure(&benchmark_incr_independent, 8,  smx_mem, 64);
-    measure(&benchmark_incr_independent, 16, smx_mem, 32);
-    measure(&benchmark_incr_independent, 32, smx_mem, 16);
-    printf("\n");
-
-    printf("100k x incr (competing)             |");
-    measure(&benchmark_incr_compete, 1,  smx_mem, 128);
-    measure(&benchmark_incr_compete, 2,  smx_mem, 64);
-    measure(&benchmark_incr_compete, 4,  smx_mem, 32);
-    measure(&benchmark_incr_compete, 8,  smx_mem, 16);
-    measure(&benchmark_incr_compete, 16, smx_mem, 8);
-    measure(&benchmark_incr_compete, 32, smx_mem, 4);
-    printf("\n");
-
-    printf("500k x incr (mixed, mem)            |");
-    measure(&benchmark_incr_mixed, 1,  smx_mem, 512);
-    measure(&benchmark_incr_mixed, 2,  smx_mem, 256);
-    measure(&benchmark_incr_mixed, 4,  smx_mem, 128);
-    measure(&benchmark_incr_mixed, 8,  smx_mem, 64);
-    measure(&benchmark_incr_mixed, 16, smx_mem, 32);
-    measure(&benchmark_incr_mixed, 32, smx_mem, 16);
-    printf("\n");
-
-    printf("-------------------------------------------------------------------------------------------------------------\n");
-  }
-
-  smatrix_close(smx_mem);
-}
-
-void test_full() {
-  smatrix_t* smx_mem = smatrix_open(NULL);
-
-  print_header();
-
-  printf("1M x incr (independent, mem, cold)  |");
-  measure(&benchmark_incr_independent, 1,  smx_mem, 1024);
-  measure(&benchmark_incr_independent, 2,  smx_mem, 1024 / 2);
-  measure(&benchmark_incr_independent, 4,  smx_mem, 1024 / 4);
-  measure(&benchmark_incr_independent, 8,  smx_mem, 1024 / 8);
-  measure(&benchmark_incr_independent, 16, smx_mem, 1024 / 16);
-  measure(&benchmark_incr_independent, 32, smx_mem, 1024 / 32);
+void test_incr(smatrix_t* smx_mem) {
+  printf("500k x incr (independent, mem)      |");
+  measure(&benchmark_incr_independent, 1,  smx_mem, 512);
+  measure(&benchmark_incr_independent, 2,  smx_mem, 256);
+  measure(&benchmark_incr_independent, 4,  smx_mem, 128);
+  measure(&benchmark_incr_independent, 8,  smx_mem, 64);
+  measure(&benchmark_incr_independent, 16, smx_mem, 32);
+  measure(&benchmark_incr_independent, 32, smx_mem, 16);
   printf("\n");
 
-  printf("1M x incr (independent, mem, warm)  |");
-  measure(&benchmark_incr_independent, 1,  smx_mem, 1024);
-  measure(&benchmark_incr_independent, 2,  smx_mem, 1024 / 2);
-  measure(&benchmark_incr_independent, 4,  smx_mem, 1024 / 4);
-  measure(&benchmark_incr_independent, 8,  smx_mem, 1024 / 8);
-  measure(&benchmark_incr_independent, 16, smx_mem, 1024 / 16);
-  measure(&benchmark_incr_independent, 32, smx_mem, 1024 / 32);
+  printf("100k x incr (competing)             |");
+  measure(&benchmark_incr_compete, 1,  smx_mem, 128);
+  measure(&benchmark_incr_compete, 2,  smx_mem, 64);
+  measure(&benchmark_incr_compete, 4,  smx_mem, 32);
+  measure(&benchmark_incr_compete, 8,  smx_mem, 16);
+  measure(&benchmark_incr_compete, 16, smx_mem, 8);
+  measure(&benchmark_incr_compete, 32, smx_mem, 4);
   printf("\n");
 
-  printf("1M x incr (competing, mem, cold)    |");
-  measure(&benchmark_incr_compete, 1,  smx_mem, 1024);
-  measure(&benchmark_incr_compete, 2,  smx_mem, 1024 / 2);
-  measure(&benchmark_incr_compete, 4,  smx_mem, 1024 / 4);
-  measure(&benchmark_incr_compete, 8,  smx_mem, 1024 / 8);
-  measure(&benchmark_incr_compete, 16, smx_mem, 1024 / 16);
-  measure(&benchmark_incr_compete, 32, smx_mem, 1024 / 32);
+  printf("500k x incr (mixed, mem)            |");
+  measure(&benchmark_incr_mixed, 1,  smx_mem, 512);
+  measure(&benchmark_incr_mixed, 2,  smx_mem, 256);
+  measure(&benchmark_incr_mixed, 4,  smx_mem, 128);
+  measure(&benchmark_incr_mixed, 8,  smx_mem, 64);
+  measure(&benchmark_incr_mixed, 16, smx_mem, 32);
+  measure(&benchmark_incr_mixed, 32, smx_mem, 16);
   printf("\n");
 
-  printf("1M x incr (competing, mem, warm)    |");
-  measure(&benchmark_incr_compete, 1,  smx_mem, 1024);
-  measure(&benchmark_incr_compete, 2,  smx_mem, 1024 / 2);
-  measure(&benchmark_incr_compete, 4,  smx_mem, 1024 / 4);
-  measure(&benchmark_incr_compete, 8,  smx_mem, 1024 / 8);
-  measure(&benchmark_incr_compete, 16, smx_mem, 1024 / 16);
-  measure(&benchmark_incr_compete, 32, smx_mem, 1024 / 32);
-  printf("\n");
-
-  printf("1M x incr (mixed, mem, cold)        |");
-  measure(&benchmark_incr_mixed, 1,  smx_mem, 1024);
-  measure(&benchmark_incr_mixed, 2,  smx_mem, 1024 / 2);
-  measure(&benchmark_incr_mixed, 4,  smx_mem, 1024 / 4);
-  measure(&benchmark_incr_mixed, 8,  smx_mem, 1024 / 8);
-  measure(&benchmark_incr_mixed, 16, smx_mem, 1024 / 16);
-  measure(&benchmark_incr_mixed, 32, smx_mem, 1024 / 32);
-  printf("\n");
-
-  printf("1M x incr (mixed, mem, warm)        |");
-  measure(&benchmark_incr_mixed, 1,  smx_mem, 1024);
-  measure(&benchmark_incr_mixed, 2,  smx_mem, 1024 / 2);
-  measure(&benchmark_incr_mixed, 4,  smx_mem, 1024 / 4);
-  measure(&benchmark_incr_mixed, 8,  smx_mem, 1024 / 8);
-  measure(&benchmark_incr_mixed, 16, smx_mem, 1024 / 16);
-  measure(&benchmark_incr_mixed, 32, smx_mem, 1024 / 32);
-  printf("\n");
-
-  smatrix_close(smx_mem);
+  printf("-------------------------------------------------------------------------------------------------------------\n");
 }
 
 int main(int argc, char** argv) {
+  int n;
+
+  print_header();
+  smatrix_t* smx_mem = smatrix_open(NULL);
+
   if (argc > 1) {
     if (!strcmp(argv[1], "incr")) {
-      test_incr();
+      for (;;) test_incr(smx_mem);
       return 0;
     }
   }
 
-  test_full();
+  for (n = 0; n < 5; n++) test_incr(smx_mem);
+
+  smatrix_close(smx_mem);
 }
