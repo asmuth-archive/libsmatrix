@@ -295,8 +295,11 @@ void smatrix_lookup(smatrix_t* self, smatrix_ref_t* ref, uint32_t x, uint32_t y,
 void smatrix_decref(smatrix_t* self, smatrix_ref_t* ref) {
   if (!ref->rmap) {
     return;
-  } else if (ref->write) {
+  }
+
+  if (ref->write) {
     if (self->fd) {
+      // FIXPAUL enqueue write, set last change tick
       smatrix_rmap_write_slot(self, ref->rmap, ref->slot);
     }
 
