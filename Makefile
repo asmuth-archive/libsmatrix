@@ -50,7 +50,7 @@ benchmark: src/smatrix_benchmark
 	src/smatrix_benchmark
 
 src/smatrix_benchmark: src/smatrix_benchmark.c
-	/bin/bash -c '$(CC) $(CFLAGS_) -o src/smatrix_benchmark src/smatrix_benchmark.c -lsmatrix $(LDFLAGS)'
+	$(CC) $(CFLAGS_) -o src/smatrix_benchmark src/smatrix_benchmark.c src/smatrix.c $(LDFLAGS)
 
 test: clean all test_java
 
