@@ -258,12 +258,14 @@ void smatrix_lookup(smatrix_t* self, smatrix_ref_t* ref, uint32_t x, uint32_t y,
   }
 
   if (rmap->size == 0) {
+    smatrix_lock_decref(&rmap->lock);
     smatrix_lock_getmutex(&rmap->lock);
     mutex = 1;
     smatrix_rmap_load(self, rmap);
   }
 
   if (write && !mutex) {
+    smatrix_lock_decref(&rmap->lock);
     smatrix_lock_getmutex(&rmap->lock);
   }
 
@@ -587,22 +589,24 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
     return rmap;
   }
 
+  smatrix_lock_decref(&cmap->lock);
+
   if (!create) {
-    smatrix_lock_decref(&cmap->lock);
     return NULL;
   }
 
-  smatrix_lock_getmutex(&cmap->lock);
+  rmap = smatrix_malloc(self, sizeof(smatrix_rmap_t));
+  smatrix_rmap_init(self, rmap, SMATRIX_RMAP_INITIAL_SIZE);
+  rmap->key = key;
 
+  smatrix_lock_getmutex(&cmap->lock);
   slot = smatrix_cmap_insert(self, cmap, key);
 
   if (slot->rmap) {
+    smatrix_rmap_free(self, rmap);
     rmap = slot->rmap;
   } else {
-    // FIXPAUL move to rmap_create method
-    rmap = smatrix_malloc(self, sizeof(smatrix_rmap_t));
-    smatrix_rmap_init(self, rmap, SMATRIX_RMAP_INITIAL_SIZE);
-    rmap->key = key;
+    slot->rmap = rmap;
 
     if (self->fd) {
       rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
@@ -610,8 +614,6 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
       smatrix_cmap_write(self, rmap);
       smatrix_rmap_write_batch(self, rmap, 0);
     }
-
-    slot->rmap = rmap;
   }
 
   smatrix_lock_incref(&rmap->lock);
@@ -805,8 +807,6 @@ void smatrix_write(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t fpos, char* d
 // returns 0 for success, 1 for failure
 void smatrix_lock_getmutex(smatrix_lock_t* lock) {
   assert(lock->count > 0);
-
-  asm("lock decw (%0)" : : "c" (&lock->count));
 
   for (;;) {
     if (__sync_bool_compare_and_swap(&lock->mutex, 0, 1)) {
