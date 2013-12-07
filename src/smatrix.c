@@ -839,25 +839,22 @@ void smatrix_lock_release(smatrix_lock_t* lock) {
   lock->mutex = 0;
 }
 
-void smatrix_lock_incref(smatrix_lock_t* lock) {
+inline void smatrix_lock_incref(smatrix_lock_t* lock) {
   for (;;) {
-    // FIXPAUL handle overflow!
-    // FIXPAUL use atomic builtin with correct memory model (full barrier neccessary?)
-    __sync_add_and_fetch(&lock->count, 1);
+    asm("lock incw (%0)" : : "c" (&lock->count));
 
-    if (lock->mutex) {
-      __sync_sub_and_fetch(&lock->count, 1);
+    if (lock->mutex == 0) {
+      return;
+    }
 
-      while (lock->mutex != 0) {
-        asm("pause");
-      }
-    } else {
-      break;
+    asm("lock decw (%0)" : : "c" (&lock->count));
+
+    while (lock->mutex != 0) {
+      asm("pause");
     }
   }
 }
 
-void smatrix_lock_decref(smatrix_lock_t* lock) {
-  // FIXPAUL use atomic builtin. memory barrier neccessary at all?
-  __sync_sub_and_fetch(&lock->count, 1);
+inline void smatrix_lock_decref(smatrix_lock_t* lock) {
+  asm("lock decw (%0)" : : "c" (&lock->count));
 }
