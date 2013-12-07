@@ -806,8 +806,7 @@ void smatrix_write(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t fpos, char* d
 void smatrix_lock_getmutex(smatrix_lock_t* lock) {
   assert(lock->count > 0);
 
-  // FIXPAUL use atomic builtin. memory barrier neccessary at all?
-  __sync_sub_and_fetch(&lock->count, 1);
+  asm("lock decw (%0)" : : "c" (&lock->count));
 
   for (;;) {
     if (__sync_bool_compare_and_swap(&lock->mutex, 0, 1)) {
@@ -826,16 +825,11 @@ void smatrix_lock_getmutex(smatrix_lock_t* lock) {
 
 void smatrix_lock_dropmutex(smatrix_lock_t* lock) {
   assert(lock->count == 0);
-
-  // FIXPAUL use atomic builtin. memory barrier neccessary at all?
-  __sync_add_and_fetch(&lock->count, 1);
-
-  __sync_synchronize();
+  asm("lock incw (%0)" : : "c" (&lock->count));
   lock->mutex = 0;
 }
 
 void smatrix_lock_release(smatrix_lock_t* lock) {
-  __sync_synchronize();
   lock->mutex = 0;
 }
 
