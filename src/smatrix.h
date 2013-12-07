@@ -121,7 +121,7 @@ void smatrix_cmap_mkblock(smatrix_t* self, smatrix_cmap_t* cmap);
 void smatrix_cmap_write(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos);
 
-int smatrix_lock_trymutex(smatrix_lock_t* lock);
+void smatrix_lock_getmutex(smatrix_lock_t* lock);
 void smatrix_lock_dropmutex(smatrix_lock_t* lock);
 void smatrix_lock_release(smatrix_lock_t* lock);
 void smatrix_lock_incref(smatrix_lock_t* lock);
