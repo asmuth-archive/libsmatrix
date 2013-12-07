@@ -45,6 +45,25 @@ void* benchmark_incr_mixed(void* args_) {
   return NULL;
 }
 
+void* benchmark_get_mixed(void* args_) {
+  args_t* args = (args_t*) args_;
+  int i, n, r, o;
+
+  o = 42 + args->threadn;
+  smatrix_t* smx = args->smx;
+
+  for (r = 0; r < args->user1; r++) {
+    for (n = 0; n < 23; n++) {
+      for (i = 0; i < 22; i++) {
+        smatrix_get(smx, n + o, i + o);
+        smatrix_get(smx, i + o, n + o);
+      }
+    }
+  }
+
+  return NULL;
+}
+
 void* benchmark_incr_independent(void* args_) {
   args_t* args = (args_t*) args_;
   int i, r, o;
@@ -105,7 +124,7 @@ void measure(void* (*cb)(void*), int nthreads, smatrix_t* smx, int user1) {
   elapsed  = (double) (t1.tv_sec - t0.tv_sec)   * 1000;
   elapsed += (double) (t1.tv_usec - t0.tv_usec) / 1000;
 
-  str[snprintf(str, 20, " %.1fms", elapsed)] = ' ';
+  str[snprintf(str, 20, "  %.1fms", elapsed)] = ' ';
 
   free(threads);
   free(args);
@@ -113,58 +132,70 @@ void measure(void* (*cb)(void*), int nthreads, smatrix_t* smx, int user1) {
   printf("%s|", str);
 }
 
-void print_header() {
-  printf("libsmatrix benchmark [date]\n");
-  printf("-------------------------------------------------------------------------------------------------------------\n");
-  printf("                                    | T=1       | T=2       | T=4       | T=8       | T=16      | T=32      |\n");
-  printf("-------------------------------------------------------------------------------------------------------------\n");
+void print_header(const char* title) {
+  printf("TEST: %s\n", title);
+  printf("-------------------------------------------------------------------------\n");
+  printf("|  T=1      |  T=2      | T=4       | T=8       | T=16      | T=32      |\n");
+  printf("-------------------------------------------------------------------------\n");
 }
 
 void test_incr(smatrix_t* smx_mem) {
-  printf("500k x incr (independent, mem)      |");
-  measure(&benchmark_incr_independent, 1,  smx_mem, 512);
-  measure(&benchmark_incr_independent, 2,  smx_mem, 256);
-  measure(&benchmark_incr_independent, 4,  smx_mem, 128);
-  measure(&benchmark_incr_independent, 8,  smx_mem, 64);
-  measure(&benchmark_incr_independent, 16, smx_mem, 32);
-  measure(&benchmark_incr_independent, 32, smx_mem, 16);
-  printf("\n");
+  int n, max = 10;
 
-  printf("100k x incr (competing)             |");
-  measure(&benchmark_incr_compete, 1,  smx_mem, 128);
-  measure(&benchmark_incr_compete, 2,  smx_mem, 64);
-  measure(&benchmark_incr_compete, 4,  smx_mem, 32);
-  measure(&benchmark_incr_compete, 8,  smx_mem, 16);
-  measure(&benchmark_incr_compete, 16, smx_mem, 8);
-  measure(&benchmark_incr_compete, 32, smx_mem, 4);
-  printf("\n");
+  for (n = 0; n < max; n++) {
+    printf("|");
+    measure(&benchmark_incr_mixed, 1,  smx_mem, 1024);
+    measure(&benchmark_incr_mixed, 2,  smx_mem, 512);
+    measure(&benchmark_incr_mixed, 4,  smx_mem, 256);
+    measure(&benchmark_incr_mixed, 8,  smx_mem, 128);
+    measure(&benchmark_incr_mixed, 16, smx_mem, 64);
+    measure(&benchmark_incr_mixed, 32, smx_mem, 32);
 
-  printf("500k x incr (mixed, mem)            |");
-  measure(&benchmark_incr_mixed, 1,  smx_mem, 512);
-  measure(&benchmark_incr_mixed, 2,  smx_mem, 256);
-  measure(&benchmark_incr_mixed, 4,  smx_mem, 128);
-  measure(&benchmark_incr_mixed, 8,  smx_mem, 64);
-  measure(&benchmark_incr_mixed, 16, smx_mem, 32);
-  measure(&benchmark_incr_mixed, 32, smx_mem, 16);
-  printf("\n");
+    if (n < max - 1) {
+      printf("\n");
+    }
+  }
+}
 
-  printf("-------------------------------------------------------------------------------------------------------------\n");
+void test_get(smatrix_t* smx_mem) {
+  int n, max = 10;
+
+  for (n = 0; n < max; n++) {
+    printf("|");
+    measure(&benchmark_get_mixed, 1,  smx_mem, 1024);
+    measure(&benchmark_get_mixed, 2,  smx_mem, 512);
+    measure(&benchmark_get_mixed, 4,  smx_mem, 256);
+    measure(&benchmark_get_mixed, 8,  smx_mem, 128);
+    measure(&benchmark_get_mixed, 16, smx_mem, 64);
+    measure(&benchmark_get_mixed, 32, smx_mem, 32);
+
+    if (n < max - 1) {
+      printf("\n");
+    }
+  }
 }
 
 int main(int argc, char** argv) {
-  int n;
+  printf("libsmatrix benchmark [date]\n\n");
 
-  print_header();
   smatrix_t* smx_mem = smatrix_open(NULL);
 
   if (argc > 1) {
     if (!strcmp(argv[1], "incr")) {
+      print_header("1 million x incr (memory)");
       for (;;) test_incr(smx_mem);
       return 0;
     }
   }
 
-  for (n = 0; n < 5; n++) test_incr(smx_mem);
+  print_header("1 million x incr (memory)");
+  test_incr(smx_mem);
+  printf("\n-------------------------------------------------------------------------\n\n");
+
+  print_header("1 million x get (memory)");
+  test_get(smx_mem);
+  printf("\n-------------------------------------------------------------------------\n\n");
+
 
   smatrix_close(smx_mem);
 }
