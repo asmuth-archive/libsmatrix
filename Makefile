@@ -44,7 +44,7 @@ src/smatrix_jni.h:
 
 clean:
 	find . -name "*.o" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -delete
-	rm -rf target pom.xml src/config.h
+	rm -rf target pom.xml src/config.h src/smatrix_benchmark
 
 benchmark: src/smatrix_benchmark
 	src/smatrix_benchmark
