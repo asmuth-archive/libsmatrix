@@ -135,7 +135,7 @@ void measure(void* (*cb)(void*), int nthreads, smatrix_t* smx, int user1) {
 void print_header(const char* title) {
   printf("TEST: %s\n", title);
   printf("-------------------------------------------------------------------------\n");
-  printf("|  T=1      |  T=2      | T=4       | T=8       | T=16      | T=32      |\n");
+  printf("|  T=1      |  T=2      |  T=4      |  T=8      |  T=16     |  T=32     |\n");
   printf("-------------------------------------------------------------------------\n");
 }
 
