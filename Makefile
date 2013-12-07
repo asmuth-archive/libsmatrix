@@ -47,7 +47,7 @@ clean:
 	rm -rf target pom.xml src/config.h src/smatrix_benchmark
 
 benchmark: src/smatrix_benchmark
-	src/smatrix_benchmark
+	src/smatrix_benchmark full
 
 src/smatrix_benchmark: src/smatrix_benchmark.c
 	$(CC) $(CFLAGS_) -o src/smatrix_benchmark src/smatrix_benchmark.c src/smatrix.c $(LDFLAGS)

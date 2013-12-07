@@ -124,26 +124,23 @@ void measure(void* (*cb)(void*), int nthreads, smatrix_t* smx, int user1) {
   elapsed  = (double) (t1.tv_sec - t0.tv_sec)   * 1000;
   elapsed += (double) (t1.tv_usec - t0.tv_usec) / 1000;
 
-  str[snprintf(str, 20, "  %.1fms", elapsed)] = ' ';
+  str[snprintf(str, 20, "%.1fms", elapsed)] = ' ';
 
   free(threads);
   free(args);
-
-  printf("%s|", str);
+  printf(str);
 }
 
 void print_header(const char* title) {
   printf("TEST: %s\n", title);
-  printf("-------------------------------------------------------------------------\n");
-  printf("|  T=1      |  T=2      |  T=4      |  T=8      |  T=16     |  T=32     |\n");
-  printf("-------------------------------------------------------------------------\n");
+  printf("---------------------------------------------------------------\n");
+  printf("T=1        T=2        T=4        T=8        T=16       T=32     \n");
 }
 
 void test_incr(smatrix_t* smx_mem) {
   int n, max = 10;
 
   for (n = 0; n < max; n++) {
-    printf("|");
     measure(&benchmark_incr_mixed, 1,  smx_mem, 1024);
     measure(&benchmark_incr_mixed, 2,  smx_mem, 512);
     measure(&benchmark_incr_mixed, 4,  smx_mem, 256);
@@ -155,13 +152,14 @@ void test_incr(smatrix_t* smx_mem) {
       printf("\n");
     }
   }
+
+  printf("\n\n");
 }
 
 void test_get(smatrix_t* smx_mem) {
   int n, max = 10;
 
   for (n = 0; n < max; n++) {
-    printf("|");
     measure(&benchmark_get_mixed, 1,  smx_mem, 1024);
     measure(&benchmark_get_mixed, 2,  smx_mem, 512);
     measure(&benchmark_get_mixed, 4,  smx_mem, 256);
@@ -173,29 +171,53 @@ void test_get(smatrix_t* smx_mem) {
       printf("\n");
     }
   }
+
+  printf("\n\n");
 }
 
 int main(int argc, char** argv) {
-  printf("libsmatrix benchmark [date]\n\n");
+  int num = 1024, threads = 4;
+
+  if (argc < 2) {
+    printf("usage: smatrix_benchmark [test] [times] [threads]\n\n");
+    printf("  Available Tests:\n");
+    printf("    full      test all methods\n");
+    printf("    incr      test the incr method\n");
+    printf("    get       test the get method\n\n");
+    printf("  Examples:\n");
+    printf("    $ smatrix_benchmark incr 1024 4\n");
+    printf("    $ smatrix_benchmark get 10000 2\n");
+    printf("    $ smatrix_benchmark full\n\n");
+    return 1;
+  }
 
   smatrix_t* smx_mem = smatrix_open(NULL);
 
-  if (argc > 1) {
-    if (!strcmp(argv[1], "incr")) {
-      print_header("1 million x incr (memory)");
-      for (;;) test_incr(smx_mem);
-      return 0;
-    }
+  if (argc > 2) {
+    num = atoi(argv[2]);
   }
+
+  if (argc > 3) {
+    threads = atoi(argv[3]);
+  }
+
+  if (!strcmp(argv[1], "incr")) {
+    printf("testing: %i x incr @ %i threads: ", num, threads);
+    measure(&benchmark_incr_mixed, threads, smx_mem, num / threads);
+    printf("\n");
+    goto exit;
+  }
+
+  printf("libsmatrix benchmark [date]\n\n");
 
   print_header("1 million x incr (memory)");
   test_incr(smx_mem);
-  printf("\n-------------------------------------------------------------------------\n\n");
 
   print_header("1 million x get (memory)");
   test_get(smx_mem);
-  printf("\n-------------------------------------------------------------------------\n\n");
 
-
+exit:
   smatrix_close(smx_mem);
+
+  return 0;
 }
