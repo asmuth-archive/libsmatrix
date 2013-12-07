@@ -623,22 +623,25 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
 
 // caller must hold a read lock on cmap!
 smatrix_cmap_slot_t* smatrix_cmap_probe(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key) {
-  uint64_t n, pos;
+  unsigned pos = key;
+  smatrix_cmap_slot_t* slot;
 
-  pos = key % cmap->size;
+  slot = cmap->data + (key % cmap->size);
 
-  // linear probing
-  for (n = 0; n < cmap->size; n++) {
-    if ((cmap->data[pos].flags & SMATRIX_CMAP_SLOT_USED) == 0)
-      break;
+  for (;;) {
+    if ((slot->flags & SMATRIX_CMAP_SLOT_USED) == 0) {
+      return slot;
+    }
 
-    if (cmap->data[pos].key == key)
-      break;
+    if (slot->key == key) {
+      return slot;
+    }
 
-    pos = (pos + 1) % cmap->size;
+    pos++;
+    slot = cmap->data + (pos % cmap->size);
   }
 
-  return &cmap->data[pos];
+  return slot;
 }
 
 smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key) {
