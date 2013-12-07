@@ -15,6 +15,7 @@
 #include <assert.h>
 
 #include "smatrix.h"
+#include "smatrix_private.h"
 
 // TODO
 //  + ftruncate in larger blocks
