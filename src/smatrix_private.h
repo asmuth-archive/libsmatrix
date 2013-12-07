@@ -21,7 +21,7 @@ void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes);
 void smatrix_write(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t fpos, char* data, uint64_t bytes);
 
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t size);
-smatrix_rmap_slot_t* smatrix_rmap_probe(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
+smatrix_rmap_slot_t* smatrix_rmap_probe(smatrix_rmap_t* rmap, uint32_t key);
 smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key);
 void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap);
 void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap);
@@ -32,7 +32,7 @@ void smatrix_rmap_free(smatrix_t* self, smatrix_rmap_t* rmap);
 
 void smatrix_cmap_init(smatrix_t* self);
 smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key, int create);
-smatrix_cmap_slot_t* smatrix_cmap_probe(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key);
+smatrix_cmap_slot_t* smatrix_cmap_probe(smatrix_cmap_t* cmap, uint32_t key);
 smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key);
 void smatrix_cmap_resize(smatrix_t* self, smatrix_cmap_t* cmap);
 void smatrix_cmap_free(smatrix_t* self, smatrix_cmap_t* cmap);
@@ -46,5 +46,7 @@ void smatrix_lock_dropmutex(smatrix_lock_t* lock);
 void smatrix_lock_release(smatrix_lock_t* lock);
 void smatrix_lock_incref(smatrix_lock_t* lock);
 void smatrix_lock_decref(smatrix_lock_t* lock);
+
+void smatrix_error(const char* msg);
 
 #endif

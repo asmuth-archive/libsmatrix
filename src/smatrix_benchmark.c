@@ -128,7 +128,7 @@ void measure(void* (*cb)(void*), int nthreads, smatrix_t* smx, int user1) {
 
   free(threads);
   free(args);
-  printf(str);
+  printf("%s", str);
 }
 
 void print_header(const char* title) {

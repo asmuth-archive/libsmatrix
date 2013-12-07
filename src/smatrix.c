@@ -13,6 +13,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <assert.h>
+#include <inttypes.h>
 
 #include "smatrix.h"
 #include "smatrix_private.h"
@@ -128,8 +129,7 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   uint64_t new = old + bytes;
 
   if (ftruncate(self->fd, new) == -1) {
-    perror("FATAL ERROR: CANNOT TRUNCATE FILE"); // FIXPAUL
-    abort();
+    smatrix_error("truncate() failed");
   }
 
   self->fpos = new;
@@ -144,7 +144,7 @@ void* smatrix_malloc(smatrix_t* self, uint64_t bytes) {
   void* ptr = malloc(bytes);
 
   if (ptr == NULL) {
-    printf("malloc failed!\n"); // FIXPAUL
+    smatrix_error("malloc() failed");
     abort();
   }
 
@@ -156,7 +156,9 @@ void smatrix_mfree(smatrix_t* self, uint64_t bytes) {
 }
 
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes) {
-  //printf("FREED %llu bytes @ %llu\n", bytes, fpos);
+  (void) self;
+  (void) fpos;
+  (void) bytes;
 }
 
 uint32_t smatrix_get(smatrix_t* self, uint32_t x, uint32_t y) {
@@ -276,7 +278,7 @@ void smatrix_lookup(smatrix_t* self, smatrix_ref_t* ref, uint32_t x, uint32_t y,
     smatrix_lock_dropmutex(&rmap->lock);
   }
 
-  slot = smatrix_rmap_probe(self, rmap, y);
+  slot = smatrix_rmap_probe(rmap, y);
 
   if (slot != NULL && slot->key == y) {
     ref->slot = slot;
@@ -328,7 +330,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
     smatrix_rmap_resize(self, rmap);
   }
 
-  slot = smatrix_rmap_probe(self, rmap, key);
+  slot = smatrix_rmap_probe(rmap, key);
   assert(slot != NULL);
 
   if (!slot->key || slot->key != key) {
@@ -341,7 +343,7 @@ smatrix_rmap_slot_t* smatrix_rmap_insert(smatrix_t* self, smatrix_rmap_t* rmap, 
 }
 
 // you need to hold a read or write lock on rmap to call this function safely
-smatrix_rmap_slot_t* smatrix_rmap_probe(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t key) {
+smatrix_rmap_slot_t* smatrix_rmap_probe(smatrix_rmap_t* rmap, uint32_t key) {
   uint64_t n, pos;
 
   pos = key % rmap->size;
@@ -458,13 +460,11 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   if (!rmap->size) {
     if (pread(self->fd, &meta_buf, SMATRIX_RMAP_HEAD_SIZE, rmap->fpos) != SMATRIX_RMAP_HEAD_SIZE) {
-      printf("CANNOT LOAD RMATRIX -- pread @ %lu\n", rmap->fpos); // FIXPAUL
-      abort();
+      smatrix_error("pread() failed (rmap_load). corrupt file?");
     }
 
     if (memcmp(&meta_buf, &SMATRIX_RMAP_MAGIC, SMATRIX_RMAP_MAGIC_SIZE)) {
-      printf("FILE IS CORRUPT\n"); // FIXPAUL
-      abort();
+      smatrix_error("file is corrupt (rmap_load)");
     }
 
     rmap_size = *((uint64_t *) &meta_buf[8]);
@@ -482,8 +482,7 @@ void smatrix_rmap_load(smatrix_t* self, smatrix_rmap_t* rmap) {
   read_bytes = pread(self->fd, buf, disk_bytes, rmap->fpos + SMATRIX_RMAP_HEAD_SIZE);
 
   if (read_bytes != disk_bytes) {
-    printf("CANNOT LOAD RMATRIX -- read wrong number of bytes: %lu vs. %lu @ %lu\n", read_bytes, disk_bytes, rmap->fpos); // FIXPAUL
-    abort();
+    smatrix_error("read() failed (rmap_load)");
   }
 
   for (pos = 0; pos < rmap->size; pos++) {
@@ -519,8 +518,6 @@ void smatrix_rmap_free(smatrix_t* self, smatrix_rmap_t* rmap) {
 
 void smatrix_fcreate(smatrix_t* self) {
   char buf[SMATRIX_META_SIZE];
-
-  printf("NEW FILE!\n");
   smatrix_falloc(self, SMATRIX_META_SIZE);
 
   memset(&buf, 0, SMATRIX_META_SIZE);
@@ -538,12 +535,12 @@ void smatrix_fload(smatrix_t* self) {
   read = pread(self->fd, &buf, SMATRIX_META_SIZE, 0);
 
   if (read != SMATRIX_META_SIZE) {
-    printf("CANNOT READ FILE HEADER\n"); //FIXPAUL
+    smatrix_error("invalid file header\n");
     abort();
   }
 
   if (buf[0] != 0x17 || buf[1] != 0x17) {
-    printf("INVALID FILE HEADER\n"); //FIXPAUL
+    smatrix_error("invalid file header\n");
     abort();
   }
 
@@ -581,7 +578,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
   smatrix_rmap_t* rmap;
 
   smatrix_lock_incref(&cmap->lock);
-  slot = smatrix_cmap_probe(self, cmap, key);
+  slot = smatrix_cmap_probe(cmap, key);
 
   if (slot && slot->key == key && (slot->flags & SMATRIX_CMAP_SLOT_USED) != 0) {
     rmap = slot->rmap;
@@ -623,7 +620,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
 }
 
 // caller must hold a read lock on cmap!
-smatrix_cmap_slot_t* smatrix_cmap_probe(smatrix_t* self, smatrix_cmap_t* cmap, uint32_t key) {
+smatrix_cmap_slot_t* smatrix_cmap_probe(smatrix_cmap_t* cmap, uint32_t key) {
   unsigned pos = key;
   smatrix_cmap_slot_t* slot;
 
@@ -652,7 +649,7 @@ smatrix_cmap_slot_t* smatrix_cmap_insert(smatrix_t* self, smatrix_cmap_t* cmap, 
     smatrix_cmap_resize(self, cmap);
   }
 
-  slot = smatrix_cmap_probe(self, cmap, key);
+  slot = smatrix_cmap_probe(cmap, key);
   assert(slot != NULL);
 
   if ((slot->flags & SMATRIX_CMAP_SLOT_USED) == 0 || slot->key != key) {
@@ -750,8 +747,7 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
     self->cmap.block_fpos = fpos;
 
     if (pread(self->fd, &meta_buf, SMATRIX_CMAP_HEAD_SIZE, fpos) != SMATRIX_CMAP_HEAD_SIZE) {
-      printf("CANNOT LOAD CMAP -- pread @ %lu\n", fpos); // FIXPAUL
-      abort();
+      smatrix_error("pread() failed (cmap_load). corrupt file?");
     }
 
     fpos += SMATRIX_CMAP_HEAD_SIZE;
@@ -759,8 +755,7 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
     buf   = smatrix_malloc(self, bytes);
 
     if (pread(self->fd, buf, bytes, fpos) != bytes) {
-      printf("CANNOT LOAD CMAP -- pread @ %lu\n", fpos); // FIXPAUL
-      abort();
+      smatrix_error("pread() failed (cmap_load). corrupt file?");
     }
 
     for (pos = 0; pos < bytes; pos += SMATRIX_CMAP_SLOT_SIZE) {
@@ -794,9 +789,8 @@ void smatrix_write(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t fpos, char* d
 
   // FIXPAUL queue and return here
 
-  if (pwrite(self->fd, data, bytes, fpos) != bytes) {
-    printf("error while writing %lu bytes @ %lu\n", bytes, fpos);
-    abort(); // FIXPAUL
+  if (pwrite(self->fd, data, bytes, fpos) != (ssize_t) bytes) {
+    smatrix_error("write() failed");
   }
 
   free(data);
@@ -855,4 +849,9 @@ inline void smatrix_lock_incref(smatrix_lock_t* lock) {
 
 inline void smatrix_lock_decref(smatrix_lock_t* lock) {
   asm("lock decw (%0)" : : "c" (&lock->count));
+}
+
+void smatrix_error(const char* msg) {
+  printf("libsmatrix error: %s", msg);
+  abort();
 }
