@@ -303,7 +303,7 @@ void smatrix_decref(smatrix_t* self, smatrix_ref_t* ref) {
   if (ref->write) {
     if (self->fd) {
       // FIXPAUL: this will sync the whole rmap. if only one slot changed this is a lot of overhead...
-      smatrix_rmap_sync(self, ref->rmap);
+      smatrix_rmap_sync_defer(self, ref->rmap);
     }
 
     smatrix_lock_release(&ref->rmap->lock);
@@ -403,8 +403,13 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   if (self->fd) {
     rmap->flags |= SMATRIX_RMAP_FLAG_RESIZED;
-    smatrix_rmap_sync(self, rmap);
+    smatrix_rmap_sync_defer(self, rmap);
   }
+}
+
+void smatrix_rmap_sync_defer(smatrix_t* self, smatrix_rmap_t* rmap) {
+  rmap->flags |= SMATRIX_RMAP_FLAG_DIRTY;
+  smatrix_rmap_sync(self, rmap);
 }
 
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
@@ -645,7 +650,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
     smatrix_lock_release(&cmap->lock);
 
     if (self->fd) {
-      smatrix_rmap_sync(self, rmap);
+      smatrix_rmap_sync_defer(self, rmap);
     }
   }
 
