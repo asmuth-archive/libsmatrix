@@ -79,7 +79,8 @@ smatrix_t* smatrix_open(const char* fname) {
   if (self == NULL)
     return NULL;
 
-  pthread_mutex_init(&self->lock, NULL);
+  self->lock.count = 0;
+  self->lock.mutex = 0;
 
   if (!fname) {
     smatrix_cmap_init(self);
@@ -115,7 +116,6 @@ void smatrix_close(smatrix_t* self) {
   }
 
   smatrix_cmap_free(self, &self->cmap);
-  pthread_mutex_destroy(&self->lock);
 
   if (self->fd) {
     close(self->fd);
@@ -125,7 +125,7 @@ void smatrix_close(smatrix_t* self) {
 }
 
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
-  pthread_mutex_lock(&self->lock);
+  smatrix_lock_getmutex(&self->lock);
 
   uint64_t old = self->fpos;
   uint64_t new = old + bytes;
@@ -136,7 +136,7 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
 
   self->fpos = new;
 
-  pthread_mutex_unlock(&self->lock);
+  smatrix_lock_release(&self->lock);
   return old;
 }
 
