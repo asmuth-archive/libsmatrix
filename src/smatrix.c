@@ -23,6 +23,7 @@
 //  + free rmaps after write :)
 //  + rmap row dirty flags
 //  + ftruncate in larger blocks
+//  + lru based GC
 //  + aquire lock on file to prevent concurrent access
 //  + check correct endianess on file open
 //  + proper error handling / return codes for smatrix_open
@@ -261,16 +262,22 @@ void smatrix_lookup(smatrix_t* self, smatrix_ref_t* ref, uint32_t x, uint32_t y,
     return;
   }
 
-  if (rmap->size == 0) {
+  if (write) {
     smatrix_lock_decref(&rmap->lock);
     smatrix_lock_getmutex(&rmap->lock);
     mutex = 1;
-    smatrix_rmap_load(self, rmap);
   }
 
-  if (write && !mutex) {
-    smatrix_lock_decref(&rmap->lock);
-    smatrix_lock_getmutex(&rmap->lock);
+  if (rmap->size == 0) {
+    if (!mutex) {
+      smatrix_lock_decref(&rmap->lock);
+      smatrix_lock_getmutex(&rmap->lock);
+      mutex = 1;
+    }
+
+    if (rmap->size == 0) {
+      smatrix_rmap_load(self, rmap);
+    }
   }
 
   ref->rmap = rmap;
