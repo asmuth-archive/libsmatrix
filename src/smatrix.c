@@ -417,6 +417,10 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 }
 
 inline void smatrix_rmap_sync_defer(smatrix_t* self, smatrix_rmap_t* rmap) {
+  if ((rmap->flags & SMATRIX_RMAP_FLAG_DIRTY) > 0) {
+    return;
+  }
+
   rmap->flags |= SMATRIX_RMAP_FLAG_DIRTY;
   smatrix_ioqueue_add(self, rmap);
 }
