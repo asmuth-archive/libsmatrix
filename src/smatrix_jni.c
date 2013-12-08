@@ -6,6 +6,7 @@
  * file except in compliance with the License. You may obtain a copy of
  * the License at: http://opensource.org/licenses/MIT
  */
+#include <stdlib.h>
 #include "smatrix_jni.h"
 #include "smatrix.h"
 
@@ -113,8 +114,9 @@ JNIEXPORT void JNICALL _JM(decr) (JNIEnv* env, jobject self, jint x, jint y, jin
 
 JNIEXPORT void JNICALL _JM(getRowNative) (JNIEnv* env, jobject self, jint x, jobject map, jint maxlen) {
   jclass    cls;
+  jint      i, len;
   jmethodID mid;
-  uint32_t  len, *data, i;
+  uint32_t  *data;
   void*     ptr = NULL;
   size_t    bytes;
 

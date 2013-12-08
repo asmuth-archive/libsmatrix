@@ -18,7 +18,7 @@ void* smatrix_malloc(smatrix_t* self, uint64_t bytes);
 void smatrix_mfree(smatrix_t* self, uint64_t bytes);
 uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes);
 void smatrix_ffree(smatrix_t* self, uint64_t fpos, uint64_t bytes);
-void smatrix_write(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t fpos, char* data, uint64_t bytes);
+void smatrix_write(smatrix_t* self, uint64_t fpos, char* data, uint64_t bytes);
 
 void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t size);
 smatrix_rmap_slot_t* smatrix_rmap_probe(smatrix_rmap_t* rmap, uint32_t key);

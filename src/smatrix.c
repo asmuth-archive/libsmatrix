@@ -466,7 +466,7 @@ void smatrix_rmap_write_batch(smatrix_t* self, smatrix_rmap_t* rmap, int full) {
     }
   }
 
-  smatrix_write(self, rmap, rmap->fpos, buf, bytes);
+  smatrix_write(self, rmap->fpos, buf, bytes);
 }
 
 void smatrix_rmap_write_slot(smatrix_t* self, smatrix_rmap_t* rmap, smatrix_rmap_slot_t* slot) {
@@ -480,7 +480,7 @@ void smatrix_rmap_write_slot(smatrix_t* self, smatrix_rmap_t* rmap, smatrix_rmap
   memcpy(buf,     &slot->key,   4);
   memcpy(buf + 4, &slot->value, 4);
 
-  smatrix_write(self, rmap, fpos, buf, SMATRIX_RMAP_SLOT_SIZE);
+  smatrix_write(self, fpos, buf, SMATRIX_RMAP_SLOT_SIZE);
 }
 
 // caller must hold writelock on rmap
@@ -754,8 +754,8 @@ void smatrix_cmap_mkblock(smatrix_t* self, smatrix_cmap_t* cmap) {
   memcpy(buf,      &cmap->block_size, 8);
   memset(buf + 8,  0,                 8);
 
-  smatrix_write(self, NULL, cmap->block_fpos, buf, SMATRIX_CMAP_HEAD_SIZE);
-  smatrix_write(self, NULL, meta_fpos, meta_buf, 8);
+  smatrix_write(self, cmap->block_fpos, buf, SMATRIX_CMAP_HEAD_SIZE);
+  smatrix_write(self, meta_fpos, meta_buf, 8);
 }
 
 void smatrix_cmap_write(smatrix_t* self, smatrix_rmap_t* rmap) {
@@ -764,7 +764,7 @@ void smatrix_cmap_write(smatrix_t* self, smatrix_rmap_t* rmap) {
   memcpy(buf,     &rmap->key,  4);
   memcpy(buf + 4, &rmap->fpos, 8);
 
-  smatrix_write(self, NULL, rmap->meta_fpos, buf, SMATRIX_CMAP_SLOT_SIZE);
+  smatrix_write(self, rmap->meta_fpos, buf, SMATRIX_CMAP_SLOT_SIZE);
 }
 
 void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
@@ -809,26 +809,13 @@ void smatrix_cmap_load(smatrix_t* self, uint64_t head_fpos) {
   }
 }
 
-
-void smatrix_write(smatrix_t* self, smatrix_rmap_t* rmap, uint64_t fpos, char* data, uint64_t bytes) {
-  //printf("write %lu bytes @ %lu\n", bytes, fpos);
-
-  if (rmap) {
-    // FIXPAUL: increment pending_writes count
-  }
-
-  // FIXPAUL queue and return here
-
+void smatrix_write(smatrix_t* self, uint64_t fpos, char* data, uint64_t bytes) {
   if (pwrite(self->fd, data, bytes, fpos) != (ssize_t) bytes) {
     smatrix_error("write() failed");
   }
 
   free(data);
   smatrix_mfree(self, bytes);
-
-  if (rmap) {
-    // FIXPAUL: decrement pending_writes count
-  }
 }
 
 // the caller of this function must have called smatrix_lock_incref before
