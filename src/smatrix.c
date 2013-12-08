@@ -19,10 +19,9 @@
 #include "smatrix_private.h"
 
 // TODO
-//  + free rmaps after write :)
 //  + rmap row dirty flags
+//  + smatrix_gc()
 //  + ftruncate in larger blocks
-//  + lru based GC
 //  + aquire lock on file to prevent concurrent access
 //  + check correct endianess on file open
 //  + proper error handling / return codes for smatrix_open
