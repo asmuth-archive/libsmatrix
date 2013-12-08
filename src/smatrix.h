@@ -64,16 +64,20 @@ typedef struct {
   smatrix_lock_t       lock;
 } smatrix_cmap_t;
 
-typedef struct {
+typedef struct smatrix_ref_s smatrix_ref_t;
+
+struct smatrix_ref_s {
   int                  write;
   smatrix_rmap_t*      rmap;
   smatrix_rmap_slot_t* slot;
-} smatrix_ref_t;
+  smatrix_ref_t*       next;
+};
 
 typedef struct {
   int                  fd;
   uint64_t             fpos;
   uint64_t             mem;
+  smatrix_ref_t*       ioqueue;
   smatrix_cmap_t       cmap;
   smatrix_lock_t       lock;
 } smatrix_t;

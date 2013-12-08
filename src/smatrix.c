@@ -79,6 +79,7 @@ smatrix_t* smatrix_open(const char* fname) {
   if (self == NULL)
     return NULL;
 
+  self->ioqueue    = NULL;
   self->lock.count = 0;
   self->lock.mutex = 0;
 
@@ -408,8 +409,13 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 }
 
 void smatrix_rmap_sync_defer(smatrix_t* self, smatrix_rmap_t* rmap) {
+  smatrix_ref_t* ref;
+
   rmap->flags |= SMATRIX_RMAP_FLAG_DIRTY;
-  smatrix_rmap_sync(self, rmap);
+  ref          = smatrix_malloc(self, sizeof(smatrix_ref_t));
+  ref->rmap    = rmap;
+
+  smatrix_ioqueue_add(self, ref);
 }
 
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
@@ -879,4 +885,14 @@ inline void smatrix_lock_decref(smatrix_lock_t* lock) {
 void smatrix_error(const char* msg) {
   printf("libsmatrix error: %s", msg);
   abort();
+}
+
+// FIXPAUL can we make this a lock-free queue? ;)
+void smatrix_ioqueue_add(smatrix_t* self, smatrix_ref_t* ref) {
+  smatrix_lock_getmutex(&self->lock);
+
+  ref->next     = self->ioqueue;
+  self->ioqueue = ref;
+
+  smatrix_lock_release(&self->lock);
 }
