@@ -141,7 +141,7 @@ uint64_t smatrix_falloc(smatrix_t* self, uint64_t bytes) {
   return old;
 }
 
-void* smatrix_malloc(smatrix_t* self, uint64_t bytes) {
+inline void* smatrix_malloc(smatrix_t* self, uint64_t bytes) {
   __sync_add_and_fetch(&self->mem, bytes);
 
   void* ptr = malloc(bytes);
@@ -154,7 +154,7 @@ void* smatrix_malloc(smatrix_t* self, uint64_t bytes) {
   return ptr;
 }
 
-void smatrix_mfree(smatrix_t* self, uint64_t bytes) {
+inline void smatrix_mfree(smatrix_t* self, uint64_t bytes) {
   __sync_sub_and_fetch(&self->mem, bytes);
 }
 
@@ -888,7 +888,7 @@ void smatrix_error(const char* msg) {
 }
 
 // FIXPAUL can we make this a lock-free queue? ;)
-void smatrix_ioqueue_add(smatrix_t* self, smatrix_ref_t* ref) {
+inline void smatrix_ioqueue_add(smatrix_t* self, smatrix_ref_t* ref) {
   smatrix_lock_getmutex(&self->lock);
 
   ref->next     = self->ioqueue;
