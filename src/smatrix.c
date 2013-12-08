@@ -19,13 +19,14 @@
 #include "smatrix_private.h"
 
 // TODO
+//  + async write
+//  + free rmaps after write :)
+//  + rmap row dirty flags
 //  + ftruncate in larger blocks
 //  + aquire lock on file to prevent concurrent access
 //  + check correct endianess on file open
-//  + convert smatrix->lock to spinlock, remove pthread dependency
 //  + proper error handling / return codes for smatrix_open
 //  + file free list
-//  + re-implement (a smart) gc
 
 /*
 
@@ -402,38 +403,25 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
 void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
   uint64_t bytes;
 
-  // create
-  if (rmap->fpos == 0) {
-    rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
-    bytes           = rmap->size * SMATRIX_RMAP_SLOT_SIZE + SMATRIX_RMAP_HEAD_SIZE;
-    rmap->fpos      = smatrix_falloc(self, bytes);
-
-    smatrix_rmap_write_batch(self, rmap, 0);
-    smatrix_cmap_write(self, rmap);
-
-    goto clear_flags;
-  }
-
-  // resize
   if ((rmap->flags & SMATRIX_RMAP_FLAG_RESIZED) > 0) {
     // FIXPAUL can't ffree without knowing the old size.. just dividing by 2 seems too hacky
     //bytes = SMATRIX_RMAP_SLOT_SIZE * rmap->size + SMATRIX_RMAP_HEAD_SIZE;
     //smatrix_ffree(self, rmap->fpos, bytes);
 
+    rmap->fpos = 0;
+  }
+
+  if (rmap->fpos == 0) {
     bytes      = SMATRIX_RMAP_SLOT_SIZE * rmap->size + SMATRIX_RMAP_HEAD_SIZE;
     rmap->fpos = smatrix_falloc(self, bytes);
 
     smatrix_rmap_write_batch(self, rmap, 1);
     smatrix_cmap_write(self, rmap);
-
-    goto clear_flags;
+  } else {
+    // FIXPAUL write only the actualy dirty slots!
+    smatrix_rmap_write_batch(self, rmap, 1);
   }
 
-  // changed
-  // FIXPAUL write only the actualy dirty slots!
-  smatrix_rmap_write_batch(self, rmap, 1);
-
-clear_flags:
   rmap->flags &= ~SMATRIX_RMAP_FLAG_DIRTY;
   rmap->flags &= ~SMATRIX_RMAP_FLAG_RESIZED;
 }
@@ -636,16 +624,24 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
   if (slot->rmap) {
     smatrix_rmap_free(self, rmap);
     rmap = slot->rmap;
+
+    smatrix_lock_incref(&rmap->lock);
+    smatrix_lock_release(&cmap->lock);
   } else {
     slot->rmap = rmap;
+
+    if (self->fd) {
+      rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
+    }
+
+    smatrix_lock_incref(&rmap->lock);
+    smatrix_lock_release(&cmap->lock);
 
     if (self->fd) {
       smatrix_rmap_sync(self, rmap);
     }
   }
 
-  smatrix_lock_incref(&rmap->lock);
-  smatrix_lock_release(&cmap->lock);
   return rmap;
 }
 
