@@ -294,8 +294,8 @@ void smatrix_decref(smatrix_t* self, smatrix_ref_t* ref) {
 
   if (ref->write) {
     if (self->fd) {
-      // FIXPAUL enqueue write, set last change tick
-      smatrix_rmap_write_slot(self, ref->rmap, ref->slot);
+      // FIXPAUL: this will sync the whole rmap. if only one slot changed this is a lot of overhead...
+      smatrix_rmap_sync(self, ref->rmap);
     }
 
     smatrix_lock_release(&ref->rmap->lock);
@@ -314,9 +314,10 @@ void smatrix_rmap_init(smatrix_t* self, smatrix_rmap_t* rmap, uint32_t size) {
     rmap->data = NULL;
   }
 
-  rmap->size = size;
-  rmap->used = 0;
-  rmap->flags = 0;
+  rmap->size       = size;
+  rmap->used       = 0;
+  rmap->fpos       = 0;
+  rmap->flags      = 0;
   rmap->lock.count = 0;
   rmap->lock.mutex = 0;
 }
@@ -364,21 +365,18 @@ smatrix_rmap_slot_t* smatrix_rmap_probe(smatrix_rmap_t* rmap, uint32_t key) {
 
 // you need to hold a write lock on rmap in order to call this function safely
 void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
+  uint64_t pos, bytes, old_size, new_size;
   smatrix_rmap_slot_t* slot;
   smatrix_rmap_t new;
-  void* old_data;
 
-  uint64_t pos, old_fpos, new_size = rmap->size * 2;
+  old_size = rmap->size;
+  new_size = rmap->size * 2;
+  bytes    = sizeof(smatrix_rmap_slot_t) * new_size;
 
-  uint64_t old_bytes_disk = SMATRIX_RMAP_SLOT_SIZE * rmap->size + SMATRIX_RMAP_HEAD_SIZE;
-  uint64_t old_bytes_mem = sizeof(smatrix_rmap_slot_t) * rmap->size;
-  uint64_t new_bytes_disk = SMATRIX_RMAP_SLOT_SIZE * new_size + SMATRIX_RMAP_HEAD_SIZE;
-  uint64_t new_bytes_mem = sizeof(smatrix_rmap_slot_t) * new_size;
-
-  new.used = 0;
   new.size = new_size;
-  new.data = smatrix_malloc(self, new_bytes_mem);
-  memset(new.data, 0, new_bytes_mem);
+  new.used = 0;
+  new.data = smatrix_malloc(self, bytes);
+  memset(new.data, 0, bytes);
 
   for (pos = 0; pos < rmap->size; pos++) {
     if (!rmap->data[pos].key && !rmap->data[pos].value)
@@ -388,21 +386,56 @@ void smatrix_rmap_resize(smatrix_t* self, smatrix_rmap_t* rmap) {
     slot->value = rmap->data[pos].value;
   }
 
-  old_data   = rmap->data;
-  old_fpos   = rmap->fpos;
+  smatrix_mfree(self, sizeof(smatrix_rmap_slot_t) * old_size);
+  free(rmap->data);
+
   rmap->data = new.data;
   rmap->size = new.size;
   rmap->used = new.used;
 
   if (self->fd) {
-    rmap->fpos = smatrix_falloc(self, new_bytes_disk);
-    smatrix_ffree(self, old_fpos, old_bytes_disk);
-    smatrix_rmap_write_batch(self, rmap, 1);
+    rmap->flags |= SMATRIX_RMAP_FLAG_RESIZED;
+    smatrix_rmap_sync(self, rmap);
+  }
+}
+
+void smatrix_rmap_sync(smatrix_t* self, smatrix_rmap_t* rmap) {
+  uint64_t bytes;
+
+  // create
+  if (rmap->fpos == 0) {
+    rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
+    bytes           = rmap->size * SMATRIX_RMAP_SLOT_SIZE + SMATRIX_RMAP_HEAD_SIZE;
+    rmap->fpos      = smatrix_falloc(self, bytes);
+
+    smatrix_rmap_write_batch(self, rmap, 0);
     smatrix_cmap_write(self, rmap);
+
+    goto clear_flags;
   }
 
-  smatrix_mfree(self, old_bytes_mem);
-  free(old_data);
+  // resize
+  if ((rmap->flags & SMATRIX_RMAP_FLAG_RESIZED) > 0) {
+    // FIXPAUL can't ffree without knowing the old size.. just dividing by 2 seems too hacky
+    //bytes = SMATRIX_RMAP_SLOT_SIZE * rmap->size + SMATRIX_RMAP_HEAD_SIZE;
+    //smatrix_ffree(self, rmap->fpos, bytes);
+
+    bytes      = SMATRIX_RMAP_SLOT_SIZE * rmap->size + SMATRIX_RMAP_HEAD_SIZE;
+    rmap->fpos = smatrix_falloc(self, bytes);
+
+    smatrix_rmap_write_batch(self, rmap, 1);
+    smatrix_cmap_write(self, rmap);
+
+    goto clear_flags;
+  }
+
+  // changed
+  // FIXPAUL write only the actualy dirty slots!
+  smatrix_rmap_write_batch(self, rmap, 1);
+
+clear_flags:
+  rmap->flags &= ~SMATRIX_RMAP_FLAG_DIRTY;
+  rmap->flags &= ~SMATRIX_RMAP_FLAG_RESIZED;
 }
 
 // the caller of this must hold a read lock on rmap
@@ -607,10 +640,7 @@ smatrix_rmap_t* smatrix_cmap_lookup(smatrix_t* self, smatrix_cmap_t* cmap, uint3
     slot->rmap = rmap;
 
     if (self->fd) {
-      rmap->meta_fpos = smatrix_cmap_falloc(self, &self->cmap);
-      rmap->fpos = smatrix_falloc(self, rmap->size * SMATRIX_RMAP_SLOT_SIZE + SMATRIX_RMAP_HEAD_SIZE);
-      smatrix_cmap_write(self, rmap);
-      smatrix_rmap_write_batch(self, rmap, 0);
+      smatrix_rmap_sync(self, rmap);
     }
   }
 
