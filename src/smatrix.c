@@ -19,7 +19,7 @@
 #include "smatrix_private.h"
 
 // TODO
-//  + rmap row dirty flags
+//  + make ioqueue fifo
 //  + smatrix_gc()
 //  + ftruncate in larger blocks
 //  + aquire lock on file to prevent concurrent access
