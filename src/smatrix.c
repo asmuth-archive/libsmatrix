@@ -19,7 +19,6 @@
 #include "smatrix_private.h"
 
 // TODO
-//  + async write
 //  + free rmaps after write :)
 //  + rmap row dirty flags
 //  + ftruncate in larger blocks
@@ -82,6 +81,7 @@ smatrix_t* smatrix_open(const char* fname) {
   self->ioqueue    = NULL;
   self->lock.count = 0;
   self->lock.mutex = 0;
+  self->shutdown   = 0;
 
   if (!fname) {
     smatrix_cmap_init(self);
@@ -104,11 +104,19 @@ smatrix_t* smatrix_open(const char* fname) {
     smatrix_fload(self);
   }
 
+  if (pthread_create(&self->iothread, NULL, &smatrix_io, self)) {
+    smatrix_error("can't start the IO thread");
+  }
+
   return self;
 }
 
 void smatrix_close(smatrix_t* self) {
+  void*    retval;
   uint64_t pos;
+
+  self->shutdown = 1;
+  pthread_join(self->iothread, &retval);
 
   for (pos = 0; pos < self->cmap.size; pos++) {
     if (self->cmap.data[pos].flags & SMATRIX_CMAP_SLOT_USED) {
@@ -919,4 +927,32 @@ smatrix_rmap_t* smatrix_ioqueue_pop(smatrix_t* self) {
   smatrix_mfree(self, sizeof(smatrix_ref_t));
 
   return rmap;
+}
+
+void* smatrix_io(void* self_) {
+  smatrix_t*      self = self_;
+  smatrix_rmap_t* rmap;
+
+  for (;;) {
+    rmap = smatrix_ioqueue_pop(self);
+
+    if (rmap == NULL) {
+      if (self->shutdown) {
+        break;
+      } else {
+        usleep(100000);
+        continue;
+      }
+    }
+
+    smatrix_lock_getmutex(&rmap->lock);
+
+    if ((rmap->flags & SMATRIX_RMAP_FLAG_DIRTY) > 0) {
+      smatrix_rmap_sync(self, rmap);
+    }
+
+    smatrix_lock_release(&rmap->lock);
+  }
+
+  return NULL;
 }

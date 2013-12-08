@@ -75,9 +75,11 @@ struct smatrix_ref_s {
 
 typedef struct {
   int                  fd;
+  int                  shutdown;
   uint64_t             fpos;
   uint64_t             mem;
   smatrix_ref_t*       ioqueue;
+  pthread_t            iothread;
   smatrix_cmap_t       cmap;
   smatrix_lock_t       lock;
 } smatrix_t;
