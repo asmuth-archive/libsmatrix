@@ -896,3 +896,27 @@ void smatrix_ioqueue_add(smatrix_t* self, smatrix_rmap_t* rmap) {
 
   smatrix_lock_release(&self->lock);
 }
+
+smatrix_rmap_t* smatrix_ioqueue_pop(smatrix_t* self) {
+  smatrix_ref_t*  ref;
+  smatrix_rmap_t* rmap;
+
+  smatrix_lock_getmutex(&self->lock);
+
+  ref = self->ioqueue;
+
+  if (ref == NULL) {
+    smatrix_lock_release(&self->lock);
+    return NULL;
+  }
+
+  self->ioqueue = ref->next;
+  smatrix_lock_release(&self->lock);
+
+  rmap = ref->rmap;
+
+  free(ref);
+  smatrix_mfree(self, sizeof(smatrix_ref_t));
+
+  return rmap;
+}

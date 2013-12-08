@@ -45,5 +45,6 @@ void smatrix_lock_incref(smatrix_lock_t* lock);
 void smatrix_lock_decref(smatrix_lock_t* lock);
 void smatrix_error(const char* msg);
 void smatrix_ioqueue_add(smatrix_t* self, smatrix_rmap_t* rmap);
+smatrix_rmap_t* smatrix_ioqueue_pop(smatrix_t* self);
 
 #endif
