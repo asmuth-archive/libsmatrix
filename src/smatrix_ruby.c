@@ -8,11 +8,36 @@
  */
 #include <stdlib.h>
 #include <ruby.h>
+#include <ruby/ruby.h>
+#include <ruby/defines.h>
+#include <ruby/config.h>
 #include "smatrix.h"
 #include "smatrix_ruby.h"
 
-VALUE smatrix = Qnil;
+VALUE smatrix_rb_initialize(VALUE self, VALUE filename) {
+  printf("initialize called\n");
 
-void Init_smatrix() {
-  smatrix = rb_define_class("SparseMatrix", rb_cObject);
+  switch (rb_type(filename)) {
+
+    case RUBY_T_STRING:
+      printf("init with string\n");
+      break;
+
+    case RUBY_T_NIL:
+      printf("init with nil\n");
+      break;
+
+    default:
+      rb_raise(rb_eTypeError, "first argument (filename) must be nil or a string");
+      break;
+
+  }
+
+  return self;
+}
+
+void Init_libsmatrix() {
+  VALUE klass = rb_define_class("SparseMatrix", rb_cObject);
+
+  rb_define_method(klass, "initialize", smatrix_rb_initialize, 1);
 }
