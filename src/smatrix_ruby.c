@@ -14,8 +14,15 @@
 #include "smatrix.h"
 #include "smatrix_ruby.h"
 
-smatrix_t* smatrix_rb_gethandle(VALUE self) {
-  return NULL;
+void smatrix_rb_gethandle(VALUE self, smatrix_t** handle) {
+  VALUE handle_wrapped = rb_iv_get(self, "@handle");
+
+  if (rb_type(handle_wrapped) != RUBY_T_DATA) {
+    rb_raise(rb_eTypeError, "smatrix @handle is of the wrong type, something went horribly wrong :(");
+    return;
+  }
+
+  Data_Get_Struct(handle_wrapped, smatrix_t, *handle);
 }
 
 VALUE smatrix_rb_initialize(VALUE self, VALUE filename) {
@@ -47,14 +54,15 @@ VALUE smatrix_rb_initialize(VALUE self, VALUE filename) {
 }
 
 VALUE smatrix_rb_get(VALUE self, VALUE x, VALUE y) {
-  smatrix_t* smatrix = smatrix_rb_gethandle(self);
+  smatrix_t* smatrix = NULL;
+
+  smatrix_rb_gethandle(self, &smatrix);
 
   if (!smatrix) {
     rb_raise(rb_eTypeError, "smatrix @handle is Nil, something went horribly wrong :(");
     return Qnil;
   }
 
-  printf("get called: %p\n", smatrix);
 }
 
 void Init_libsmatrix() {
