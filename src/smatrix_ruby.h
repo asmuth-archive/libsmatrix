@@ -17,4 +17,9 @@
 #define RUBY_T_STRING T_STRING
 #endif
 
+smatrix_t* smatrix_rb_gethandle(VALUE self);
+VALUE smatrix_rb_get(VALUE self, VALUE x, VALUE y);
+VALUE smatrix_rb_initialize(VALUE self, VALUE filename);
+void Init_libsmatrix();
+
 #endif
