@@ -8,11 +8,11 @@
 SHELL        = /bin/sh
 CC           = clang
 CFLAGS_      = $(CFLAGS) -Wall -Wextra -O3 -march=native -mtune=native -D NDEBUG -fPIC
-LDFLAGS      = -lpthread -lm
+LDFLAGS      = -lpthread -lm -lruby
 PREFIX       = $(DESTDIR)/usr/local
 LIBDIR       = $(PREFIX)/lib
 UNAME        = $(shell uname)
-SOURCES      = src/smatrix.c src/smatrix_jni.c
+SOURCES      = src/smatrix.c src/smatrix_jni.c src/smatrix_ruby.c
 
 ifeq ($(UNAME), Darwin)
 LIBEXT       = dylib
@@ -21,12 +21,12 @@ ifeq ($(UNAME), Linux)
 LIBEXT       = so
 endif
 
-all: src/smatrix_jni.h src/config.h
+all: src/smatrix.c src/smatrix.h src/smatrix_jni.h src/config.h
 ifeq ($(UNAME), Linux)
-	$(CC) $(CFLAGS_) -shared -o src/libsmatrix.so -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux $(SOURCES) $(LDFLAGS)
+	$(CC) $(CFLAGS_) -shared -o src/libsmatrix.so $(RUBY_INCLUDE) -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux $(SOURCES) $(LDFLAGS)
 endif
 ifeq ($(UNAME), Darwin)
-	$(CC) $(CFLAGS_) -dynamiclib -o src/libsmatrix.dylib -I /System/Library/Frameworks/JavaVM.framework/Headers -I /System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Headers $(SOURCES) $(LDFLAGS)
+	$(CC) $(CFLAGS_) -dynamiclib -o src/libsmatrix.dylib $(RUBY_INCLUDE) -I /System/Library/Frameworks/JavaVM.framework/Headers -I /System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Headers $(SOURCES) $(LDFLAGS)
 endif
 
 install: src/libsmatrix.$(LIBEXT)
