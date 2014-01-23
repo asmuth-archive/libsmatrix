@@ -27,7 +27,7 @@ void smatrix_rb_gethandle(VALUE self, smatrix_t** handle) {
 
 VALUE smatrix_rb_initialize(VALUE self, VALUE filename) {
   smatrix_t* smatrix = NULL;
-  VALUE      smatrix_handle = NULL;
+  VALUE      smatrix_handle;
 
   switch (rb_type(filename)) {
 
@@ -55,7 +55,6 @@ VALUE smatrix_rb_initialize(VALUE self, VALUE filename) {
 
 VALUE smatrix_rb_get(VALUE self, VALUE x, VALUE y) {
   smatrix_t* smatrix = NULL;
-
   smatrix_rb_gethandle(self, &smatrix);
 
   if (!smatrix) {
@@ -63,6 +62,17 @@ VALUE smatrix_rb_get(VALUE self, VALUE x, VALUE y) {
     return Qnil;
   }
 
+  if (rb_type(x) != RUBY_T_FIXNUM) {
+    rb_raise(rb_eTypeError, "first argument (x) must be of type RUBY_T_FIXNUM");
+    return Qnil;
+  }
+
+  if (rb_type(y) != RUBY_T_FIXNUM) {
+    rb_raise(rb_eTypeError, "first argument (x) must be of type RUBY_T_FIXNUM");
+    return Qnil;
+  }
+
+  return INT2NUM(smatrix_get(smatrix, NUM2INT(x), NUM2INT(y)));
 }
 
 void Init_libsmatrix() {
