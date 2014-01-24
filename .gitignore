@@ -8,3 +8,4 @@ src/smatrix_benchmark
 *.dylib
 *.class
 *.smx
+.DS_Store
