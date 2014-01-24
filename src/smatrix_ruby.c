@@ -63,16 +63,43 @@ VALUE smatrix_rb_get(VALUE self, VALUE x, VALUE y) {
   }
 
   if (rb_type(x) != RUBY_T_FIXNUM) {
-    rb_raise(rb_eTypeError, "first argument (x) must be of type RUBY_T_FIXNUM");
+    rb_raise(rb_eTypeError, "first argument (x) must be a Fixnum");
     return Qnil;
   }
 
   if (rb_type(y) != RUBY_T_FIXNUM) {
-    rb_raise(rb_eTypeError, "first argument (x) must be of type RUBY_T_FIXNUM");
+    rb_raise(rb_eTypeError, "second argument (y) must be a Fixnum");
     return Qnil;
   }
 
   return INT2NUM(smatrix_get(smatrix, NUM2INT(x), NUM2INT(y)));
+}
+
+VALUE smatrix_rb_set(VALUE self, VALUE x, VALUE y, VALUE value) {
+  smatrix_t* smatrix = NULL;
+  smatrix_rb_gethandle(self, &smatrix);
+
+  if (!smatrix) {
+    rb_raise(rb_eTypeError, "smatrix @handle is Nil, something is very bad :'(");
+    return Qnil;
+  }
+
+  if (rb_type(x) != RUBY_T_FIXNUM) {
+    rb_raise(rb_eTypeError, "first argument (x) must be a Fixnum");
+    return Qnil;
+  }
+
+  if (rb_type(y) != RUBY_T_FIXNUM) {
+    rb_raise(rb_eTypeError, "second argument (y) must be a Fixnum");
+    return Qnil;
+  }
+
+  if (rb_type(value) != RUBY_T_FIXNUM) {
+    rb_raise(rb_eTypeError, "third argument must be a Fixnum");
+    return Qnil;
+  }
+
+  return INT2NUM(smatrix_set(smatrix, NUM2INT(x), NUM2INT(y), NUM2INT(value)));
 }
 
 void Init_libsmatrix() {
@@ -80,4 +107,5 @@ void Init_libsmatrix() {
 
   rb_define_method(klass, "initialize", smatrix_rb_initialize, 1);
   rb_define_method(klass, "get", smatrix_rb_get, 2);
+  rb_define_method(klass, "set", smatrix_rb_set, 3);
 }
