@@ -129,6 +129,34 @@ VALUE smatrix_rb_incr(VALUE self, VALUE x, VALUE y, VALUE value) {
   return INT2NUM(smatrix_incr(smatrix, NUM2INT(x), NUM2INT(y), NUM2INT(value)));
 }
 
+VALUE smatrix_rb_decr(VALUE self, VALUE x, VALUE y, VALUE value) {
+  smatrix_t* smatrix = NULL;
+  smatrix_rb_gethandle(self, &smatrix);
+
+  if (!smatrix) {
+    rb_raise(rb_eTypeError, "smatrix @handle is Nil, something is very bad :'(");
+    return Qnil;
+  }
+
+  if (rb_type(x) != RUBY_T_FIXNUM) {
+    rb_raise(rb_eTypeError, "first argument (x) must be a Fixnum");
+    return Qnil;
+  }
+
+  if (rb_type(y) != RUBY_T_FIXNUM) {
+    rb_raise(rb_eTypeError, "second argument (y) must be a Fixnum");
+    return Qnil;
+  }
+
+  if (rb_type(value) != RUBY_T_FIXNUM) {
+    rb_raise(rb_eTypeError, "third argument must be a Fixnum");
+    return Qnil;
+  }
+
+  return INT2NUM(smatrix_decr(smatrix, NUM2INT(x), NUM2INT(y), NUM2INT(value)));
+}
+
+
 void Init_libsmatrix() {
   VALUE klass = rb_define_class("SparseMatrix", rb_cObject);
 
@@ -136,4 +164,5 @@ void Init_libsmatrix() {
   rb_define_method(klass, "get", smatrix_rb_get, 2);
   rb_define_method(klass, "set", smatrix_rb_set, 3);
   rb_define_method(klass, "incr", smatrix_rb_incr, 3);
+  rb_define_method(klass, "decr", smatrix_rb_decr, 3);
 }
