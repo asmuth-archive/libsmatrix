@@ -46,7 +46,7 @@ VALUE smatrix_rb_initialize(VALUE self, VALUE filename) {
   }
 
   if (smatrix) {
-    smatrix_handle = Data_Wrap_Struct(rb_cObject, NULL, NULL, smatrix);
+    smatrix_handle = Data_Wrap_Struct(rb_cObject, NULL, smatrix_rb_free, smatrix);
     rb_iv_set(self, "@handle", smatrix_handle);
   }
 
@@ -156,6 +156,14 @@ VALUE smatrix_rb_decr(VALUE self, VALUE x, VALUE y, VALUE value) {
   return INT2NUM(smatrix_decr(smatrix, NUM2INT(x), NUM2INT(y), NUM2INT(value)));
 }
 
+void smatrix_rb_free(smatrix_t* smatrix) {
+  if (!smatrix) {
+   rb_raise(rb_eTypeError, "smatrix @handle is Nil, something is very bad :'(");
+   return;
+  }
+
+  smatrix_close(smatrix);
+}
 
 void Init_libsmatrix() {
   VALUE klass = rb_define_class("SparseMatrix", rb_cObject);

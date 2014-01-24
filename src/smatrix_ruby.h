@@ -20,6 +20,10 @@
 void smatrix_rb_gethandle(VALUE self, smatrix_t** handle);
 VALUE smatrix_rb_get(VALUE self, VALUE x, VALUE y);
 VALUE smatrix_rb_initialize(VALUE self, VALUE filename);
+VALUE smatrix_rb_incr(VALUE self, VALUE x, VALUE y, VALUE value);
+VALUE smatrix_rb_decr(VALUE self, VALUE x, VALUE y, VALUE value);
+VALUE smatrix_rb_set(VALUE self, VALUE x, VALUE y, VALUE value);
+void smatrix_rb_free(smatrix_t* smatrix);
 void Init_libsmatrix();
 
 #endif
