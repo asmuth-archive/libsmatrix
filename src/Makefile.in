@@ -9,7 +9,7 @@ LIBDIR       = $(PREFIX)/lib
 LIBFLAGS   = -shared
 LIBEXT     = so
 
-#ifeq ($(UNAME), Darwin)
+ifeq ($(UNAME), Darwin)
 LIBFLAGS   = -dynamic -bundle
 LIBEXT     = bundle
-#endif
+endif
