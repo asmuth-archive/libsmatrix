@@ -163,7 +163,7 @@ void smatrix_rb_free(smatrix_t* smatrix) {
   smatrix_close(smatrix);
 }
 
-void Init_libsmatrix() {
+void Init_smatrix() {
   VALUE klass = rb_define_class("SparseMatrix", rb_cObject);
 
   rb_define_method(klass, "initialize", smatrix_rb_initialize, 1);
@@ -171,4 +171,8 @@ void Init_libsmatrix() {
   rb_define_method(klass, "set", smatrix_rb_set, 3);
   rb_define_method(klass, "incr", smatrix_rb_incr, 3);
   rb_define_method(klass, "decr", smatrix_rb_decr, 3);
+}
+
+void Init_smatrix_ruby() {
+  Init_smatrix();
 }
