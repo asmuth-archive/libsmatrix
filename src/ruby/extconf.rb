@@ -7,7 +7,7 @@ RUBY_LIB          = #{RbConfig::CONFIG["libdir"]}
 RUBY_SO_NAME      = #{RbConfig::CONFIG['RUBY_SO_NAME']}
 LIBRUBYARG_SHARED = #{$LIBRUBYARG_SHARED}
 LIBRUBYARG_STATIC = #{$LIBRUBYARG_STATIC}
-LIBRUBYARG        = #{$LIBRUBYARG}
+LIBRUBYARG        = #{$LIBRUBYARG_SHARED.length > 0 ? $LIBRUBYARG_SHARED : $LIBRUBYARG_STATIC}
 EOF
 
 File.open(::File.expand_path("../Makefile.in", __FILE__), "w+") do |f|
