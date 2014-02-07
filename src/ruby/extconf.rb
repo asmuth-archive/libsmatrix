@@ -3,7 +3,7 @@ require "mkmf"
 mkmf_includes = <<EOF
 RUBY_INCLUDE      = #{RbConfig::CONFIG["rubyhdrdir"]}
 RUBY_INCLUDE_ARCH = #{RbConfig::CONFIG["rubyhdrdir"]}/#{RbConfig::CONFIG["arch"]}
-RUBY_LIB          = #{RbConfig::CONFIG["archdir"]}
+RUBY_LIB          = #{RbConfig::CONFIG["rubylibdir"]}/#{RbConfig::CONFIG["arch"]}
 EOF
 
 File.open(::File.expand_path("../Makefile.in", __FILE__), "w+") do |f|

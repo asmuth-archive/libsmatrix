@@ -16,6 +16,6 @@ all: $(TARGET)
 	cd .. && make
 
 $(TARGET): ../smatrix.o ../smatrix_ruby.c ../smatrix_ruby.h
-	$(CC) -I$(RUBY_INCLUDE_ARCH) -I$(RUBY_INCLUDE) $(LIBFLAGS) $(LDFLAGS) ../smatrix_ruby.c ../smatrix.o -o $(TARGET) -I$(RUBY_LIB) -lruby
+	$(CC) -I$(RUBY_INCLUDE_ARCH) -I$(RUBY_INCLUDE) $(LIBFLAGS) $(LDFLAGS) ../smatrix_ruby.c ../smatrix.o -o $(TARGET) -L$(RUBY_LIB) -lruby
 
 install: $(TARGET)
