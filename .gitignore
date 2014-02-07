@@ -3,6 +3,7 @@ src/config.h
 src/smatrix_benchmark
 *.o
 *.so
+*.a
 *.gem
 *.bundle
 *.dylib

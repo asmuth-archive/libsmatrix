@@ -7,12 +7,16 @@
 
 include Makefile.in
 
-TARGET       = smatrix.$(LIBEXT)
+TARGET         = smatrix.$(LIBEXT)
+TARGET_STATIC  = smatrix-static.a
 
-all: $(TARGET)
+all: $(TARGET) $(TARGET_STATIC)
 
 $(TARGET): smatrix.o
 	$(CC) $(LIBFLAGS) smatrix.o -o $(TARGET) $(LDFLAGS)
+
+$(TARGET_STATIC): smatrix.o
+	ar cr $(TARGET_STATIC) smatrix.o
 
 smatrix.o: config.h smatrix.c smatrix.h smatrix_private.h
 	$(CC) -c $(CFLAGS) smatrix.c -o smatrix.o

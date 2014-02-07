@@ -25,7 +25,7 @@ install:
 	cp src/smatrix.$(LIBEXT) $(LIBDIR)
 
 clean:
-	find . -name "*.o" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -o -name "*.bundle" | xargs rm
+	find . -name "*.o" -o -name "*.a" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -o -name "*.bundle" | xargs rm
 	rm -rf src/java/target src/config.h src/smatrix_benchmark *.gem
 
 ruby:
