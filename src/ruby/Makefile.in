@@ -1,3 +1,0 @@
-RUBY_INCLUDE      = /Users/paul/.rvm/rubies/ruby-1.9.3-p327/include/ruby-1.9.1
-RUBY_INCLUDE_ARCH = /Users/paul/.rvm/rubies/ruby-1.9.3-p327/include/ruby-1.9.1/x86_64-darwin12.2.1
-RUBY_LIB          = /Users/paul/.rvm/rubies/ruby-1.9.3-p327/lib/ruby/1.9.1/x86_64-darwin12.2.1
