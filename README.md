@@ -132,7 +132,30 @@ here be dragons
 Ruby API
 --------
 
-here be dragons
+
+Require the gem:
+
+	$ require 'libsmatrix'
+
+
+Create a new smatrix instance:
+
+	$ smatrix = SparseMatrix.new("/path/to/smatrix.smx")
+	
+Get, Set, Increment, Decrement a (x,y) position
+
+	$ smatrix.set(x, y, 5)
+	=> 5
+	$ smatrix.get(x, y)
+	=> 5
+	$ smatrix.incr(x, y, 1)
+	=> 6
+	$ smatrix.decr(x, y, 1)
+	=> 5
+	
+Close and free the matrix (data is persisted to disk):
+
+	$ smatrix = nil
 
 
 Benchmarks
