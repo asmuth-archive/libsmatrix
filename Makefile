@@ -16,13 +16,13 @@ LIBDIR       = $(PREFIX)/lib
 UNAME        = $(shell uname)
 SOURCES      = src/smatrix.c src/smatrix_jni.c src/smatrix_ruby.c
 
-all: src/libsmatrix.$(LIBEXT)
+all: src/smatrix.$(LIBEXT)
 
-src/libsmatrix.$(LIBEXT):
+src/smatrix.$(LIBEXT):
 	cd src && make
 
 install:
-	cp src/libsmatrix.$(LIBEXT) $(LIBDIR)
+	cp src/smatrix.$(LIBEXT) $(LIBDIR)
 
 clean:
 	find . -name "*.o" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -o -name "*.bundle" | xargs rm
@@ -43,8 +43,5 @@ benchmark: src/smatrix_benchmark
 src/smatrix_benchmark:
 	cd src && make smatrix_benchmark
 
-test: clean all test_java
-
-test_java:
-	javac -classpath ./src:./src/java src/java/test/TestSparseMatrix.java
-	java -Djava.library.path=./src -classpath ./src:./src/java:./src/java/test TestSparseMatrix
+test:
+	cd src/java && make test

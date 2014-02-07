@@ -7,7 +7,7 @@
 
 include ../Makefile.in
 
-TARGET     = libsmatrix_java.$(LIBEXT)
+TARGET     = smatrix_java.$(LIBEXT)
 
 ifeq ($(UNAME), Darwin)
 JNI_FLAGS  = -I /System/Library/Frameworks/JavaVM.framework/Headers -I /System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Headers
@@ -21,6 +21,15 @@ all: $(TARGET)
 
 $(TARGET): ../smatrix.o ../smatrix_jni.c ../smatrix_jni.h
 	$(CC) $(JNI_FLAGS) $(LIBFLAGS) $(LDFLAGS) ../smatrix_jni.c ../smatrix.o -o $(TARGET)
+ifeq ($(UNAME), Darwin)
+	ln -s $(TARGET) smatrix_java.so
+endif
 
 ../smatrix.o:
 	cd .. && make
+
+test: $(TARGET)
+	javac -classpath . test/TestSparseMatrix.java
+	java -Djava.library.path=./ -classpath .:./test TestSparseMatrix
+
+.PHONY: test

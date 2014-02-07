@@ -8,7 +8,7 @@
 include ../Makefile.in
 include Makefile.in
 
-TARGET = libsmatrix_ruby.$(LIBEXT)
+TARGET = smatrix_ruby.$(LIBEXT)
 
 all: $(TARGET)
 

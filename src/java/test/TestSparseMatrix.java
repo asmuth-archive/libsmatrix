@@ -167,6 +167,7 @@ class TestSparseMatrix {
 
   public static void main(String[] opts) {
     boolean success = true;
+    SparseMatrix.setLibraryPath("./smatrix_java.so");
 
     SparseMatrix smx1 = new SparseMatrix();
     success &= run_tests(smx1);

@@ -21,8 +21,8 @@ config.h:
 	touch config.h
 
 smatrix_jni.h:
-	javac java/com/paulasmuth/libsmatrix/SparseMatrix.java
-	javah -o smatrix_jni.h -classpath ./java com.paulasmuth.libsmatrix.SparseMatrix
+	javac com/paulasmuth/libsmatrix/SparseMatrix.java
+	javah -o smatrix_jni.h -classpath . com.paulasmuth.libsmatrix.SparseMatrix
 
 smatrix_benchmark: smatrix.o smatrix_benchmark.c
 	$(CC) $(CFLAGS) smatrix_benchmark.c smatrix.o -o smatrix_benchmark $(LDFLAGS)
