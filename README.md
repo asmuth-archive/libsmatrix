@@ -39,23 +39,23 @@ in "C API".
     $ make
     $ make install
 
-To run the tests (optional, requires java and ruby)
+To run the tests/benchmarks (optional, requires java and ruby)
 
     $ make test
-
-To compile the examples (optional):
-
-    $ make examples
+    $ make benchmark
 
 To build the MRI ruby and Java JNI bindings (optional), run:
 
     $ make ruby
     $ make java
 
-This will produce the respective shared objects in:
+This will produce the respective shared objects and bundles in:
 
     src/ruby/smatrix_ruby.so
+    src/ruby/smatrix_X.X.X.gem
+
     src/java/smatrix_java.so
+    src/java/target/libsmatrix-X.X-SNAPSHOT.jar
 
 ### Import artifact via Maven/sbt (java/scala)
 

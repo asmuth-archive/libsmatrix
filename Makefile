@@ -28,6 +28,15 @@ clean:
 	find . -name "*.o" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -o -name "*.bundle" | xargs rm
 	rm -rf src/java/target src/config.h src/smatrix_benchmark *.gem
 
+ruby:
+	cd src/ruby && make
+
+java:
+	cd src/java && make
+
+publish_java: java
+	cd src/java && mvn deploy
+
 benchmark: src/smatrix_benchmark
 	src/smatrix_benchmark full
 
