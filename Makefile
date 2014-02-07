@@ -29,6 +29,7 @@ clean:
 	rm -rf src/java/target src/config.h src/smatrix_benchmark *.gem
 
 ruby:
+	cd src/ruby && ruby extconf.rb
 	cd src/ruby && make
 
 publish_ruby:

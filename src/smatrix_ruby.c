@@ -7,10 +7,8 @@
  * the License at: http://opensource.org/licenses/MIT
  */
 #include <stdlib.h>
-#include <ruby.h>
-#include <ruby/ruby.h>
-#include <ruby/defines.h>
 #include <ruby/config.h>
+#include <ruby/ruby.h>
 #include "smatrix.h"
 #include "smatrix_ruby.h"
 

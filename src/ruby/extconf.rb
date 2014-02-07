@@ -1,10 +1,9 @@
 require "mkmf"
 
-#have_header("ruby.h") or missing("ruby.h")
-ruby_include = RbConfig::CONFIG["rubyhdrdir"]
-
 mkmf_includes = <<EOF
-RUBY_INCLUDE = #{ruby_include}
+RUBY_INCLUDE      = #{RbConfig::CONFIG["rubyhdrdir"]}
+RUBY_INCLUDE_ARCH = #{RbConfig::CONFIG["rubyhdrdir"]}/#{RbConfig::CONFIG["arch"]}
+RUBY_LIB          = #{RbConfig::CONFIG["archdir"]}
 EOF
 
 File.open(::File.expand_path("../Makefile.in", __FILE__), "w+") do |f|

@@ -7,7 +7,6 @@
  * the License at: http://opensource.org/licenses/MIT
  */
 #include <stdlib.h>
-#include <ruby.h>
 #include "smatrix.h"
 
 #ifndef SMATRIX_RUBY_H
