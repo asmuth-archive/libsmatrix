@@ -12,9 +12,9 @@ TARGET       = smatrix.$(LIBEXT)
 all: $(TARGET)
 
 $(TARGET): smatrix.o
-	$(CC) $(LIBFLAGS) $(LDFLAGS) smatrix.o -o $(TARGET)
+	$(CC) $(LIBFLAGS) smatrix.o -o $(TARGET) $(LDFLAGS)
 
-smatrix.o: config.h smatrix_jni.h smatrix.c smatrix.h smatrix_private.h
+smatrix.o: config.h smatrix.c smatrix.h smatrix_private.h
 	$(CC) -c $(CFLAGS) smatrix.c -o smatrix.o
 
 config.h:
@@ -23,3 +23,6 @@ config.h:
 smatrix_jni.h:
 	javac java/com/paulasmuth/libsmatrix/SparseMatrix.java
 	javah -o smatrix_jni.h -classpath ./java com.paulasmuth.libsmatrix.SparseMatrix
+
+smatrix_benchmark: smatrix.o smatrix_benchmark.c
+	$(CC) $(CFLAGS) smatrix_benchmark.c smatrix.o -o smatrix_benchmark $(LDFLAGS)

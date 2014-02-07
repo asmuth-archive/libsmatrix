@@ -14,49 +14,21 @@ LIBDIR       = $(PREFIX)/lib
 UNAME        = $(shell uname)
 SOURCES      = src/smatrix.c src/smatrix_jni.c src/smatrix_ruby.c
 
-ifeq ($(UNAME), Darwin)
-CFLAGS_     +=  -dynamic -bundle -o src/libsmatrix.bundle
-INCLUDES     = -I /System/Library/Frameworks/JavaVM.framework/Headers -I /System/Library/Frameworks/JavaVM.framework/Versions/CurrentJDK/Headers
-endif
-ifeq ($(UNAME), Linux)
-CFLAGS_     +=  -shared -o src/libsmatrix.so
-INCLUDES     = -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux
-endif
-
 all: src/smatrix.c src/smatrix.h src/smatrix_jni.h src/config.h
 	$(CC) $(CFLAGS_) $(RUBY_INCLUDE) $(INCLUDES) $(SOURCES) $(LDFLAGS)
 
 install: src/libsmatrix.$(LIBEXT)
 	cp src/libsmatrix.$(LIBEXT) $(LIBDIR)
 
-src/config.h:
-	touch src/config.h
-
-pom.xml:
-	ln -s build/maven/pom.xml
-
-src/smatrix_jni.h:
-	javac java/com/paulasmuth/libsmatrix/SparseMatrix.java
-	javah -o smatrix_jni.h -classpath ./java com.paulasmuth.libsmatrix.SparseMatrix
-
 clean:
 	find . -name "*.o" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -delete
-	rm -rf target pom.xml src/config.h src/smatrix_benchmark
+	rm -rf src/java/target src/config.h src/smatrix_benchmark
 
 benchmark: src/smatrix_benchmark
 	src/smatrix_benchmark full
-
-src/smatrix_benchmark: src/smatrix_benchmark.c
-	$(CC) $(CFLAGS_) -o src/smatrix_benchmark src/smatrix_benchmark.c src/smatrix.c $(LDFLAGS)
 
 test: clean all test_java
 
 test_java:
 	javac -classpath ./src:./src/java src/java/test/TestSparseMatrix.java
 	java -Djava.library.path=./src -classpath ./src:./src/java:./src/java/test TestSparseMatrix
-
-build_maven:
-	mvn package
-
-publish_maven: build_maven
-	mvn deploy
