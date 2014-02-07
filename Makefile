@@ -31,6 +31,9 @@ clean:
 ruby:
 	cd src/ruby && make
 
+publish_ruby:
+	gem build src/ruby/libsmatrix.gemspec
+
 java:
 	cd src/java && make
 
