@@ -33,6 +33,7 @@ ruby:
 
 publish_ruby:
 	gem build src/ruby/libsmatrix.gemspec
+	mv *.gem src/ruby/
 
 java:
 	cd src/java && make
