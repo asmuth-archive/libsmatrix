@@ -5,6 +5,8 @@
 # file except in compliance with the License. You may obtain a copy of
 # the License at: http://opensource.org/licenses/MIT
 
+include src/Makefile.in
+
 SHELL        = /bin/sh
 CC           = clang
 CFLAGS_      = $(CFLAGS) -Wall -Wextra -O3 -march=native -mtune=native -D NDEBUG -fPIC
@@ -14,18 +16,23 @@ LIBDIR       = $(PREFIX)/lib
 UNAME        = $(shell uname)
 SOURCES      = src/smatrix.c src/smatrix_jni.c src/smatrix_ruby.c
 
-all: src/smatrix.c src/smatrix.h src/smatrix_jni.h src/config.h
-	$(CC) $(CFLAGS_) $(RUBY_INCLUDE) $(INCLUDES) $(SOURCES) $(LDFLAGS)
+all: src/libsmatrix.$(LIBEXT)
 
-install: src/libsmatrix.$(LIBEXT)
+src/libsmatrix.$(LIBEXT):
+	cd src && make
+
+install:
 	cp src/libsmatrix.$(LIBEXT) $(LIBDIR)
 
 clean:
-	find . -name "*.o" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -delete
-	rm -rf src/java/target src/config.h src/smatrix_benchmark
+	find . -name "*.o" -o -name "*.class" -o -name "*.so" -o -name "*.dylib" -o -name "*.bundle" | xargs rm
+	rm -rf src/java/target src/config.h src/smatrix_benchmark *.gem
 
 benchmark: src/smatrix_benchmark
 	src/smatrix_benchmark full
+
+src/smatrix_benchmark:
+	cd src && make smatrix_benchmark
 
 test: clean all test_java
 

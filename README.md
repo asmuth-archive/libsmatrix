@@ -33,23 +33,29 @@ There are multiple ways to install libsmatrix:
 
 ### Compile from source
 
-This will produce a single shared object "libsmatrix.so" file that exports all calls documented
-in "C API" as well as MRI ruby and Java JNI bindings if their respective header files (ruby.h,
-jni.h) are found:
-
-1) Compile and install into system
+This will produce a single shared object "smatrix.so" file that exports all calls documented
+in "C API".
 
     $ make
     $ make install
 
-2) Run tests (optional, requires java and ruby)
+To run the tests (optional, requires java and ruby)
 
     $ make test
 
-4) Compile examples (optional)
+To compile the examples (optional):
 
     $ make examples
 
+To build the MRI ruby and Java JNI bindings (optional), run:
+
+    $ make ruby
+    $ make java
+
+This will produce the respective shared objects in:
+
+    src/ruby/smatrix_ruby.so
+    src/java/smatrix_java.so
 
 ### Import artifact via Maven/sbt (java/scala)
 
@@ -74,9 +80,9 @@ Import artifact via Maven2 (put this into your pom.xml):
       </snapshots>
     </repository>
 
-To build the maven artifact from source, check out libsmatrix and run this:
+To publish the maven artifact from source, check out libsmatrix and run this:
 
-    $ make build_maven
+    $ make publish_java
 
 
 ### Import gem via rubygems (ruby only)
@@ -89,10 +95,9 @@ To use libsmatrix in your project, require it like this:
 
     require "libsmatrix"
 
-To build the rubygem from source, check out libsmatrix and run this:
+To build and publish the ruby gem run:
 
-    $ make build_gem
-
+    $ make publish_ruby
 
 C API
 -----
