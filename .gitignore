@@ -4,6 +4,7 @@ src/config.h
 src/smatrix_benchmark
 *.o
 *.so
+*.gem
 *.bundle
 *.dylib
 *.class
