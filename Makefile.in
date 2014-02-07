@@ -1,0 +1,9 @@
+UNAME        = $(shell uname)
+
+LIBFLAGS   = -shared
+LIBEXT     = so
+
+#ifeq ($(UNAME), Darwin)
+LIBFLAGS   = -dynamic -bundle
+LIBEXT     = bundle
+#endif

@@ -4,7 +4,10 @@ include Makefile.in
 
 all: $(TARGET)
 
-$(TARGET):
+../smatrix.o:
+	cd .. && make
+
+$(TARGET): ../smatrix.o
 	echo $(RUBY_INCLUDE)
 	echo "FNORD"
 
