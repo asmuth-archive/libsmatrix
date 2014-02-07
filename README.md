@@ -132,9 +132,11 @@ here be dragons
 Ruby API
 --------
 
+[![Gem Version](https://badge.fury.io/rb/libsmatrix.png)](http://badge.fury.io/rb/libsmatrix)
 
-Require the gem:
+Install and require the gem:
 
+	$ install gem libsmatrix
 	$ require 'libsmatrix'
 
 
