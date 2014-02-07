@@ -1,4 +1,10 @@
 UNAME        = $(shell uname)
+SHELL        = /bin/sh
+CC           = clang
+CFLAGS      ?= -Wall -Wextra -O3 -march=native -mtune=native -D NDEBUG -fPIC
+LDFLAGS      = -lpthread -lm
+PREFIX       = $(DESTDIR)/usr/local
+LIBDIR       = $(PREFIX)/lib
 
 LIBFLAGS   = -shared
 LIBEXT     = so

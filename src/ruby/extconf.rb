@@ -1,7 +1,7 @@
 require "mkmf"
 
 #have_header("ruby.h") or missing("ruby.h")
-ruby_include = RbConfig::CONFIG["rubyhdrdir"] + "/ruby/"
+ruby_include = RbConfig::CONFIG["rubyhdrdir"]
 
 mkmf_includes = <<EOF
 RUBY_INCLUDE = #{ruby_include}

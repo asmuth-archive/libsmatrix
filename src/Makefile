@@ -7,21 +7,15 @@
 
 include Makefile.in
 
-SHELL        = /bin/sh
-CC           = clang
-CFLAGS      ?= -c -Wall -Wextra -O3 -march=native -mtune=native -D NDEBUG -fPIC
-LDFLAGS      = -lpthread -lm
-PREFIX       = $(DESTDIR)/usr/local
-LIBDIR       = $(PREFIX)/lib
 TARGET       = smatrix.$(LIBEXT)
 
 all: $(TARGET)
 
 $(TARGET): smatrix.o
-	$(CC) $(LIBFLAGS) smatrix.o -o $(TARGET)
+	$(CC) $(LIBFLAGS) $(LDFLAGS) smatrix.o -o $(TARGET)
 
 smatrix.o: config.h smatrix_jni.h smatrix.c smatrix.h smatrix_private.h
-	$(CC) $(CFLAGS) smatrix.c -o smatrix.o
+	$(CC) -c $(CFLAGS) smatrix.c -o smatrix.o
 
 config.h:
 	touch config.h
