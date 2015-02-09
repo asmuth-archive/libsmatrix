@@ -154,6 +154,37 @@ VALUE smatrix_rb_decr(VALUE self, VALUE x, VALUE y, VALUE value) {
   return INT2NUM(smatrix_decr(smatrix, NUM2INT(x), NUM2INT(y), NUM2INT(value)));
 }
 
+VALUE smatrix_rb_getrow(VALUE self, VALUE x, VALUE y) {
+  smatrix_t* smatrix = NULL;
+  smatrix_rb_gethandle(self, &smatrix);
+
+  if (!smatrix) {
+    rb_raise(rb_eTypeError, "smatrix @handle is Nil, something went horribly wrong :(");
+    return Qnil;
+  }
+
+  if (rb_type(x) != RUBY_T_FIXNUM) {
+    rb_raise(rb_eTypeError, "first argument (x) must be a Fixnum");
+    return Qnil;
+  }
+
+  if (rb_type(y) != RUBY_T_FIXNUM) {
+    rb_raise(rb_eTypeError, "first argument (y) must be a Fixnum");
+    return Qnil;
+  }
+
+  uint32_t  *data, neighbors;
+  data  = malloc(NUM2INT(y) * 8);
+  VALUE ret_array = rb_ary_new2(NUM2INT(y));
+
+  neighbors = smatrix_getrow(smatrix, NUM2INT(x), data, 20);
+
+  for(int i=0; i < neighbors; i++) {
+    rb_ary_store(ret_array, i, INT2NUM(data[i]));
+  }
+  return ret_array;
+}
+
 void smatrix_rb_free(smatrix_t* smatrix) {
   if (!smatrix) {
    rb_raise(rb_eTypeError, "smatrix @handle is Nil, something is very bad :'(");
@@ -171,6 +202,7 @@ void Init_smatrix() {
   rb_define_method(klass, "set", smatrix_rb_set, 3);
   rb_define_method(klass, "incr", smatrix_rb_incr, 3);
   rb_define_method(klass, "decr", smatrix_rb_decr, 3);
+  rb_define_method(klass, "getrow", smatrix_rb_getrow, 2);
 }
 
 void Init_smatrix_ruby() {
