@@ -177,7 +177,7 @@ VALUE smatrix_rb_getrow(VALUE self, VALUE x, VALUE y) {
   data  = malloc(NUM2INT(y) * 8);
   VALUE ret_array = rb_ary_new2(NUM2INT(y));
 
-  neighbors = smatrix_getrow(smatrix, NUM2INT(x), data, NUM2INT(y));
+  neighbors = smatrix_getrow(smatrix, NUM2INT(x), data, NUM2INT(y) * 8);
 
   for(int i=0; i < neighbors; i++) {
     rb_ary_store(ret_array, i, INT2NUM(data[i]));
