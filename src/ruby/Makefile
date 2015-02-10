@@ -12,9 +12,9 @@ TARGET = smatrix_ruby.$(LIBEXT)
 UNAME        = $(shell uname)
 
 ifeq ($(UNAME), Darwin)
-WLFLAGS    = -Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress
+LDFLAGS    = -Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress
 else
-WLFLAGS    = -fPIC
+LDFLAGS    = -fPIC
 endif
 
 all: $(TARGET)
