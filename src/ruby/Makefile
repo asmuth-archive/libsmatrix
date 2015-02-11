@@ -9,6 +9,13 @@ include ../Makefile.in
 include Makefile.in
 
 TARGET = smatrix_ruby.$(LIBEXT)
+UNAME        = $(shell uname)
+
+ifeq ($(UNAME), Darwin)
+LDFLAGS    = -Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress
+else
+LDFLAGS    = -fPIC
+endif
 
 all: $(TARGET)
 
@@ -16,6 +23,6 @@ all: $(TARGET)
 	cd .. && make
 
 $(TARGET): ../smatrix.o ../smatrix_ruby.c ../smatrix_ruby.h
-	$(CC) -L$(RUBY_LIB) -I$(RUBY_INCLUDE_ARCH) -I$(RUBY_INCLUDE) $(LIBFLAGS) -Wl,-undefined,dynamic_lookup -Wl,-multiply_defined,suppress $(LDFLAGS) ../smatrix_ruby.c ../smatrix.o -o $(TARGET)
+	$(CC) -L$(RUBY_LIB) -I$(RUBY_INCLUDE_ARCH) -I$(RUBY_INCLUDE) $(LIBFLAGS) $(WLFLAGS) $(LDFLAGS) ../smatrix_ruby.c ../smatrix.o -o $(TARGET)
 
 install: $(TARGET)
