@@ -22,6 +22,7 @@ VALUE smatrix_rb_initialize(VALUE self, VALUE filename);
 VALUE smatrix_rb_incr(VALUE self, VALUE x, VALUE y, VALUE value);
 VALUE smatrix_rb_decr(VALUE self, VALUE x, VALUE y, VALUE value);
 VALUE smatrix_rb_set(VALUE self, VALUE x, VALUE y, VALUE value);
+VALUE smatrix_rb_getrow(VALUE self, VALUE x, VALUE y);
 void smatrix_rb_free(smatrix_t* smatrix);
 void Init_smatrix_ruby();
 void Init_smatrix();

@@ -179,6 +179,11 @@ VALUE smatrix_rb_getrow(VALUE self, VALUE x, VALUE y) {
 
   neighbors = smatrix_getrow(smatrix, NUM2INT(x), data, NUM2INT(y) * 8 * 2);
 
+  if (neighbors == 0) {
+    free(data);
+    return Qnil;
+  }
+
   for(int i=0; i < neighbors; i++) {
     rb_ary_store(ret_array, i, INT2NUM(data[i]));
   }
